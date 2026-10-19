@@ -22,7 +22,8 @@
 | Contextual Retrieval | ✅（可开关） | `context_text` 与原文分开存储；索引文本可切换，引用仍用原文 |
 | 声明级引用检查 | ✅（v0） | 回答拆句、映射 `[S1]`、词面支持性；明确不是 NLI |
 | 检索 Trace | ✅（本地调试） | `GET /api/debug/query-logs/{request_id}` |
-| 图扩展 / 多跳 / 自适应路由 | ⏳ Phase 2 | 本次未接默认链路；先保留开关与 IR/route 接口 |
+| 轻量领域图 / 证据补检 | ✅（默认关闭） | 种子图、实体 mention、一跳 Graph-to-Chunk、facet 补检 |
+| 多跳 / LangGraph 路由 | ⏳ Phase 2b/3 | 当前只有一跳图和确定性 route；未做问题分解与 LangGraph |
 | 文档版本更新 | ✅ | 新版本入库成功后才激活，旧版本归档 |
 | 版本回滚 | ✅ | 校验 Qdrant 中该版本仍有向量 |
 | 后台任务恢复 | ✅ | ARQ 重试 + 失败重试接口 + worker 启动回收超时任务 |
@@ -69,7 +70,13 @@ uv sync
 uv run python ../../scripts/make_sample_pdf.py
 # 建表 + 增量迁移；应用启动时也会自动执行
 uv run python ../../scripts/migrate_db.py
+
+# 可选：写入人工审核的种子图，并回填已有 chunk 的实体 mention
+uv run python ../../scripts/seed_graph.py
 ```
+
+启用图扩展前必须执行 `seed_graph.py`，并在同一环境设置
+`ENABLE_GRAPH_EXPANSION=true`；否则图召回为空，不影响基础链路。
 
 启动 API：
 
@@ -169,7 +176,7 @@ uv run pytest -q
 uv run ruff check app tests ../../scripts
 ```
 
-当前单元测试覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析。
+当前 **61 个单元测试**覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、声明级检查、Contextual text、图实体/一跳扩展、证据要求/定向补检、自适应路由守卫。
 
 端到端测试（需要 API + worker 运行）：
 
@@ -194,7 +201,7 @@ apps/api/app/
   config.py               pydantic-settings 配置
   db.py                   async SQLAlchemy + 启动迁移
   migrations.py           schema_migrations 与增量加列
-  models.py               8 张表
+  models.py               文档/版本/块/任务/会话/引用/日志 + 图实体/别名/关系/mention
   species.py              品种解析、识别、通用品种约定
   queue.py                ARQ 连接池
   worker.py               ARQ WorkerSettings
@@ -208,13 +215,19 @@ apps/api/app/
     chunker.py            Parent-Child、表格、位置合并
     embedder.py           Hashing 开发占位 + BGE-M3 适配器
     pipeline.py           解析→切分→向量化→写入→校验→激活
+  graph/
+    seed.py               人工审核的种子实体、别名、关系
+    service.py            图加载、实体链接、一跳扩展、Graph-to-Chunk
+  query/
+    ir.py                 Typed Query IR、硬约束编译、确定性路由
   retrieval/
     bm25.py               中文分词、BM25 稀疏权重
     vector_store.py       Qdrant collection、品种/版本过滤、检索
     rrf.py                RRF
     rerank.py             Noop + BGE 适配器 + 工厂
     sufficiency.py        证据不足门槛（词面 v0）
-    service.py            四种模式、融合、父块扩展、证据组装
+    requirements.py       facet 覆盖检查、定向补检 query
+    service.py            四种模式、图召回、融合、父块扩展、证据组装
   generation/
     llm.py                Mock 生成器 + DeepSeek 流式适配器
     citations.py          引用解析、有效性、覆盖率
@@ -222,6 +235,7 @@ apps/api/app/
 scripts/
   migrate_db.py           建表 + 增量迁移
   smoke_test.py           A/B/C 端到端验收
+  seed_graph.py           种子图 + 旧 chunk mention 回填
   evaluate.py             批量评测、导出 JSONL/CSV
 eval/
   sample_questions.jsonl  合成测试集（非论文 Ground Truth）
@@ -365,7 +379,7 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 13. **Query IR 是规则 v1**，不处理复杂否定、指代和隐含条件；LLM IR 尚未接入。
 14. **声明级检查是词面 v0**，会把“同词不同义”判成支持，也会漏掉改写；需要 NLI/人工标注验证。
 15. **Contextual Retrieval 默认关闭**；开启后必须重建索引，且收益需要在真实数据上验证。
-16. **图扩展、多跳分解、自适应 LangGraph 路由尚未实现**；当前只有 IR 的 strategy 字段和确定性 route 函数，不应在论文中声称已完成。
+16. **图扩展是人工审核种子图的一跳召回**，不是从论文数据自动抽取的完整领域图；多跳分解、LangGraph 路由尚未实现，论文中不能扩大表述。
 
 ## 11. 下一阶段建议
 
@@ -377,7 +391,7 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 4. 完成 PDF.js 查看器：页码跳转 + bbox 高亮 + 多 location 切换。
 5. 增加 `reindex` 与旧版本清理任务、Qdrant/PostgreSQL 对账。
 6. 建立 200 条人工评测集（含 gold chunk / 证据句），跑检索消融 E1；把支持性验证从词面 v0 升级到 NLI 或人工标注。
-7. **Phase 2**：实现 PostgreSQL 轻量领域图（实体/别名/关系/来源/审核状态）、Graph-to-Chunk 召回、多查询/问题分解、证据缺口定向补检，并加 `ENABLE_GRAPH_EXPANSION` 等开关。
+7. **Phase 2b**：做问题分解与多查询、多跳证据合并；图已有一跳/mention/Graph-to-Chunk 基础，但关系和数据仍需扩充与审核。
 8. **Phase 3**：用 LangGraph 编排 `SIMPLE / SEMANTIC_EXPANSION / MULTI_HOP / REGULATION / CALCULATION`，加 PDF.js bbox 高亮与 Next.js 前端。
 9. 与陶江老师确认品种清单和数据来源后，再扩充品种；当前不预收集几十个品种。
 

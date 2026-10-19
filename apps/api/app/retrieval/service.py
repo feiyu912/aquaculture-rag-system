@@ -10,10 +10,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.graph.service import expand_entities, graph_chunk_ids, load_graph
 from app.ingestion.embedder import Embedder
 from app.models import KbChunk, KbDocument, KbDocumentVersion
 from app.query.ir import QueryIR, build_query_ir
 from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, tokenize
+from app.retrieval.requirements import (
+    Requirement,
+    assess_requirements,
+    build_requirements,
+    build_supplemental_query,
+)
 from app.retrieval.rerank import NoopReranker, Reranker
 from app.retrieval.rrf import rrf_fuse
 from app.retrieval.sufficiency import Sufficiency, assess_evidence
@@ -144,9 +151,12 @@ async def retrieve(
     category: str | None = None,
     species: str | None = None,
     mode: str = "hybrid",
+    search_question: str | None = None,
+    _attempt: int = 0,
 ) -> RetrievalResult:
     started = time.perf_counter()
     mode = normalize_mode(mode)
+    query_text = (search_question or question).strip()
     active_versions, species_options = await _active_version_rows(db)
     query_ir: QueryIR | None = None
     if settings.enable_query_ir:
@@ -168,6 +178,29 @@ async def retrieve(
             gate=gate.as_dict(),
         )
 
+    adaptive_route = query_ir.strategy if query_ir else "simple"
+    if settings.enable_adaptive_routing and query_ir is not None:
+        block_reason = route_block_reason(query_ir)
+        if block_reason is not None:
+            gate = Sufficiency(False, block_reason, [], [], 0.0, 0.0, 0.0, None)
+            return RetrievalResult(
+                evidence=[],
+                active_versions=active_versions,
+                timings={"retrieval_ms": 0},
+                rankings={},
+                config=_config(
+                    mode,
+                    query_ir.species_filter,
+                    query_ir.category_filter,
+                    "none",
+                    gate,
+                    query_ir,
+                    route=adaptive_route,
+                ),
+                sufficient=False,
+                gate=gate.as_dict(),
+            )
+
     if query_ir is not None:
         species_filter = query_ir.species_filter
         category_filter = query_ir.category_filter
@@ -177,9 +210,31 @@ async def retrieve(
             species_filter = detect_species(question, species_options)
         category_filter = category
 
+    graph_expansion = None
+    graph_ids: list[str] = []
+    graph_ms = 0.0
+    if settings.enable_graph_expansion:
+        graph_started = time.perf_counter()
+        graph = await load_graph(db)
+        if graph.entities:
+            graph_expansion = expand_entities(query_text, graph)
+            if graph_expansion.expanded_entity_ids:
+                graph_ids = [
+                    str(chunk_id)
+                    for chunk_id in await graph_chunk_ids(
+                        db,
+                        graph_expansion.expanded_entity_ids,
+                        active_versions,
+                        category=category_filter,
+                        species=species_filter,
+                        limit=settings.graph_top_k,
+                    )
+                ]
+        graph_ms = (time.perf_counter() - graph_started) * 1000
+
     client = get_client()
-    query_dense = embedder.embed_query(question)
-    query_sparse = bm25.query_vector(question)
+    query_dense = embedder.embed_query(query_text)
+    query_sparse = bm25.query_vector(query_text)
     dense_hits: list[SearchHit] = []
     sparse_hits: list[SearchHit] = []
     dense_ms = 0.0
@@ -217,11 +272,17 @@ async def retrieve(
         rank_lists.append([hit.chunk_id for hit in dense_hits])
     if sparse_hits:
         rank_lists.append([hit.chunk_id for hit in sparse_hits])
+    if graph_ids:
+        rank_lists.append(graph_ids)
+    weights = [1.0] * len(rank_lists)
+    if graph_ids:
+        weights[-1] = settings.graph_rrf_weight
 
     fused = (
         rrf_fuse(
             rank_lists,
             k=settings.rrf_k,
+            weights=weights,
             limit=max((top_k or settings.rerank_top_k) * 4, 24),
         )
         if rank_lists
@@ -230,11 +291,13 @@ async def retrieve(
     rankings = {
         "dense": [hit.chunk_id for hit in dense_hits],
         "sparse": [hit.chunk_id for hit in sparse_hits],
+        "graph": graph_ids,
         "fused": [chunk_id for chunk_id, _ in fused],
     }
     timings = {
         "dense_ms": round(dense_ms, 1),
         "sparse_ms": round(sparse_ms, 1),
+        "graph_ms": round(graph_ms, 1),
         "retrieval_ms": round((time.perf_counter() - started) * 1000, 1),
     }
     if not fused:
@@ -244,7 +307,15 @@ async def retrieve(
             active_versions=active_versions,
             timings=timings,
             rankings=rankings,
-            config=_config(mode, species_filter, category_filter, "none", gate, query_ir),
+            config=_config(
+                mode,
+                species_filter,
+                category_filter,
+                "none",
+                gate,
+                query_ir,
+                graph_expansion.as_dict() if graph_expansion else None,
+            ),
             sufficient=False,
             gate=gate.as_dict(),
         )
@@ -349,6 +420,103 @@ async def retrieve(
         if len(evidence) >= (top_k or settings.max_sources):
             break
 
+    requirements: list[Requirement] = []
+    if settings.enable_evidence_requirements:
+        requirements = assess_requirements(
+            build_requirements(query_ir), [item.content for item in evidence]
+        )
+    gate = _assess_with_requirements(
+        question,
+        evidence,
+        requirements,
+        species_options,
+        fallback_reason=None,
+    )
+
+    targeted_trace: dict | None = None
+    if (
+        not gate.sufficient
+        and settings.enable_targeted_retrieval
+        and _attempt < settings.max_targeted_retrieval
+    ):
+        supplement = build_supplemental_query(
+            question,
+            requirements,
+            gate.missing_terms,
+        )
+        if supplement:
+            second = await retrieve(
+                db,
+                question,
+                embedder,
+                bm25,
+                reranker=reranker,
+                top_k=top_k,
+                category=category,
+                species=species,
+                mode=mode,
+                search_question=supplement,
+                _attempt=_attempt + 1,
+            )
+            targeted_trace = {
+                "attempt": _attempt + 1,
+                "supplement": supplement,
+                "insufficient_reason": gate.reason,
+                "second_sufficient": second.sufficient,
+            }
+            if second.sufficient:
+                merged = _merge_evidence(evidence, second.evidence)
+                if merged:
+                    evidence = merged[: settings.max_sources]
+                    for index, item in enumerate(evidence, start=1):
+                        item.source_index = index
+                    gate = _assess_with_requirements(
+                        question,
+                        evidence,
+                        requirements,
+                        species_options,
+                        fallback_reason=None,
+                    )
+                rankings = _merge_rankings(rankings, second.rankings)
+                timings["targeted_ms"] = second.timings.get("retrieval_ms", 0)
+
+    if not gate.sufficient:
+        evidence = []
+
+    config = _config(
+        mode,
+        species_filter,
+        category_filter,
+        reranker_name,
+        gate,
+        query_ir,
+        graph_expansion.as_dict() if graph_expansion else None,
+        route=adaptive_route,
+    )
+    if requirements:
+        config["evidence_requirements"] = [item.as_dict() for item in requirements]
+    if targeted_trace:
+        config["targeted_retrieval"] = targeted_trace
+    timings["retrieval_ms"] = round((time.perf_counter() - started) * 1000, 1)
+    return RetrievalResult(
+        evidence=evidence,
+        active_versions=active_versions,
+        timings=timings,
+        rankings=rankings,
+        config=config,
+        sufficient=gate.sufficient,
+        gate=gate.as_dict(),
+    )
+
+
+def _assess_with_requirements(
+    question: str,
+    evidence: list[Evidence],
+    requirements: list[Requirement],
+    species_options: list[str],
+    *,
+    fallback_reason: str | None,
+) -> Sufficiency:
     gate = assess_evidence(
         question,
         [item.content for item in evidence],
@@ -357,19 +525,64 @@ async def retrieve(
         min_coverage=settings.evidence_min_coverage,
         domain_terms=set(species_options),
     )
-    if not gate.sufficient:
-        evidence = []
+    if fallback_reason and not gate.sufficient:
+        return Sufficiency(
+            False,
+            fallback_reason,
+            gate.query_terms,
+            gate.matched_terms,
+            gate.matched_weight,
+            gate.total_weight,
+            gate.coverage,
+            None,
+            gate.missing_terms,
+        )
+    if requirements and not all(item.covered for item in requirements):
+        missing = [item for item in requirements if not item.covered]
+        missing_terms = [
+            term for item in missing for term in item.terms if term not in item.matched_terms
+        ]
+        return Sufficiency(
+            False,
+            "missing_requirements",
+            gate.query_terms,
+            gate.matched_terms,
+            gate.matched_weight,
+            gate.total_weight,
+            gate.coverage,
+            gate.best_index,
+            list(dict.fromkeys(missing_terms)),
+        )
+    return gate
 
-    timings["retrieval_ms"] = round((time.perf_counter() - started) * 1000, 1)
-    return RetrievalResult(
-        evidence=evidence,
-        active_versions=active_versions,
-        timings=timings,
-        rankings=rankings,
-        config=_config(mode, species_filter, category_filter, reranker_name, gate, query_ir),
-        sufficient=gate.sufficient,
-        gate=gate.as_dict(),
+
+def _merge_evidence(first: list[Evidence], second: list[Evidence]) -> list[Evidence]:
+    by_parent: dict[uuid.UUID, Evidence] = {}
+    for item in [*first, *second]:
+        current = by_parent.get(item.parent_chunk_id)
+        if current is None or item.score > current.score:
+            by_parent[item.parent_chunk_id] = item
+    return sorted(by_parent.values(), key=lambda item: -item.score)
+
+
+def _merge_rankings(first: dict, second: dict) -> dict:
+    merged = dict(first)
+    for key in ("dense", "sparse", "graph"):
+        merged[key] = list(dict.fromkeys([*(first.get(key) or []), *(second.get(key) or [])]))
+    merged["targeted_fused"] = second.get("fused") or []
+    merged["fused"] = list(
+        dict.fromkeys([*(first.get("fused") or []), *(second.get("fused") or [])])
     )
+    return merged
+
+
+def route_block_reason(query_ir: QueryIR) -> str | None:
+    """Conservative deterministic guards for routes that need absent tools/metadata."""
+    if query_ir.strategy == "calculation":
+        return "calculation_tool_unavailable"
+    if query_ir.strategy == "regulation" and query_ir.requires_current_regulation:
+        return "regulation_metadata_unavailable"
+    return None
 
 
 def _config(
@@ -379,6 +592,8 @@ def _config(
     reranker: str,
     gate: Sufficiency,
     query_ir: QueryIR | None = None,
+    graph_expansion: dict | None = None,
+    route: str | None = None,
 ) -> dict:
     return {
         "dense_top_k": settings.dense_top_k,
@@ -392,6 +607,10 @@ def _config(
         "category_filter": category_filter,
         "reranker": reranker,
         "query_ir": query_ir.model_dump() if query_ir else None,
+        "graph_expansion": graph_expansion,
+        "graph_top_k": settings.graph_top_k,
+        "adaptive_route": route,
+        "adaptive_routing_enabled": settings.enable_adaptive_routing,
         "evidence_min_terms": settings.evidence_min_terms,
         "evidence_min_weight": settings.evidence_min_weight,
         "evidence_min_coverage": settings.evidence_min_coverage,

@@ -7,17 +7,17 @@
 
 | # | 能力 | 当前状态 | 代码/开关 | 说明 |
 |---|---|---|---|---|
-| 1 | 领域实体识别与归一化 | 部分 | `species.py`、`query/ir.py` | 品种已归一化；通用实体表/别名表待 Phase 2 |
+| 1 | 领域实体识别与归一化 | ✅ 基础 | `species.py`、`query/ir.py`、`graph/service.py` | 品种 + 11 个种子实体/别名；通用实体仍靠人工审核 |
 | 2 | Typed Query IR / NL2IR | ✅ 规则 v1 | `query/ir.py` | 意图、品种、阶段、水质指标、年份、规范标记；不调用 LLM |
 | 3 | 硬约束过滤 | ✅ 部分 | IR → Qdrant filter | 唯一品种、显式分类可硬过滤；年份/规范状态**不**偷懒编译 |
-| 4 | 领域图扩展 | ⏳ Phase 2 | `ENABLE_GRAPH_EXPANSION=false` | 表结构、实体/关系/来源/审核、Graph-to-Chunk 尚未实现 |
-| 5 | 多跳 / 问题分解 | ⏳ Phase 2 | `strategy=multi_hop` 仅标记 | 尚未真正拆子问题、合并证据 |
+| 4 | 领域图扩展 | ✅ Phase 2a | `ENABLE_GRAPH_EXPANSION=false` | PostgreSQL 实体/别名/关系/mention；已验证关系的一跳扩展 + Graph-to-Chunk；默认关闭 |
+| 5 | 多跳 / 问题分解 | ⏳ Phase 2b | `strategy=multi_hop` 仅标记 | 图只做一跳；尚未拆子问题、合并多跳证据 |
 | 6 | Contextual Retrieval | ✅ 可开关 | `ENABLE_CONTEXTUAL_RETRIEVAL`、`ingestion/context.py` | `context_text` 与原文分离；默认关闭 |
 | 7 | Parent-Child / Neighbor | ✅ 基础 | `ingestion/chunker.py`、`retrieval/service.py` | 已有父块扩展；邻居扩展未单独实现 |
 | 8 | 表格感知 | ✅ 基础 | 表格独立父块、表头/单位保留 | 复杂跨页表格仍需 MinerU/人工校验 |
-| 9 | 自适应检索路由 | ⏳ Phase 3 | `query/ir.py:route_query` | 已有确定性 route 函数；LangGraph 未接入 |
+| 9 | 自适应检索路由 | ✅ 确定性 v0 | `ENABLE_ADAPTIVE_ROUTING=false`、`retrieval/service.py` | `calculation`/现行规范在缺工具/日期元数据时安全拒答；LangGraph 未接入 |
 | 10 | 去重 / 多样性 | 部分 | parent 聚合、RRF | 没有显式 MMR / section diversity 控制 |
-| 11 | 证据完整性 / 补充检索 | 部分 | `retrieval/sufficiency.py` | 有词面 gate 与 missing_terms；定向补检未实现 |
+| 11 | 证据完整性 / 补充检索 | ✅ 可开关 | `ENABLE_EVIDENCE_REQUIREMENTS`、`ENABLE_TARGETED_RETRIEVAL` | facet 覆盖检查 + 最多一次定向补检；默认关闭 |
 | 12 | 声明级引用验证 | ✅ v0 | `generation/claims.py` | 句子级 `[S1]` 映射 + 词面支持性；**不是 NLI** |
 
 ## 2. 目标链路（Phase 2/3 完成后）
@@ -45,7 +45,19 @@ Query IR → species/category hard filter → Dense + BM25 → RRF
 → citation validity + claim-level lexical check
 ```
 
+可选模块（默认关闭）：`ENABLE_GRAPH_EXPANSION`、`ENABLE_EVIDENCE_REQUIREMENTS`、
+`ENABLE_TARGETED_RETRIEVAL`、`ENABLE_ADAPTIVE_ROUTING`。
+
 ## 3. 分阶段实施
+
+### Phase 2a（已完成，默认关闭）
+
+- PostgreSQL 轻量图：`graph_entities` / `graph_aliases` / `graph_relations` / `kb_chunk_entities`。
+- 关系带 `review_status`、`confidence`、可选 `provenance_document_version_id`；只加载 `verified` 关系。
+- 入库时用最长别名匹配建立 chunk→entity mention；`scripts/seed_graph.py` 可回填旧文档。
+- 查询时：实体链接 → 一跳关系扩展 → Graph-to-Chunk（按 mention 取 active version 的 child chunk）→ 以 `GRAPH_RRF_WEIGHT` 参与 RRF。
+- 没有 `RELATED_TO` 万能关系；没有 Neo4j；没有跨文档推断。
+- 当前图来源于人工审核的 11 个种子实体/8 条关系，不是从论文数据自动抽取的完整领域图。
 
 ### Phase 1（已完成）
 
@@ -54,9 +66,9 @@ Query IR → species/category hard filter → Dense + BM25 → RRF
 - Contextual Retrieval：`context_text` 入库，索引开关，引用仍用原文。
 - 声明级引用检查 v0：`[S1]` 映射、状态、summary 持久化。
 - 检索 Trace：`GET /api/debug/query-logs/{request_id}`。
-- 回归：52 个单元测试、A/B/C smoke、四模式评测。
+- 回归：61 个单元测试、A/B/C smoke、四模式评测；图和补检默认关闭，基线指标与 Phase 1 一致。
 
-### Phase 2（下一步）
+### Phase 2b（下一步）
 
 1. PostgreSQL 轻量图：
    - `domain_entities` / `domain_aliases` / `domain_relations` / `entity_mentions`；

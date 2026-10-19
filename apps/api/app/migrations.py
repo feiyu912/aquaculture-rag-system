@@ -42,6 +42,50 @@ MIGRATIONS: list[tuple[str, str]] = [
         "0008_chunk_context_text",
         "ALTER TABLE kb_chunks ADD COLUMN IF NOT EXISTS context_text text",
     ),
+    (
+        "0009_graph_entities",
+        """CREATE TABLE IF NOT EXISTS graph_entities (
+            id uuid PRIMARY KEY,
+            name text NOT NULL UNIQUE,
+            entity_type varchar(32) NOT NULL,
+            description text NOT NULL DEFAULT '',
+            review_status varchar(16) NOT NULL DEFAULT 'verified',
+            created_at timestamptz NOT NULL DEFAULT now()
+        )""",
+    ),
+    (
+        "0010_graph_aliases",
+        """CREATE TABLE IF NOT EXISTS graph_aliases (
+            id uuid PRIMARY KEY,
+            entity_id uuid NOT NULL REFERENCES graph_entities(id) ON DELETE CASCADE,
+            alias text NOT NULL UNIQUE,
+            review_status varchar(16) NOT NULL DEFAULT 'verified',
+            created_at timestamptz NOT NULL DEFAULT now()
+        )""",
+    ),
+    (
+        "0011_graph_relations",
+        """CREATE TABLE IF NOT EXISTS graph_relations (
+            id uuid PRIMARY KEY,
+            source_entity_id uuid NOT NULL REFERENCES graph_entities(id) ON DELETE CASCADE,
+            target_entity_id uuid NOT NULL REFERENCES graph_entities(id) ON DELETE CASCADE,
+            relation_type varchar(32) NOT NULL,
+            provenance_document_version_id uuid,
+            confidence double precision NOT NULL DEFAULT 1.0,
+            review_status varchar(16) NOT NULL DEFAULT 'verified',
+            created_at timestamptz NOT NULL DEFAULT now(),
+            CONSTRAINT uq_graph_relation UNIQUE (source_entity_id, target_entity_id, relation_type)
+        )""",
+    ),
+    (
+        "0012_chunk_entities",
+        """CREATE TABLE IF NOT EXISTS kb_chunk_entities (
+            chunk_id uuid NOT NULL REFERENCES kb_chunks(id) ON DELETE CASCADE,
+            entity_id uuid NOT NULL REFERENCES graph_entities(id) ON DELETE CASCADE,
+            mention_count integer NOT NULL DEFAULT 1,
+            PRIMARY KEY (chunk_id, entity_id)
+        )""",
+    ),
 ]
 
 

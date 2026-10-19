@@ -205,3 +205,69 @@ class QueryLog(Base, TimestampMixin):
     generation_config: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     cost_usd: Mapped[float | None] = mapped_column(Float)
     citation_check: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+
+
+class GraphEntity(Base, TimestampMixin):
+    __tablename__ = "graph_entities"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    entity_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    review_status: Mapped[str] = mapped_column(String(16), nullable=False, default="verified")
+
+    __table_args__ = (Index("ix_graph_entities_type", "entity_type"),)
+
+
+class GraphAlias(Base, TimestampMixin):
+    __tablename__ = "graph_aliases"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    entity_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("graph_entities.id", ondelete="CASCADE"), nullable=False
+    )
+    alias: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    review_status: Mapped[str] = mapped_column(String(16), nullable=False, default="verified")
+
+    __table_args__ = (Index("ix_graph_aliases_entity", "entity_id"),)
+
+
+class GraphRelation(Base, TimestampMixin):
+    __tablename__ = "graph_relations"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    source_entity_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("graph_entities.id", ondelete="CASCADE"), nullable=False
+    )
+    target_entity_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("graph_entities.id", ondelete="CASCADE"), nullable=False
+    )
+    relation_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    provenance_document_version_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    review_status: Mapped[str] = mapped_column(String(16), nullable=False, default="verified")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "source_entity_id",
+            "target_entity_id",
+            "relation_type",
+            name="uq_graph_relation",
+        ),
+        Index("ix_graph_relations_source", "source_entity_id"),
+        Index("ix_graph_relations_target", "target_entity_id"),
+    )
+
+
+class KbChunkEntity(Base):
+    __tablename__ = "kb_chunk_entities"
+
+    chunk_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("kb_chunks.id", ondelete="CASCADE"), primary_key=True
+    )
+    entity_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("graph_entities.id", ondelete="CASCADE"), primary_key=True
+    )
+    mention_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+    __table_args__ = (Index("ix_chunk_entities_entity", "entity_id"),)

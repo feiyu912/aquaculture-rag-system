@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     enable_evidence_requirements: bool = False
     enable_targeted_retrieval: bool = False
     enable_graph_expansion: bool = False
+    graph_top_k: int = 10
+    graph_rrf_weight: float = 0.7
     enable_adaptive_routing: bool = False
     max_targeted_retrieval: int = 1
 

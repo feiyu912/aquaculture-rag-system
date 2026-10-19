@@ -39,13 +39,16 @@
 - **Typed Query IR（规则 v1）**：意图/品种/阶段/水质指标/年份标记，硬约束确定性编译
 - **Contextual Retrieval（可开关）**：索引辅助文本与引用原文分离
 - **声明级引用检查（v0）**：句子级 `[S1]` 映射与词面支持性，不冒充 NLI
+- **轻量领域图（可开关）**：人工审核种子实体/别名/关系、chunk mention、一跳扩展、Graph-to-Chunk
+- **证据要求 + 定向补检（可开关）**：facet 缺口检查、最多一次补充检索
+- **确定性自适应路由（可开关）**：计算/现行规范缺少工具或日期元数据时安全拒答
 - **检索 Trace**：按 request_id 查看排名、证据、IR、gate 与耗时
-- 52 个单元测试 + A/B/C 端到端冒烟测试 + 批量评测 CLI
+- 61 个单元测试 + A/B/C 端到端冒烟测试 + 批量评测 CLI
 
 > ⚠️ 当前 Dense 使用 `HashingEmbedder` 开发占位，**不是 BGE-M3，不能用于论文实验**。
 > PyMuPDF 只是 MinerU 的临时降级解析器。Reranker 默认 `noop`；PDF.js 高亮、真实 DeepSeek 调用尚未验证。
 > `hybrid_rerank` 在接入 BGE-Reranker 前等价于 RRF，不能作为真实重排结果写论文。
-> 图扩展、多跳分解、LangGraph 自适应路由、PDF.js 高亮尚未接入默认链路（Phase 2/3），
+> 图扩展是一跳种子图的**可选**能力；多跳分解、LangGraph 路由、PDF.js 高亮尚未接入默认链路（Phase 2b/3），
 > 不要在当前论文结果中声称已完成。
 
 ## 技术栈（固定基线）

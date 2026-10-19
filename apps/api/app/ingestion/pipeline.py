@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db import SessionLocal
+from app.graph.service import link_chunks, load_graph
 from app.ingestion.chunker import build_chunks
 from app.ingestion.context import build_context_text
 from app.ingestion.embedder import get_embedder
@@ -141,6 +142,17 @@ async def ingest_version(ctx: dict, version_id: str) -> dict:
                     )
                 )
             await db.commit()
+
+            # Entity mentions are document metadata: build them independently
+            # of the graph-expansion switch so ablations can use the same links.
+            graph = await load_graph(db)
+            if graph.entities:
+                await link_chunks(
+                    db,
+                    [(chunk.id, chunk.content) for chunk in children],
+                    graph,
+                )
+                await db.commit()
 
             await _set_stage(db, job, "embed", 50)
             embedder = get_embedder(settings.embedding_model, settings.qdrant_vector_size)

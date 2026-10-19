@@ -135,6 +135,9 @@ async def chat_stream(
                 "retrieval_mode": retrieval.config.get("retrieval_mode"),
                 "species_filter": retrieval.config.get("species_filter"),
                 "query_ir": retrieval.config.get("query_ir"),
+                "adaptive_route": retrieval.config.get("adaptive_route"),
+                "targeted_retrieval": retrieval.config.get("targeted_retrieval"),
+                "graph_expansion": retrieval.config.get("graph_expansion"),
                 "gate": retrieval.gate,
             },
         )
@@ -214,6 +217,9 @@ async def chat_stream(
                 "timings": timings,
                 "retrieval_mode": retrieval.config.get("retrieval_mode"),
                 "query_ir": retrieval.config.get("query_ir"),
+                "adaptive_route": retrieval.config.get("adaptive_route"),
+                "targeted_retrieval": retrieval.config.get("targeted_retrieval"),
+                "graph_expansion": retrieval.config.get("graph_expansion"),
                 "sufficient": retrieval.sufficient,
                 "gate": retrieval.gate,
                 "citation_check": report,
@@ -281,6 +287,9 @@ async def _persist_success(
             "citation_check": report,
             "evidence_count": len(evidence),
             "superseded": superseded,
+            "adaptive_route": retrieval.config.get("adaptive_route"),
+            "targeted_retrieval": retrieval.config.get("targeted_retrieval"),
+            "graph_expansion": retrieval.config.get("graph_expansion"),
         }
         for item in evidence:
             db.add(
@@ -317,6 +326,9 @@ async def _persist_success(
                     "temperature": 0.2,
                     "retrieval_mode": retrieval.config.get("retrieval_mode"),
                     "reranker": retrieval.config.get("reranker"),
+                    "adaptive_route": retrieval.config.get("adaptive_route"),
+                    "targeted_retrieval": retrieval.config.get("targeted_retrieval"),
+                    "graph_expansion": retrieval.config.get("graph_expansion"),
                 },
                 cost_usd=cost_usd,
                 citation_check=report,
