@@ -176,7 +176,7 @@ uv run pytest -q
 uv run ruff check app tests ../../scripts
 ```
 
-当前 **61 个单元测试**覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、声明级检查、Contextual text、图实体/一跳扩展、证据要求/定向补检、自适应路由守卫。
+当前 **64 个单元测试**覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/一跳扩展、证据要求/定向补检、自适应路由守卫。
 
 端到端测试（需要 API + worker 运行）：
 
@@ -184,13 +184,21 @@ uv run ruff check app tests ../../scripts
 uv run python ../../scripts/smoke_test.py
 ```
 
-批量评测：
+批量评测（经 API，四种检索模式）：
 
 ```bash
 uv run python ../../scripts/evaluate.py \
   --dataset ../../eval/sample_questions.jsonl \
   --modes dense,bm25,hybrid,hybrid_rerank \
   --out ../../eval/runs/demo
+```
+
+增强模块消融（直接调用 retrieval service，不需要 API；Contextual 需单独重建索引，故不在此脚本内）：
+
+```bash
+uv run python ../../scripts/evaluate_ablations.py \
+  --dataset ../../eval/sample_questions.jsonl \
+  --out ../../eval/runs/ablations
 ```
 
 ## 8. 代码结构
@@ -237,6 +245,7 @@ scripts/
   smoke_test.py           A/B/C 端到端验收
   seed_graph.py           种子图 + 旧 chunk mention 回填
   evaluate.py             批量评测、导出 JSONL/CSV
+  evaluate_ablations.py   增强模块消融（直接调用检索服务）
 eval/
   sample_questions.jsonl  合成测试集（非论文 Ground Truth）
 ```

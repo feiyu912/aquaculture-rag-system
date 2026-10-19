@@ -40,10 +40,11 @@
 - **Contextual Retrieval（可开关）**：索引辅助文本与引用原文分离
 - **声明级引用检查（v0）**：句子级 `[S1]` 映射与词面支持性，不冒充 NLI
 - **轻量领域图（可开关）**：人工审核种子实体/别名/关系、chunk mention、一跳扩展、Graph-to-Chunk
+- **规则问题分解（可开关）**：多指标问题拆 facet 子查询，继承硬约束并参与 RRF
 - **证据要求 + 定向补检（可开关）**：facet 缺口检查、最多一次补充检索
 - **确定性自适应路由（可开关）**：计算/现行规范缺少工具或日期元数据时安全拒答
 - **检索 Trace**：按 request_id 查看排名、证据、IR、gate 与耗时
-- 61 个单元测试 + A/B/C 端到端冒烟测试 + 批量评测 CLI
+- 64 个单元测试 + A/B/C 端到端冒烟测试 + 批量评测 CLI
 
 > ⚠️ 当前 Dense 使用 `HashingEmbedder` 开发占位，**不是 BGE-M3，不能用于论文实验**。
 > PyMuPDF 只是 MinerU 的临时降级解析器。Reranker 默认 `noop`；PDF.js 高亮、真实 DeepSeek 调用尚未验证。
