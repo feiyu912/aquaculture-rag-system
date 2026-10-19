@@ -7,6 +7,7 @@ from qdrant_client import QdrantClient, models
 
 from app.config import settings
 from app.ingestion.chunker import ChunkDraft
+from app.species import GENERAL_SPECIES, normalize_species_list
 
 
 @dataclass(slots=True)
@@ -23,6 +24,8 @@ def get_client() -> QdrantClient:
 def ensure_collection(client: QdrantClient | None = None) -> None:
     client = client or get_client()
     if client.collection_exists(settings.qdrant_collection):
+        # Existing dev collections may predate the species filter/index.
+        _ensure_payload_indexes(client)
         return
     client.create_collection(
         collection_name=settings.qdrant_collection,
@@ -33,7 +36,15 @@ def ensure_collection(client: QdrantClient | None = None) -> None:
         },
         sparse_vectors_config={"bm25": models.SparseVectorParams(modifier=models.Modifier.IDF)},
     )
-    for field in ("document_id", "document_version_id", "category", "chunk_role"):
+    _ensure_payload_indexes(client)
+
+
+def _ensure_payload_indexes(client: QdrantClient) -> None:
+    info = client.get_collection(settings.qdrant_collection)
+    existing = set((info.payload_schema or {}).keys())
+    for field in ("document_id", "document_version_id", "category", "chunk_role", "species"):
+        if field in existing:
+            continue
         client.create_payload_index(
             collection_name=settings.qdrant_collection,
             field_name=field,
@@ -46,6 +57,7 @@ def version_filter(
     version_ids: list[uuid.UUID | str],
     category: str | None = None,
     chunk_role: str | None = "child",
+    species: str | None = None,
 ) -> models.Filter:
     must: list[models.Condition] = [
         models.FieldCondition(
@@ -59,7 +71,15 @@ def version_filter(
         )
     if category:
         must.append(models.FieldCondition(key="category", match=models.MatchValue(value=category)))
-    return models.Filter(must=must)
+    should = None
+    if species:
+        should = [
+            models.FieldCondition(
+                key="species",
+                match=models.MatchAny(any=[species, GENERAL_SPECIES]),
+            )
+        ]
+    return models.Filter(must=must, should=should)
 
 
 def upsert_chunks(
@@ -70,7 +90,9 @@ def upsert_chunks(
     document_id: uuid.UUID,
     version_id: uuid.UUID,
     category: str,
+    species: list[str] | None = None,
 ) -> None:
+    payload_species = normalize_species_list(species)
     points: list[models.PointStruct] = []
     for chunk, dense, sparse in zip(chunks, dense_vectors, sparse_vectors, strict=True):
         points.append(
@@ -83,6 +105,7 @@ def upsert_chunks(
                     "document_version_id": str(version_id),
                     "parent_id": str(chunk.parent_id) if chunk.parent_id else None,
                     "category": category,
+                    "species": payload_species,
                     "chunk_role": chunk.role,
                     "page_from": chunk.page_from,
                     "page_to": chunk.page_to,
@@ -146,12 +169,13 @@ def search_dense(
     version_ids: list[uuid.UUID | str],
     limit: int,
     category: str | None = None,
+    species: str | None = None,
 ) -> list[SearchHit]:
     result = client.query_points(
         collection_name=settings.qdrant_collection,
         query=query_vector,
         using="dense",
-        query_filter=version_filter(version_ids, category),
+        query_filter=version_filter(version_ids, category, species=species),
         limit=limit,
         with_payload=True,
     )
@@ -167,6 +191,7 @@ def search_sparse(
     version_ids: list[uuid.UUID | str],
     limit: int,
     category: str | None = None,
+    species: str | None = None,
 ) -> list[SearchHit]:
     if not query_vector.indices:
         return []
@@ -174,7 +199,7 @@ def search_sparse(
         collection_name=settings.qdrant_collection,
         query=query_vector,
         using="bm25",
-        query_filter=version_filter(version_ids, category),
+        query_filter=version_filter(version_ids, category, species=species),
         limit=limit,
         with_payload=True,
     )

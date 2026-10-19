@@ -43,3 +43,12 @@ class BGEReranker:
             scores = [scores]
         ranked = sorted(zip(candidates, scores), key=lambda item: -float(item[1]))
         return [(chunk_id, float(score)) for (chunk_id, _), score in ranked[:top_k]]
+
+
+def build_reranker(name: str | None = None) -> Reranker:
+    value = (name or "noop").strip()
+    if value.lower() in {"", "none", "noop"}:
+        return NoopReranker()
+    if value.lower() in {"bge", "bge-reranker-v2-m3", "baai/bge-reranker-v2-m3"}:
+        return BGEReranker()
+    raise ValueError(f"unsupported reranker: {name}")

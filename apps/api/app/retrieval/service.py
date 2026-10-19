@@ -15,14 +15,12 @@ from app.models import KbChunk, KbDocument, KbDocumentVersion
 from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, tokenize
 from app.retrieval.rerank import NoopReranker, Reranker
 from app.retrieval.rrf import rrf_fuse
-from app.retrieval.vector_store import (
-    SearchHit,
-    get_client,
-    search_dense,
-    search_sparse,
-)
+from app.retrieval.sufficiency import Sufficiency, assess_evidence
+from app.retrieval.vector_store import SearchHit, get_client, search_dense, search_sparse
+from app.species import detect_species, normalize_species_list, parse_species
 
 SENTENCE_RE = re.compile(r"(?<=[。！？!?；;])")
+VALID_MODES = ("dense", "bm25", "hybrid", "hybrid_rerank")
 
 
 @dataclass(slots=True)
@@ -39,6 +37,7 @@ class Evidence:
     content: str
     location: dict | None
     score: float
+    species: list[str] = field(default_factory=list)
     heading_path: list[str] = field(default_factory=list)
 
     def as_source(self) -> dict:
@@ -49,6 +48,7 @@ class Evidence:
             "version_id": str(self.version_id),
             "version_no": self.version_no,
             "title": self.title,
+            "species": self.species,
             "page": self.page,
             "quote": self.quote,
             "heading_path": self.heading_path,
@@ -63,6 +63,15 @@ class RetrievalResult:
     timings: dict
     rankings: dict
     config: dict
+    sufficient: bool = True
+    gate: dict = field(default_factory=dict)
+
+
+def normalize_mode(mode: str | None) -> str:
+    value = (mode or settings.default_retrieval_mode).strip().lower()
+    if value not in VALID_MODES:
+        raise ValueError(f"unsupported retrieval mode: {mode}")
+    return value
 
 
 def _excerpt(text: str, limit: int = 300) -> str:
@@ -103,6 +112,27 @@ async def get_active_versions(db: AsyncSession) -> list[uuid.UUID]:
     return [row[0] for row in result.all() if row[0] is not None]
 
 
+async def _active_version_rows(
+    db: AsyncSession,
+) -> tuple[list[uuid.UUID], list[str]]:
+    rows = (
+        await db.execute(
+            select(KbDocument.current_version_id, KbDocument.species).where(
+                KbDocument.status == "active",
+                KbDocument.current_version_id.is_not(None),
+            )
+        )
+    ).all()
+    versions: list[uuid.UUID] = []
+    options: set[str] = set()
+    for version_id, species in rows:
+        if version_id is None:
+            continue
+        versions.append(version_id)
+        options.update(normalize_species_list(species))
+    return versions, sorted(options)
+
+
 async def retrieve(
     db: AsyncSession,
     question: str,
@@ -111,57 +141,101 @@ async def retrieve(
     reranker: Reranker | None = None,
     top_k: int | None = None,
     category: str | None = None,
+    species: str | None = None,
+    mode: str = "hybrid",
 ) -> RetrievalResult:
     started = time.perf_counter()
-    active_versions = await get_active_versions(db)
+    mode = normalize_mode(mode)
+    active_versions, species_options = await _active_version_rows(db)
     if not active_versions:
+        gate = Sufficiency(False, "no_active_versions", [], [], 0.0, 0.0, 0.0, None)
         return RetrievalResult(
             evidence=[],
             active_versions=[],
             timings={"retrieval_ms": 0},
             rankings={},
-            config={},
+            config=_config(mode, None, "none", gate),
+            sufficient=False,
+            gate=gate.as_dict(),
         )
+
+    species_filter = parse_species(species)[0] if species and species.strip() else None
+    if species_filter is None:
+        species_filter = detect_species(question, species_options)
 
     client = get_client()
     query_dense = embedder.embed_query(question)
     query_sparse = bm25.query_vector(question)
-
-    client = get_client()
+    dense_hits: list[SearchHit] = []
+    sparse_hits: list[SearchHit] = []
+    dense_ms = 0.0
+    sparse_ms = 0.0
     try:
-        dense_started = time.perf_counter()
-        dense_hits: list[SearchHit] = await asyncio.to_thread(
-            search_dense, client, query_dense, active_versions, settings.dense_top_k, category
-        )
-        dense_ms = (time.perf_counter() - dense_started) * 1000
-
-        sparse_started = time.perf_counter()
-        sparse_hits: list[SearchHit] = await asyncio.to_thread(
-            search_sparse, client, query_sparse, active_versions, settings.bm25_top_k, category
-        )
-        sparse_ms = (time.perf_counter() - sparse_started) * 1000
+        if mode in {"dense", "hybrid", "hybrid_rerank"}:
+            dense_started = time.perf_counter()
+            dense_hits = await asyncio.to_thread(
+                search_dense,
+                client,
+                query_dense,
+                active_versions,
+                settings.dense_top_k,
+                category,
+                species_filter,
+            )
+            dense_ms = (time.perf_counter() - dense_started) * 1000
+        if mode in {"bm25", "hybrid", "hybrid_rerank"}:
+            sparse_started = time.perf_counter()
+            sparse_hits = await asyncio.to_thread(
+                search_sparse,
+                client,
+                query_sparse,
+                active_versions,
+                settings.bm25_top_k,
+                category,
+                species_filter,
+            )
+            sparse_ms = (time.perf_counter() - sparse_started) * 1000
     finally:
         client.close()
 
-    fused = rrf_fuse(
-        [[hit.chunk_id for hit in dense_hits], [hit.chunk_id for hit in sparse_hits]],
-        k=settings.rrf_k,
-        limit=max((top_k or settings.rerank_top_k) * 4, 24),
+    rank_lists: list[list[str]] = []
+    if dense_hits:
+        rank_lists.append([hit.chunk_id for hit in dense_hits])
+    if sparse_hits:
+        rank_lists.append([hit.chunk_id for hit in sparse_hits])
+
+    fused = (
+        rrf_fuse(
+            rank_lists,
+            k=settings.rrf_k,
+            limit=max((top_k or settings.rerank_top_k) * 4, 24),
+        )
+        if rank_lists
+        else []
     )
+    rankings = {
+        "dense": [hit.chunk_id for hit in dense_hits],
+        "sparse": [hit.chunk_id for hit in sparse_hits],
+        "fused": [chunk_id for chunk_id, _ in fused],
+    }
+    timings = {
+        "dense_ms": round(dense_ms, 1),
+        "sparse_ms": round(sparse_ms, 1),
+        "retrieval_ms": round((time.perf_counter() - started) * 1000, 1),
+    }
     if not fused:
+        gate = Sufficiency(False, "no_hits", [], [], 0.0, 0.0, 0.0, None)
         return RetrievalResult(
             evidence=[],
             active_versions=active_versions,
-            timings={"retrieval_ms": round((time.perf_counter() - started) * 1000, 1)},
-            rankings={
-                "dense": [hit.chunk_id for hit in dense_hits],
-                "sparse": [hit.chunk_id for hit in sparse_hits],
-            },
-            config=_config(),
+            timings=timings,
+            rankings=rankings,
+            config=_config(mode, species_filter, "none", gate),
+            sufficient=False,
+            gate=gate.as_dict(),
         )
 
     fused_ids = [uuid.UUID(chunk_id) for chunk_id, _ in fused]
-
     rows = (await db.execute(select(KbChunk).where(KbChunk.id.in_(fused_ids)))).scalars().all()
     child_by_id = {row.id: row for row in rows}
 
@@ -198,11 +272,7 @@ async def retrieve(
         parent = parent or child
         current = grouped.get(parent.id)
         if current is None:
-            grouped[parent.id] = {
-                "parent": parent,
-                "child": child,
-                "score": score,
-            }
+            grouped[parent.id] = {"parent": parent, "child": child, "score": score}
         elif score > current["score"]:
             current["child"] = child
             current["score"] = score
@@ -211,18 +281,28 @@ async def retrieve(
     if top_k:
         candidates = candidates[: max(top_k * 2, top_k)]
 
-    reranker = reranker or NoopReranker()
-    candidates_for_rerank = [
-        (str(item["parent"].id), item["parent"].content) for item in candidates
-    ]
-    reranked = reranker.rerank(question, candidates_for_rerank, top_k or settings.rerank_top_k)
-    if isinstance(reranker, NoopReranker):
-        by_parent_id = {uuid.UUID(str(item["parent"].id)): item["score"] for item in candidates}
-    else:
+    reranker_name = "none"
+    if mode == "hybrid_rerank":
+        active_reranker: Reranker = reranker or NoopReranker()
+        reranker_name = active_reranker.name
+        candidates_for_rerank = [
+            (str(item["parent"].id), item["parent"].content) for item in candidates
+        ]
+        reranked = active_reranker.rerank(
+            question, candidates_for_rerank, top_k or settings.rerank_top_k
+        )
         by_parent_id = {uuid.UUID(chunk_id): score for chunk_id, score in reranked}
+        ordered_ids = [uuid.UUID(chunk_id) for chunk_id, _ in reranked]
+        candidate_by_id = {item["parent"].id: item for item in candidates}
+        candidate_iter = [
+            candidate_by_id[parent_id] for parent_id in ordered_ids if parent_id in candidate_by_id
+        ]
+    else:
+        by_parent_id = {item["parent"].id: item["score"] for item in candidates}
+        candidate_iter = candidates
 
     evidence: list[Evidence] = []
-    for item in candidates:
+    for item in candidate_iter:
         if item["parent"].id not in by_parent_id:
             continue
         parent: KbChunk = item["parent"]
@@ -248,31 +328,42 @@ async def retrieve(
                 content=_excerpt(parent.content, 1800),
                 location=location,
                 score=by_parent_id[parent.id],
+                species=normalize_species_list(doc.species),
                 heading_path=list(parent.heading_path or []),
             )
         )
         if len(evidence) >= (top_k or settings.max_sources):
             break
 
-    timings = {
-        "dense_ms": round(dense_ms, 1),
-        "sparse_ms": round(sparse_ms, 1),
-        "retrieval_ms": round((time.perf_counter() - started) * 1000, 1),
-    }
+    gate = assess_evidence(
+        question,
+        [item.content for item in evidence],
+        min_terms=settings.evidence_min_terms,
+        min_weight=settings.evidence_min_weight,
+        min_coverage=settings.evidence_min_coverage,
+        domain_terms=set(species_options),
+    )
+    if not gate.sufficient:
+        evidence = []
+
+    timings["retrieval_ms"] = round((time.perf_counter() - started) * 1000, 1)
     return RetrievalResult(
         evidence=evidence,
         active_versions=active_versions,
         timings=timings,
-        rankings={
-            "dense": [hit.chunk_id for hit in dense_hits],
-            "sparse": [hit.chunk_id for hit in sparse_hits],
-            "fused": [chunk_id for chunk_id, _ in fused],
-        },
-        config=_config(),
+        rankings=rankings,
+        config=_config(mode, species_filter, reranker_name, gate),
+        sufficient=gate.sufficient,
+        gate=gate.as_dict(),
     )
 
 
-def _config() -> dict:
+def _config(
+    mode: str,
+    species_filter: str | None,
+    reranker: str,
+    gate: Sufficiency,
+) -> dict:
     return {
         "dense_top_k": settings.dense_top_k,
         "bm25_top_k": settings.bm25_top_k,
@@ -280,4 +371,11 @@ def _config() -> dict:
         "rerank_top_k": settings.rerank_top_k,
         "embedding": settings.embedding_model,
         "collection": settings.qdrant_collection,
+        "retrieval_mode": mode,
+        "species_filter": species_filter,
+        "reranker": reranker,
+        "evidence_min_terms": settings.evidence_min_terms,
+        "evidence_min_weight": settings.evidence_min_weight,
+        "evidence_min_coverage": settings.evidence_min_coverage,
+        "evidence_gate": gate.as_dict(),
     }

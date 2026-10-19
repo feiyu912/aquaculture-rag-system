@@ -103,7 +103,9 @@
     .doc:last-child { border-bottom: 0; }
     .doc .title { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
     .doc .meta { color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
-    .doc a { color: var(--brand); text-decoration: none; }
+    .doc a, .mini-upload { color: var(--brand); text-decoration: none; }
+    .mini-upload { cursor: pointer; font-size: 11px; }
+    .mini-upload input { display: none; }
     .tag {
       display: inline-block;
       background: var(--brand-soft);
@@ -117,7 +119,7 @@
     .msg { max-width: 88%; line-height: 1.75; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
     .msg.user { align-self: flex-end; background: var(--brand); color: #fff; padding: 10px 13px; border-radius: 13px 13px 4px 13px; }
     .msg.assistant { align-self: flex-start; background: #f7faf8; border: 1px solid var(--line); padding: 12px 14px; border-radius: 13px 13px 13px 4px; }
-    .msg.assistant .cite { color: var(--brand); font-weight: 700; }
+    .msg.assistant .cite, .msg.assistant a.cite { color: var(--brand); font-weight: 700; text-decoration: none; border-bottom: 1px dotted currentColor; }
     .msg .meta { display: block; color: var(--muted); font-size: 11px; margin-top: 8px; white-space: normal; }
     .sources { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
     .source {
@@ -134,6 +136,9 @@
     .source .head a { color: var(--brand); text-decoration: none; }
     .source .quote { color: #33453b; margin-top: 4px; }
     .statusline { font-size: 11px; color: var(--muted); padding: 0 18px 8px; min-height: 16px; }
+    .chat-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 9px 16px; border-bottom: 1px solid var(--line); }
+    .chat-tools label { margin: 0; font-size: 11px; }
+    .chat-tools select { width: auto; min-width: 112px; padding: 5px 8px; font-size: 12px; }
     .composer { border-top: 1px solid var(--line); padding: 12px 14px; display: flex; gap: 9px; align-items: flex-end; }
     .composer textarea { resize: none; height: 44px; max-height: 120px; }
     .composer button { height: 40px; padding: 0 16px; }
@@ -162,6 +167,8 @@
       <input id="file" type="file" accept="application/pdf,.pdf" />
       <label for="title">标题（可选）</label>
       <input id="title" type="text" placeholder="默认使用文件名" />
+      <label for="species">适用品种（逗号分隔，留空=通用）</label>
+      <input id="species" type="text" placeholder="如：中华绒螯蟹、凡纳滨对虾；留空=通用" />
       <label for="category">分类</label>
       <select id="category">
         <option value="中华绒螯蟹">中华绒螯蟹</option>
@@ -184,6 +191,17 @@
       <span class="badge" id="provider">mock</span>
       <button class="ghost" id="newChat" style="margin-left:auto;padding:5px 10px;font-size:12px">新会话</button>
     </h2>
+    <div class="chat-tools">
+      <label for="retrievalMode">检索方案</label>
+      <select id="retrievalMode">
+        <option value="hybrid" selected>混合检索 + RRF</option>
+        <option value="hybrid_rerank">混合检索 + 重排</option>
+        <option value="dense">仅 Dense</option>
+        <option value="bm25">仅 BM25</option>
+      </select>
+      <label for="querySpecies">品种过滤</label>
+      <select id="querySpecies"><option value="">全部品种</option></select>
+    </div>
     <div id="messages">
       <div class="empty" id="emptyChat">上传资料后提问，例如：<br />“中华绒螯蟹养殖对溶解氧有什么要求？”</div>
     </div>
@@ -203,8 +221,18 @@ let busy = false;
 function esc(text) {
   return String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
-function citeHtml(text) {
-  return esc(text).replace(/\[S(\d+)\]/g, '<span class="cite">[S$1]</span>');
+function sourceUrl(source) {
+  const page = source.page || 1;
+  return `/api/documents/${source.document_id}/file?version_id=${source.version_id}#page=${page}`;
+}
+function citeHtml(text, sources) {
+  const byIndex = new Map((sources || []).map((source) => [String(source.index), source]));
+  return esc(text).replace(/\[(?:S)?(\d+)\]/g, (match, index) => {
+    const source = byIndex.get(index);
+    if (!source) return `<span class="cite">${match}</span>`;
+    const page = source.page ? `第 ${source.page} 页` : "原文";
+    return `<a class="cite" href="${sourceUrl(source)}" target="_blank" rel="noopener" title="${esc(source.title)} · ${page}">${match}</a>`;
+  });
 }
 function setStatus(text) { $("statusline").textContent = text || ""; }
 
@@ -231,18 +259,37 @@ async function loadDocs() {
       const link = d.current_version_id
         ? `<a href="/api/documents/${d.id}/file" target="_blank" rel="noopener">打开 PDF</a>`
         : "";
+      const species = (d.species && d.species.length ? d.species : ["通用"])
+        .map((value) => `<span class="tag">${esc(value)}</span>`).join("");
+      const update = d.current_version_id
+        ? `<label class="mini-upload">更新版本<input type="file" class="version-file" data-doc="${d.id}" accept="application/pdf,.pdf"></label>`
+        : "";
       return `<div class="doc">
         <div class="title">${esc(d.title)}</div>
         <div class="meta">
+          ${species}
           <span class="tag">${esc(d.category)}</span>
           <span>${d.page_count ? d.page_count + " 页" : "解析中"}</span>
           <span>v${d.current_version_no ?? "-"}</span>
           <span>${esc(d.status)}</span>
-          ${link}
+          ${link}${update}
         </div>
       </div>`;
     }).join("");
   } catch (e) { /* ignore */ }
+}
+
+async function loadSpecies() {
+  try {
+    const res = await fetch("/api/species");
+    const values = await res.json();
+    const select = $("querySpecies");
+    const current = select.value;
+    select.innerHTML = '<option value="">全部品种</option>' + values
+      .filter((value) => value !== "通用")
+      .map((value) => `<option value="${esc(value)}">${esc(value)}</option>`).join("");
+    if (values.includes(current)) select.value = current;
+  } catch (e) { /* keep current options */ }
 }
 
 async function pollJob(jobId) {
@@ -280,6 +327,7 @@ $("uploadBtn").addEventListener("click", async () => {
     const fd = new FormData();
     fd.append("file", file);
     if ($("title").value.trim()) fd.append("title", $("title").value.trim());
+    if ($("species").value.trim()) fd.append("species", $("species").value.trim());
     fd.append("category", $("category").value);
     const res = await fetch("/api/documents", { method: "POST", body: fd });
     const data = await res.json();
@@ -294,6 +342,35 @@ $("uploadBtn").addEventListener("click", async () => {
     $("job").className = "job bad";
   } finally {
     btn.disabled = false;
+  }
+});
+
+async function uploadVersion(docId, file) {
+  $("job").className = "job";
+  $("job").textContent = "上传新版本…";
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/documents/${docId}/versions`, { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = typeof data.detail === "string" ? data.detail : (data.detail?.message || "上传失败");
+      throw new Error(msg);
+    }
+    $("job").textContent = "新版本已入队，等待 worker…";
+    await pollJob(data.job_id);
+    await loadSpecies();
+  } catch (e) {
+    $("job").textContent = `新版本上传失败：${e.message}`;
+    $("job").className = "job bad";
+  }
+}
+
+$("docs").addEventListener("change", (event) => {
+  const input = event.target;
+  if (input.matches(".version-file") && input.files && input.files[0]) {
+    uploadVersion(input.dataset.doc, input.files[0]);
+    input.value = "";
   }
 });
 
@@ -313,9 +390,11 @@ function renderSources(sources, container) {
   box.className = "sources";
   box.innerHTML = sources.map((s) => {
     const page = s.page ? `第 ${s.page} 页` : "";
-    const url = `/api/documents/${s.document_id}/file?version_id=${s.version_id}#page=${s.page || 1}`;
-    return `<div class="source">
-      <div class="head"><b>[${esc(s.source_id)}] ${esc(s.title)}</b><span class="badge">${page}</span><a href="${url}" target="_blank" rel="noopener">原文</a></div>
+    const version = s.version_no ? `v${s.version_no}` : "";
+    const species = (s.species || []).join("、") || "通用";
+    const url = sourceUrl(s);
+    return `<div class="source" id="source-S${s.index}">
+      <div class="head"><b>[${esc(s.source_id)}] ${esc(s.title)}</b><span class="badge">${page}</span><span class="badge">${version}</span><span class="badge">${esc(species)}</span><a href="${url}" target="_blank" rel="noopener">原文</a></div>
       <div class="quote">${esc(s.quote || "")}</div>
     </div>`;
   }).join("");
@@ -339,7 +418,12 @@ async function send() {
     const res = await fetch("/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, session_id: sessionId }),
+      body: JSON.stringify({
+        question,
+        session_id: sessionId,
+        retrieval_mode: $("retrievalMode").value,
+        species: $("querySpecies").value || null,
+      }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -368,7 +452,11 @@ async function send() {
           sessionId = payload.session_id;
           localStorage.setItem("aqua_session_id", sessionId);
         } else if (event === "status") {
-          setStatus(payload.stage === "retrieved" ? `已检索 ${payload.sources} 条证据，生成中…` : payload.stage);
+          if (payload.sufficient === false) {
+            setStatus(`未找到足够证据（${payload.gate?.reason || "weak_overlap"}），生成资料不足说明…`);
+          } else {
+            setStatus(payload.stage === "retrieved" ? `已检索 ${payload.sources} 条证据，生成中…` : payload.stage);
+          }
         } else if (event === "sources") {
           sources = payload.sources || [];
           assistant.textContent = "";
@@ -379,17 +467,25 @@ async function send() {
           $("messages").scrollTop = $("messages").scrollHeight;
         } else if (event === "citation_check") {
           const c = payload;
-          const badge = c.valid ? "引用有效" : `无效引用：${(c.invalid_indices || []).join(", ")}`;
-          setStatus(`${badge} · 事实引用覆盖率 ${(c.coverage * 100).toFixed(0)}%`);
+          if (!sources.length) {
+            setStatus("证据不足：未生成事实性引用");
+          } else {
+            const badge = c.valid ? "引用编号有效（支持性未验证）" : `无效引用：${(c.invalid_indices || []).join(", ")}`;
+            setStatus(`${badge} · 事实引用覆盖率 ${(c.coverage * 100).toFixed(0)}%`);
+          }
         } else if (event === "error") {
           throw new Error(payload.message || "生成失败");
         } else if (event === "done") {
           const t = payload.timings || {};
-          assistant.innerHTML = citeHtml(answer);
+          const sufficient = payload.sufficient !== false && sources.length > 0;
+          assistant.innerHTML = citeHtml(answer, sources);
+          const verification = sufficient && payload.citation_check
+            ? " · 引用有效性：" + (payload.citation_check.valid ? "通过" : "有无效编号") + " · 支持性：未验证"
+            : " · 证据不足";
           assistant.insertAdjacentHTML("beforeend",
-            `<span class="meta">${esc(payload.model || "")} · 总耗时 ${Math.round(t.total_ms || 0)} ms · TTFT ${Math.round(t.ttft_ms || 0)} ms${payload.citation_check ? " · 引用校验：" + (payload.citation_check.valid ? "通过" : "有无效编号") : ""}</span>`);
+            `<span class="meta">${esc(payload.model || "")} · ${esc(payload.retrieval_mode || "")} · 总耗时 ${Math.round(t.total_ms || 0)} ms · TTFT ${Math.round(t.ttft_ms || 0)} ms${verification}</span>`);
           renderSources(sources, assistant);
-          setStatus("");
+          setStatus(sufficient ? "" : "证据不足：未生成事实性引用");
           $("messages").scrollTop = $("messages").scrollHeight;
         }
       }
@@ -417,6 +513,7 @@ $("newChat").addEventListener("click", () => {
 
 checkHealth();
 loadDocs();
+loadSpecies();
 </script>
 </body>
 </html>

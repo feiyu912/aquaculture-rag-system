@@ -39,3 +39,5 @@ qdrant_storage/
 .DS_Store
 .idea/
 .vscode/
+# Evaluation artifacts
+eval/runs/

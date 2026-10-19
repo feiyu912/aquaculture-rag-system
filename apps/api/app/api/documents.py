@@ -23,6 +23,7 @@ from app.schemas import (
     UploadResponse,
     VersionOut,
 )
+from app.species import GENERAL_SPECIES, normalize_species_list, parse_species
 
 router = APIRouter(prefix="/api", tags=["documents"])
 
@@ -47,6 +48,7 @@ def _doc_out(doc: KbDocument, version: KbDocumentVersion | None) -> DocumentOut:
         id=doc.id,
         title=doc.title,
         category=doc.category,
+        species=normalize_species_list(doc.species),
         status=doc.status,
         current_version_id=doc.current_version_id,
         current_version_no=version.version_no if version else None,
@@ -61,6 +63,7 @@ async def upload_document(
     file: UploadFile = File(...),
     title: str | None = Form(default=None),
     category: str = Form(default="未分类"),
+    species: str | None = Form(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> UploadResponse:
     filename = file.filename or "upload.pdf"
@@ -115,10 +118,16 @@ async def upload_document(
     target.parent.mkdir(parents=True, exist_ok=True)
     await asyncio.to_thread(target.write_bytes, bytes(buffer))
 
+    try:
+        species_list = parse_species(species)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     doc = KbDocument(
         id=doc_id,
         title=safe_title,
         category=category.strip() or "未分类",
+        species=species_list,
         status="active",
         doc_metadata={"original_filename": filename, "size_bytes": len(buffer)},
     )
@@ -217,6 +226,15 @@ async def add_version(
             },
         )
 
+    # Serialize version-number allocation for the same document. The file has
+    # already been read, so this lock is held only for the metadata transaction.
+    doc = (
+        await db.execute(
+            select(KbDocument).where(KbDocument.id == document_id).with_for_update()
+        )
+    ).scalar_one_or_none()
+    if doc is None or doc.status == "deleted":
+        raise HTTPException(status_code=404, detail="文档不存在")
     max_no = (
         await db.execute(
             select(func.max(KbDocumentVersion.version_no)).where(
@@ -253,8 +271,25 @@ async def add_version(
 
     pool = getattr(request.app.state, "arq_pool", None)
     if pool is None:
+        version.status = "failed"
+        version.error_code = "queue_unavailable"
+        version.error_message = "Redis/ARQ unavailable"
+        job.status = "failed"
+        job.error_code = "queue_unavailable"
+        job.error_message = "Redis/ARQ unavailable"
+        await db.commit()
         raise HTTPException(status_code=503, detail="任务队列不可用，请检查 Redis")
-    await pool.enqueue_job("ingest_version", str(version_id), _job_id=f"ingest:{version_id}:v1")
+    try:
+        await pool.enqueue_job("ingest_version", str(version_id), _job_id=f"ingest:{version_id}:v1")
+    except Exception as exc:
+        version.status = "failed"
+        version.error_code = "enqueue_failed"
+        version.error_message = str(exc)[:500]
+        job.status = "failed"
+        job.error_code = "enqueue_failed"
+        job.error_message = str(exc)[:500]
+        await db.commit()
+        raise HTTPException(status_code=503, detail="任务入队失败") from exc
     return UploadResponse(
         document_id=document_id, version_id=version_id, job_id=job_id, status="queued"
     )
@@ -299,6 +334,22 @@ async def rollback_version(
     doc.status = "active"
     await db.commit()
     return _doc_out(doc, version)
+
+
+@router.get("/species", response_model=list[str])
+async def list_species(db: AsyncSession = Depends(get_db)) -> list[str]:
+    rows = (
+        await db.execute(
+            select(KbDocument.species).where(
+                KbDocument.status == "active", KbDocument.current_version_id.is_not(None)
+            )
+        )
+    ).all()
+    values: set[str] = set()
+    for (species,) in rows:
+        values.update(normalize_species_list(species))
+    ordered = sorted(value for value in values if value != GENERAL_SPECIES)
+    return [GENERAL_SPECIES, *ordered]
 
 
 @router.get("/documents", response_model=list[DocumentOut])
@@ -362,17 +413,35 @@ async def delete_document(document_id: uuid.UUID, db: AsyncSession = Depends(get
     versions = (
         (
             await db.execute(
-                select(KbDocumentVersion).where(
-                    KbDocumentVersion.document_id == document_id,
-                    KbDocumentVersion.status == "ready",
-                )
+                select(KbDocumentVersion).where(KbDocumentVersion.document_id == document_id)
             )
         )
         .scalars()
         .all()
     )
     for version in versions:
-        version.status = "archived"
+        if version.status != "failed":
+            version.status = "archived"
+    jobs = (
+        (
+            await db.execute(
+                select(KbIngestJob).where(
+                    KbIngestJob.document_version_id.in_([version.id for version in versions]),
+                    KbIngestJob.status.in_(["queued", "running"]),
+                )
+            )
+        )
+        .scalars()
+        .all()
+        if versions
+        else []
+    )
+    for job in jobs:
+        job.status = "cancelled"
+        job.current_stage = "cancelled"
+        job.error_code = "document_deleted"
+        job.error_message = "文档已删除，任务取消"
+        job.finished_at = datetime.now(UTC)
     await db.commit()
 
 
@@ -397,6 +466,64 @@ async def get_document_file(
         media_type="application/pdf",
         filename=f"{doc.title}.pdf",
         content_disposition_type="inline",
+    )
+
+
+@router.post("/jobs/{job_id}/retry", response_model=JobOut, status_code=status.HTTP_202_ACCEPTED)
+async def retry_job(
+    job_id: uuid.UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> JobOut:
+    job = await db.get(KbIngestJob, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    if job.status not in {"failed", "cancelled"}:
+        raise HTTPException(status_code=409, detail="只有失败任务可以重试")
+    version = await db.get(KbDocumentVersion, job.document_version_id)
+    if version is None:
+        raise HTTPException(status_code=404, detail="版本不存在")
+
+    version.status = "processing"
+    version.error_code = None
+    version.error_message = None
+    job.status = "queued"
+    job.progress = 0
+    job.current_stage = "queued"
+    job.attempts = 0
+    job.error_code = None
+    job.error_message = None
+    job.started_at = None
+    job.finished_at = None
+    await db.commit()
+
+    pool = getattr(request.app.state, "arq_pool", None)
+    if pool is None:
+        raise HTTPException(status_code=503, detail="任务队列不可用，请检查 Redis")
+    try:
+        await pool.enqueue_job(
+            "ingest_version",
+            str(version.id),
+            _job_id=f"ingest:{version.id}:retry:{job_id}",
+        )
+    except Exception as exc:
+        job.status = "failed"
+        job.error_code = "enqueue_failed"
+        job.error_message = str(exc)[:500]
+        version.status = "failed"
+        version.error_code = "enqueue_failed"
+        version.error_message = str(exc)[:500]
+        await db.commit()
+        raise HTTPException(status_code=503, detail="任务入队失败") from exc
+    return JobOut(
+        id=job.id,
+        document_version_id=job.document_version_id,
+        status=job.status,
+        progress=job.progress,
+        current_stage=job.current_stage,
+        error_code=job.error_code,
+        error_message=job.error_message,
+        metrics=job.metrics or {},
     )
 
 

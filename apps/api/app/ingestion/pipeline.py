@@ -63,6 +63,14 @@ async def ingest_version(ctx: dict, version_id: str) -> dict:
         ).scalar_one_or_none()
         if doc is None or job is None:
             return {"status": "missing_relations", "version_id": version_id}
+        if doc.status == "deleted":
+            job.status = "cancelled"
+            job.current_stage = "cancelled"
+            job.error_code = "document_deleted"
+            job.error_message = "文档已删除，任务取消"
+            job.finished_at = _now()
+            await db.commit()
+            return {"status": "document_deleted", "version_id": version_id}
         if version.status == "ready" and doc.current_version_id == version.id:
             job.status = "succeeded"
             job.progress = 100
@@ -145,6 +153,7 @@ async def ingest_version(ctx: dict, version_id: str) -> dict:
                     version.document_id,
                     version.id,
                     doc.category,
+                    doc.species,
                 )
                 indexed = await asyncio.to_thread(count_version_points, client, version.id)
             finally:
@@ -191,9 +200,24 @@ async def _activate(db: AsyncSession, document_id: uuid.UUID, version_id: uuid.U
     doc = (
         await db.execute(select(KbDocument).where(KbDocument.id == document_id).with_for_update())
     ).scalar_one()
+    if doc.status == "deleted":
+        raise ValueError("Document was deleted during ingestion")
+
     version = await db.get(KbDocumentVersion, version_id)
     if version is None or version.document_id != document_id:
         raise ValueError("Version does not belong to document")
+
+    # A retried older job must not overwrite a newer active version.
+    current = (
+        await db.get(KbDocumentVersion, doc.current_version_id)
+        if doc.current_version_id
+        else None
+    )
+    if current is not None and current.version_no > version.version_no:
+        version.status = "archived"
+        version.archived_at = _now()
+        await db.flush()
+        return
 
     version.status = "ready"
     version.activated_at = _now()

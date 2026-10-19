@@ -33,12 +33,19 @@ class Settings(BaseSettings):
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-chat"
+    deepseek_price_input_per_m: float = 0.0
+    deepseek_price_output_per_m: float = 0.0
 
+    default_retrieval_mode: str = "hybrid"  # dense | bm25 | hybrid | hybrid_rerank
+    reranker_model: str = "noop"  # noop | BAAI/bge-reranker-v2-m3
     dense_top_k: int = 20
     bm25_top_k: int = 20
     rrf_k: int = 60
     rerank_top_k: int = 8
     max_sources: int = 5
+    evidence_min_terms: int = 2
+    evidence_min_weight: float = 3.0
+    evidence_min_coverage: float = 0.3
 
     bm25_k1: float = 1.2
     bm25_b: float = 0.75

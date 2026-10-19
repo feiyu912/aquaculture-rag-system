@@ -8,8 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
+from app.generation.support import verify_support
 from app.models import ChatCitation, ChatMessage, ChatSession
-from app.schemas import CitationOut, MessageOut, SessionOut
+from app.schemas import CitationOut, CitationVerifyRequest, MessageOut, SessionOut, SupportOut
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 
@@ -78,6 +79,7 @@ async def list_messages(
     for citation in citations:
         by_message.setdefault(citation.message_id, []).append(
             CitationOut(
+                id=citation.id,
                 source_index=citation.source_index,
                 document_id=citation.document_id,
                 document_version_id=citation.document_version_id,
@@ -86,6 +88,7 @@ async def list_messages(
                 bbox=citation.bbox,
                 score=citation.score,
                 support_status=citation.support_status,
+                support_score=citation.support_score,
             )
         )
     return [
@@ -99,6 +102,28 @@ async def list_messages(
         )
         for message in messages
     ]
+
+
+@router.post("/citations/{citation_id}/verify", response_model=SupportOut)
+async def verify_citation(
+    citation_id: uuid.UUID,
+    payload: CitationVerifyRequest,
+    db: AsyncSession = Depends(get_db),
+) -> SupportOut:
+    citation = await db.get(ChatCitation, citation_id)
+    if citation is None:
+        raise HTTPException(status_code=404, detail="引用不存在")
+    result = verify_support(payload.claim, citation.quote)
+    citation.support_status = result.status
+    citation.support_score = result.score
+    await db.commit()
+    return SupportOut(
+        citation_id=citation.id,
+        status=result.status,
+        score=result.score,
+        method=result.method,
+        matched_terms=result.matched_terms,
+    )
 
 
 @router.delete("/sessions/{session_id}", status_code=204)

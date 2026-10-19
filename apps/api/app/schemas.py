@@ -2,14 +2,19 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
+
+RetrievalMode = Literal["dense", "bm25", "hybrid", "hybrid_rerank"]
 
 
 class ChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     session_id: uuid.UUID | None = None
     category: str | None = None
+    species: str | None = None
+    retrieval_mode: RetrievalMode = "hybrid"
 
 
 class VersionOut(BaseModel):
@@ -27,6 +32,7 @@ class DocumentOut(BaseModel):
     id: uuid.UUID
     title: str
     category: str
+    species: list[str] = Field(default_factory=list)
     status: str
     current_version_id: uuid.UUID | None = None
     current_version_no: int | None = None
@@ -50,6 +56,7 @@ class JobOut(BaseModel):
 
 
 class CitationOut(BaseModel):
+    id: uuid.UUID
     source_index: int
     document_id: uuid.UUID
     document_version_id: uuid.UUID
@@ -58,6 +65,7 @@ class CitationOut(BaseModel):
     bbox: dict | list | None = None
     score: float | None = None
     support_status: str
+    support_score: float | None = None
 
 
 class MessageOut(BaseModel):
@@ -78,6 +86,18 @@ class SessionOut(BaseModel):
 
 class RollbackRequest(BaseModel):
     version_id: uuid.UUID
+
+
+class CitationVerifyRequest(BaseModel):
+    claim: str = Field(min_length=1, max_length=2000)
+
+
+class SupportOut(BaseModel):
+    citation_id: uuid.UUID
+    status: str
+    score: float
+    method: str
+    matched_terms: list[str]
 
 
 class UploadResponse(BaseModel):

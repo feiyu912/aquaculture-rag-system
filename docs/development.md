@@ -16,24 +16,43 @@
 | RRF | ✅ | 应用侧融合，保留两路排名日志 |
 | Reranker | ⏳ | `NoopReranker` 占位；BGE 适配器已写，未启用 |
 | 生成 | ✅ / ⏳ | 默认 `mock` 抽取式回答；DeepSeek 适配器已写，需 Key 验证 |
+| 检索模式 | ✅ | `dense` / `bm25` / `hybrid` / `hybrid_rerank` 可切换 |
+| 多品种元数据 | ✅ | 文档可关联多个品种；Qdrant 品种过滤；问题中自动识别单一品种 |
 | 文档版本更新 | ✅ | 新版本入库成功后才激活，旧版本归档 |
 | 版本回滚 | ✅ | 校验 Qdrant 中该版本仍有向量 |
+| 后台任务恢复 | ✅ | ARQ 重试 + 失败重试接口 + worker 启动回收超时任务 |
 | 引用有效性 / 覆盖率 | ✅ | 确定性校验 + 启发式覆盖率 |
-| 引用支持性（NLI/LLM） | ❌ | 下一阶段 |
-| PDF.js 区域高亮 | ❌ | 当前只跳转页码；坐标已存好 |
+| 引用支持性 | ⚠️ | 已留验证接口，当前是词面重叠 v0，**不是 NLI** |
+| 证据不足拒答 | ✅ | 词面门槛；域外问题不返回证据、不生成引用 |
+| PDF 原文定位 | ⚠️ | 引用可点击到 PDF 页码；bbox 已存，PDF.js 高亮未做 |
 | 会话 / 消息 / 引用持久化 | ✅ | PostgreSQL |
-| 查询日志 / 分段耗时 | ✅ | `query_logs` |
+| 查询日志 / 分段耗时 | ✅ | `query_logs` 含 rankings、evidence、模型、token、成本 |
 | 身份认证 | ❌ | 仅本地开发 |
-| 数据库迁移 | ⚠️ | 开发期 `create_all`；改表前补 Alembic |
-| 评测脚本 | ❌ | 阶段 9 |
+| 数据库迁移 | ✅（轻量） | `schema_migrations` + 加列迁移；正式环境再换 Alembic |
+| 批量评测 | ✅ | `scripts/evaluate.py` + `eval/sample_questions.jsonl`，导出 JSONL/CSV |
 
-## 2. 环境要求
+## 2. 三个验收场景
+
+| 场景 | 操作 | 已验证 |
+|---|---|---|
+| A | 上传水产资料 → 提问 → 带来源回答 → 点击引用到 PDF 页码 | `scripts/smoke_test.py` |
+| B | 上传同一文档新版本 → 只引用新版本 → 回滚旧版本 | 同上 |
+| C | 提问知识库外问题 → 说明证据不足，不编造引用 | 同上 |
+
+```bash
+cd apps/api
+uv run python ../../scripts/smoke_test.py
+# 保留生成的示例文档用于手工演示：
+uv run python ../../scripts/smoke_test.py --keep
+```
+
+## 3. 环境要求
 
 - macOS / Linux，Python 3.12+
 - Docker Desktop（Postgres、Qdrant、Redis）
 - [uv](https://docs.astral.sh/uv/)
 
-## 3. 启动
+## 4. 启动
 
 ```bash
 cd /path/to/aquaculture-rag-system
@@ -43,6 +62,8 @@ cd apps/api
 cp .env.example .env          # 已存在则跳过
 uv sync
 uv run python ../../scripts/make_sample_pdf.py
+# 建表 + 增量迁移；应用启动时也会自动执行
+uv run python ../../scripts/migrate_db.py
 ```
 
 启动 API：
@@ -68,16 +89,19 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
 docker compose -f infra/docker-compose.yml ps
 ```
 
-## 4. API 快速验证
+## 5. API 快速验证
 
 上传：
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/documents \
   -F 'file=@data/samples/aquaculture_sample.pdf;type=application/pdf' \
-  -F 'title=水产养殖水质管理示例资料' \
+  -F 'title=水产养殖水质通用资料' \
+  -F 'species=通用' \
   -F 'category=水质管理'
 ```
+
+`species` 用逗号/顿号分隔，可写多个品种；留空等同“通用”。文档的品种会写入 Qdrant payload，检索时作为硬过滤条件；问题中出现唯一品种名（含唯一后缀别名，如“对虾”）时自动启用过滤。
 
 查询任务：
 
@@ -90,8 +114,11 @@ curl http://127.0.0.1:8000/api/jobs/<job_id>
 ```bash
 curl -N -X POST http://127.0.0.1:8000/api/chat/stream \
   -H 'Content-Type: application/json' \
-  -d '{"question":"中华绒螯蟹养殖对溶解氧有什么要求？"}'
+  -d '{"question":"中华绒螯蟹养殖对溶解氧有什么要求？","retrieval_mode":"hybrid","species":"中华绒螯蟹"}'
 ```
+
+`retrieval_mode` 可选 `dense`、`bm25`、`hybrid`、`hybrid_rerank`，用于演示和消融。
+`species` 可留空；系统会根据问题自动识别单一品种，识别到两个及以上时不硬过滤。
 
 历史消息：
 
@@ -100,7 +127,7 @@ curl http://127.0.0.1:8000/api/sessions
 curl http://127.0.0.1:8000/api/sessions/<session_id>/messages
 ```
 
-## 5. 版本更新与回滚
+## 6. 文档版本、回滚与重试
 
 上传同一文档的新版本：
 
@@ -121,7 +148,15 @@ curl -X POST http://127.0.0.1:8000/api/documents/<document_id>/rollback \
 
 回滚会检查该版本在 Qdrant 中是否仍有向量；如果已被清理，返回 409，需要重新索引。
 
-## 6. 测试
+失败任务重试：
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/jobs/<job_id>/retry
+```
+
+worker 启动时会回收超过 30 分钟仍为 `running`、或超过 60 分钟仍为 `queued` 的任务；同一版本重复入库会先删除该版本旧向量再写入。
+
+## 7. 测试
 
 ```bash
 cd apps/api
@@ -129,16 +164,33 @@ uv run pytest -q
 uv run ruff check app tests ../../scripts
 ```
 
-当前测试覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词、引用解析与覆盖率、示例 PDF 解析。
+当前单元测试覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析。
 
-## 7. 代码结构
+端到端测试（需要 API + worker 运行）：
+
+```bash
+uv run python ../../scripts/smoke_test.py
+```
+
+批量评测：
+
+```bash
+uv run python ../../scripts/evaluate.py \
+  --dataset ../../eval/sample_questions.jsonl \
+  --modes dense,bm25,hybrid,hybrid_rerank \
+  --out ../../eval/runs/demo
+```
+
+## 8. 代码结构
 
 ```text
 apps/api/app/
   main.py                 FastAPI 生命周期、路由、演示页
   config.py               pydantic-settings 配置
-  db.py                   async SQLAlchemy
+  db.py                   async SQLAlchemy + 启动迁移
+  migrations.py           schema_migrations 与增量加列
   models.py               8 张表
+  species.py              品种解析、识别、通用品种约定
   queue.py                ARQ 连接池
   worker.py               ARQ WorkerSettings
   api/
@@ -153,18 +205,26 @@ apps/api/app/
     pipeline.py           解析→切分→向量化→写入→校验→激活
   retrieval/
     bm25.py               中文分词、BM25 稀疏权重
-    vector_store.py       Qdrant collection、过滤、检索
+    vector_store.py       Qdrant collection、品种/版本过滤、检索
     rrf.py                RRF
-    rerank.py             Noop + BGE 适配器
-    service.py            两路召回、融合、父块扩展、证据组装
+    rerank.py             Noop + BGE 适配器 + 工厂
+    sufficiency.py        证据不足门槛（词面 v0）
+    service.py            四种模式、融合、父块扩展、证据组装
   generation/
     llm.py                Mock 生成器 + DeepSeek 流式适配器
     citations.py          引用解析、有效性、覆盖率
+    support.py            引用支持性接口（词面 v0，非 NLI）
+scripts/
+  migrate_db.py           建表 + 增量迁移
+  smoke_test.py           A/B/C 端到端验收
+  evaluate.py             批量评测、导出 JSONL/CSV
+eval/
+  sample_questions.jsonl  合成测试集（非论文 Ground Truth）
 ```
 
-## 8. 关键实现说明
+## 9. 关键实现说明
 
-### 8.1 为什么 BM25 是应用侧算权重
+### 9.1 为什么 BM25 是应用侧算权重
 
 本地 Qdrant OSS 镜像没有启用 inference service，直接传 `Document(text=..., model="qdrant/bm25")` 会报 `InferenceService is not initialized`。因此当前实现：
 
@@ -174,7 +234,7 @@ apps/api/app/
 
 这仍然是 Qdrant 上的 BM25 稀疏检索，并且分词策略可测试、可复现。后续如果部署环境启用了 Qdrant 原生 BM25，可在 `vector_store.py` 内替换，不影响上层。
 
-### 8.2 开发占位 Embedder
+### 9.2 开发占位 Embedder
 
 `HashingEmbedder` 用字符/词哈希生成 1024 维向量，只保证流程可跑，**没有语义能力**。切换 BGE-M3：
 
@@ -187,7 +247,7 @@ QDRANT_COLLECTION=kb_chunks_bge_m3_v1
 
 然后重建集合并重新入库。旧 collection 不要复用，维度/模型都变了。
 
-### 8.3 版本激活顺序
+### 9.3 版本激活顺序
 
 ```text
 Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_version_id → 旧版本 archived
@@ -195,39 +255,79 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 
 任何一步失败，新版本都不会成为当前版本；旧版本继续服务。检索只使用查询开始时读取的生效版本快照。
 
-### 8.4 引用
+### 9.4 引用
 
 - 模型只看到 `S1..Sn` 与文本，不接触 bbox。
 - 回答结束后解析 `[S1]`、`[1]`、`【1】`、`[S1,S2]`。
 - 越界编号记为无效，不静默丢弃。
 - `chat_citations` 保存 `quote/page/bbox` 快照，旧版本清理后历史来源仍可展示。
+- **有效性 ≠ 支持性**：`citation_check` 只检查编号是否存在；`chat_citations.support_status` 初始为 `unverified`。
+- 支持性验证接口：`POST /api/citations/{citation_id}/verify`，请求 `{"claim":"..."}`。当前实现是 `lexical_overlap_v0`，只用于联调和标注辅助，不能报告为事实正确性。
 - 覆盖率是启发式指标，用于开发提示，不替代论文中的人工标注。
 
-## 9. 已知限制
+### 9.5 四种检索模式
+
+`retrieve(..., mode=...)` 内部按模式决定是否发起 Dense / BM25 请求：
+
+| 模式 | 行为 |
+|---|---|
+| `dense` | 只查 `dense` 向量 |
+| `bm25` | 只查 `bm25` 稀疏向量 |
+| `hybrid` | 两路独立召回，应用侧 RRF 融合 |
+| `hybrid_rerank` | RRF 后接 Reranker；当前默认 `noop`，接 BGE 后才是真正重排 |
+
+四路都写入 `query_logs.retrieval_rankings`，可直接用于消融。
+
+### 9.6 品种可扩展性
+
+- 品种不是枚举，存在 `kb_documents.species text[]`，上传时自由填写，可多个；空值规范为保留值 `通用`。
+- Qdrant payload 同步 `species`；检索过滤为 `species = 查询品种 OR 通用`，避免把虾的病害/用药资料混进蟹的问题。
+- 问题中出现唯一已有品种（含唯一后缀别名，如“对虾”对应“凡纳滨对虾”）时自动过滤；出现两个及以上品种时不硬过滤，交给回答层讨论。
+- 当前品种粒度是**文档级**。混排文档必须拆成品种专档，否则标错会污染过滤；这是数据治理要求，不是代码能自动推断的。
+
+### 9.7 证据不足门槛
+
+`app/retrieval/sufficiency.py` 是保守的词面门槛，不是语义模型：
+
+```text
+命中加权词数 >= 2 且 权重 >= 3 且 覆盖率 >= 0.3
+或 单查询词且为领域词
+```
+
+- 领域词 = 水产自定义词典 + 通用水质词 + 当前知识库品种名。
+- 多证据时取并集判断，避免“蟹在 A 块、溶解氧在 B 块”被误拒。
+- 未通过时 `evidence=[]`、`sufficient=false`，生成器走资料不足分支，不产生引用。
+- 阈值在 `.env` 的 `EVIDENCE_MIN_TERMS` / `EVIDENCE_MIN_WEIGHT` / `EVIDENCE_MIN_COVERAGE`，论文中必须报告。
+
+## 10. 已知限制
 
 1. **Hash embedder 不是 BGE-M3**，检索质量不代表最终系统。
 2. **PyMuPDF 解析器只适合文本型 PDF**；扫描件、复杂双栏、公式需要 MinerU。
-3. **未接入 Reranker**，当前是 RRF 排序。
-4. **DeepSeek 适配器未做真实 Key 验证**；默认 mock 便于离线开发。
-5. **没有 PDF.js 高亮**，只有页码跳转；坐标数据已经按规范入库。
+3. **Reranker 默认是 `noop`**；`hybrid_rerank` 在接 BGE-Reranker 前等价于 RRF，不要把它当成真实重排结果。
+4. **DeepSeek 适配器未做真实 Key 验证**；默认 mock 便于离线开发，所有测试不依赖外网。
+5. **没有 PDF.js 高亮**，只有页码跳转；bbox 已按规范入库，前端可后续接高亮。
 6. **没有认证/权限**，不要暴露到公网。
 7. **没有旧版本清理任务**，Qdrant 会保留归档版本向量；检索已过滤，不影响正确性。
-8. **`create_all` 不是迁移方案**，修改表结构前引入 Alembic。
-9. **没有评测集与指标脚本**，阶段 9 完成。
+8. **迁移是轻量加列方案**，不是 Alembic；改列类型/删列/复杂回填前必须引入 Alembic。
+9. **评测是 page-level 代理指标**，`eval/sample_questions.jsonl` 是合成集，不是论文 Ground Truth；引用支持性尚未做 NLI。
+10. **品种过滤是文档级**；混排多种品种的文档必须拆档，否则会污染过滤。
+11. **证据不足是词面规则**，会误拒/误放；阈值和失败案例必须写进论文。
+12. **表格/跨页 bbox** 只保证规范化和页码降级，不保证每个复杂表格的框都精确。
 
-## 10. 下一阶段建议
+## 11. 下一阶段建议
 
 按依赖顺序：
 
 1. 用 BGE-M3 替换 Hash embedder，建立 `kb_chunks_bge_m3_v1`，重跑同一批问题对比。
 2. 接入 MinerU 适配器，用真实 PDF 校准 bbox；保留 PyMuPDF 作为降级。
-3. 接入 BGE-Reranker-v2-m3，先测 CPU/GPU 延迟，再定候选数。
+3. 接入 BGE-Reranker-v2-m3，先测 CPU/GPU 延迟，再定候选数；同时在评测中对比 `hybrid` 与 `hybrid_rerank`。
 4. 完成 PDF.js 查看器：页码跳转 + bbox 高亮 + 多 location 切换。
 5. 增加 `reindex` 与旧版本清理任务、Qdrant/PostgreSQL 对账。
-6. 建立 200 条人工评测集，先跑检索消融（E1）。
+6. 建立 200 条人工评测集（含 gold chunk / 证据句），跑检索消融 E1；把支持性验证从词面 v0 升级到 NLI 或人工标注。
 7. 前端迁移到 Next.js，保留当前演示页作为联调工具。
+8. 与陶江老师确认品种清单和数据来源后，再扩充品种；当前不预收集几十个品种。
 
-## 11. 常见问题
+## 12. 常见问题
 
 **Q: 上传后一直 queued。**
 检查 worker 是否启动、Redis 是否健康：`docker compose ps`、`uv run arq app.worker.WorkerSettings`。

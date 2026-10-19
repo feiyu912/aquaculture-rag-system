@@ -1,0 +1,5 @@
+{"id": "q1", "question": "中华绒螯蟹养殖对溶解氧有什么要求？", "reference_answer": "溶解氧宜保持在 5 mg/L 以上，低氧时及时增氧。", "gold_pages": [1], "gold_title": "水产养殖水质通用资料", "species": "中华绒螯蟹", "category": null, "expect_insufficient": false, "notes": "合成资料，仅用于流程验证"}
+{"id": "q2", "question": "氨氮宜控制在什么范围？", "reference_answer": "氨氮宜控制在 0.2 mg/L 以下，过高会增加水产动物应激。", "gold_pages": [1], "gold_title": "水产养殖水质通用资料", "species": null, "category": "水质管理", "expect_insufficient": false, "notes": "合成资料，仅用于流程验证"}
+{"id": "q3", "question": "凡纳滨对虾适宜的水温和盐度范围是多少？", "reference_answer": "示例资料给出的参考范围为水温 25 至 30 摄氏度、盐度 10 至 25。", "gold_pages": [1], "gold_title": "凡纳滨对虾养殖示例资料", "species": "凡纳滨对虾", "category": "养殖技术", "expect_insufficient": false, "notes": "合成资料，仅用于流程验证"}
+{"id": "q4", "question": "中华绒螯蟹蜕壳期管理应注意什么？", "reference_answer": "保持溶解氧稳定，避免剧烈换水造成应激，适当补充钙、镁等矿物质。", "gold_pages": [1], "gold_title": "中华绒螯蟹养殖示例资料", "species": "中华绒螯蟹", "category": "养殖技术", "expect_insufficient": false, "notes": "合成资料，仅用于流程验证"}
+{"id": "q5", "question": "今天上海天气怎么样？", "reference_answer": "现有资料不足以回答。", "gold_pages": [], "gold_title": null, "species": null, "category": null, "expect_insufficient": true, "notes": "域外问题，验证拒答"}

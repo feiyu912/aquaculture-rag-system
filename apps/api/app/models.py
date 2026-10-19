@@ -37,6 +37,7 @@ class KbDocument(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     category: Mapped[str] = mapped_column(String(64), nullable=False, default="未分类")
+    species: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     source_org: Mapped[str | None] = mapped_column(Text)
     source_url: Mapped[str | None] = mapped_column(Text)
     publish_year: Mapped[int | None] = mapped_column(Integer)
@@ -175,6 +176,7 @@ class ChatCitation(Base, TimestampMixin):
     bbox: Mapped[dict | list | None] = mapped_column(JSONB)
     score: Mapped[float | None] = mapped_column(Float)
     support_status: Mapped[str] = mapped_column(String(16), nullable=False, default="unverified")
+    support_score: Mapped[float | None] = mapped_column(Float)
 
     __table_args__ = (
         UniqueConstraint("message_id", "source_index", name="uq_citation_source"),
@@ -196,4 +198,9 @@ class QueryLog(Base, TimestampMixin):
     active_versions: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     timings: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     token_usage: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    retrieval_rankings: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    evidence: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    llm_model: Mapped[str | None] = mapped_column(String(64))
+    generation_config: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    cost_usd: Mapped[float | None] = mapped_column(Float)
     citation_check: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)

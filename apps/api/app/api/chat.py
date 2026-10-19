@@ -19,6 +19,7 @@ from app.generation.llm import Generator, MockGenerator, build_generator
 from app.ingestion.embedder import get_embedder
 from app.models import ChatCitation, ChatMessage, ChatSession, KbDocument, QueryLog
 from app.retrieval.bm25 import BM25SparseEncoder
+from app.retrieval.rerank import build_reranker
 from app.retrieval.service import Evidence, RetrievalResult, retrieve
 from app.schemas import ChatRequest
 
@@ -76,9 +77,21 @@ async def chat_stream(
 
     embedder = get_embedder(settings.embedding_model, settings.qdrant_vector_size)
     bm25 = BM25SparseEncoder(k1=settings.bm25_k1, b=settings.bm25_b, avg_len=settings.bm25_avg_len)
+    reranker = (
+        build_reranker(settings.reranker_model)
+        if payload.retrieval_mode == "hybrid_rerank"
+        else None
+    )
     try:
         retrieval: RetrievalResult = await retrieve(
-            db, question, embedder, bm25, category=payload.category
+            db,
+            question,
+            embedder,
+            bm25,
+            reranker=reranker,
+            category=payload.category,
+            species=payload.species,
+            mode=payload.retrieval_mode,
         )
     except Exception as exc:
         await _persist_failure(
@@ -117,6 +130,10 @@ async def chat_stream(
                 "stage": "retrieved",
                 "sources": len(evidence),
                 "active_versions": len(retrieval.active_versions),
+                "sufficient": retrieval.sufficient,
+                "retrieval_mode": retrieval.config.get("retrieval_mode"),
+                "species_filter": retrieval.config.get("species_filter"),
+                "gate": retrieval.gate,
             },
         )
         yield _sse("sources", {"sources": [item.as_source() for item in evidence]})
@@ -164,6 +181,7 @@ async def chat_stream(
             "generation_ms": round((now - (first_token_at or now)) * 1000, 1),
             "total_ms": round((now - started) * 1000, 1),
         }
+        cost_usd = _estimate_cost(generator.last_usage, generator.name)
         yield _sse("citation_check", report.as_dict())
         await _persist_success(
             assistant_id=assistant_id,
@@ -177,6 +195,7 @@ async def chat_stream(
             timings=timings,
             usage=generator.last_usage,
             model=generator.name,
+            cost_usd=cost_usd,
         )
         yield _sse(
             "done",
@@ -184,12 +203,28 @@ async def chat_stream(
                 "message_id": str(assistant_id),
                 "model": generator.name,
                 "usage": generator.last_usage,
+                "cost_usd": cost_usd,
                 "timings": timings,
+                "retrieval_mode": retrieval.config.get("retrieval_mode"),
+                "sufficient": retrieval.sufficient,
+                "gate": retrieval.gate,
                 "citation_check": report.as_dict(),
             },
         )
 
     return StreamingResponse(event_stream(), media_type="text/event-stream", headers=SSE_HEADERS)
+
+
+def _estimate_cost(usage: dict, model: str) -> float:
+    if model != "deepseek":
+        return 0.0
+    prompt = float(usage.get("prompt_tokens") or 0)
+    completion = float(usage.get("completion_tokens") or 0)
+    return round(
+        prompt / 1_000_000 * settings.deepseek_price_input_per_m
+        + completion / 1_000_000 * settings.deepseek_price_output_per_m,
+        6,
+    )
 
 
 async def _persist_success(
@@ -205,8 +240,8 @@ async def _persist_success(
     timings: dict,
     usage: dict,
     model: str,
+    cost_usd: float,
 ) -> None:
-    cited = set(report.get("cited_indices", []))
     async with SessionLocal() as db:
         message = await db.get(ChatMessage, assistant_id)
         if message is None:
@@ -251,7 +286,8 @@ async def _persist_success(
                     page=item.page,
                     bbox=item.location,
                     score=item.score,
-                    support_status="valid" if item.source_index in cited else "unverified",
+                    support_status="unverified",
+                    support_score=None,
                 )
             )
         db.add(
@@ -265,6 +301,16 @@ async def _persist_success(
                 active_versions=[str(v) for v in retrieval.active_versions],
                 timings=timings,
                 token_usage=usage,
+                retrieval_rankings=retrieval.rankings,
+                evidence=[item.as_source() for item in evidence],
+                llm_model=model,
+                generation_config={
+                    "llm_provider": settings.llm_provider,
+                    "temperature": 0.2,
+                    "retrieval_mode": retrieval.config.get("retrieval_mode"),
+                    "reranker": retrieval.config.get("reranker"),
+                },
+                cost_usd=cost_usd,
                 citation_check=report,
             )
         )

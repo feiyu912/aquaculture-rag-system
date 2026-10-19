@@ -1,4 +1,4 @@
-.PHONY: install up down api worker pdf test lint
+.PHONY: install up down api worker pdf migrate test lint smoke eval
 
 install:
 	cd apps/api && uv sync
@@ -18,8 +18,20 @@ worker:
 pdf:
 	cd apps/api && uv run python ../../scripts/make_sample_pdf.py
 
+migrate:
+	cd apps/api && uv run python ../../scripts/migrate_db.py
+
 test:
 	cd apps/api && uv run pytest -q
 
 lint:
 	cd apps/api && uv run ruff check app tests ../../scripts
+
+smoke:
+	cd apps/api && uv run python ../../scripts/smoke_test.py
+
+eval:
+	cd apps/api && uv run python ../../scripts/evaluate.py \
+		--dataset ../../eval/sample_questions.jsonl \
+		--modes dense,bm25,hybrid,hybrid_rerank \
+		--out ../../eval/runs/demo

@@ -2,7 +2,7 @@
 
 本科毕业设计项目：**《基于检索增强生成的水产养殖知识问答系统设计与实现》**
 
-> 当前状态：**技术方案 v1.0 已定稿；阶段 1–2 的可运行骨架已完成。**
+> 当前状态：**技术方案 v1.0 已定稿；可运行纵向切片 + 四个验收场景的关键补强已完成。**
 > 方案基线见 [技术方案](docs/technical-plan.md)，启动方式见 [开发说明](docs/development.md)。
 
 ## 项目定位
@@ -30,10 +30,17 @@
 - 回滚到旧版本，并校验 Qdrant 中该版本向量仍存在
 - 查询时固定生效版本快照，引用记录版本号与 `quote/page/bbox` 快照
 - 引用有效性校验、启发式事实引用覆盖率、分段耗时日志
-- 19 个单元测试（切分、坐标、BM25、RRF、引用、示例 PDF）
+- 四种检索模式：`dense` / `bm25` / `hybrid` / `hybrid_rerank`（用于消融）
+- 文档级多品种元数据与 Qdrant 过滤；问题中出现唯一品种时自动过滤
+- 证据不足门槛：域外问题不返回证据、不生成引用
+- 引用支持性验证接口（当前 `lexical_overlap_v0`，不是 NLI）
+- 查询日志保留两路排名、证据、模型、token 与成本
+- 轻量增量迁移、失败任务重试、worker 启动回收超时任务
+- 38 个单元测试 + A/B/C 端到端冒烟测试 + 批量评测 CLI
 
 > ⚠️ 当前 Dense 使用 `HashingEmbedder` 开发占位，**不是 BGE-M3，不能用于论文实验**。
-> PyMuPDF 只是 MinerU 的临时降级解析器。Reranker、PDF.js 高亮、真实 DeepSeek 调用尚未验证。
+> PyMuPDF 只是 MinerU 的临时降级解析器。Reranker 默认 `noop`；PDF.js 高亮、真实 DeepSeek 调用尚未验证。
+> `hybrid_rerank` 在接入 BGE-Reranker 前等价于 RRF，不能作为真实重排结果写论文。
 
 ## 技术栈（固定基线）
 
@@ -55,7 +62,7 @@
 | 后台任务 | ARQ + Redis |
 | 流式 | SSE |
 | 文件 | 本地文件系统，按版本目录管理 |
-| 评测 | 自建评测集 + RAGAS 辅助（后续） |
+| 评测 | 自建 JSONL 测试集 + 批量评测脚本；RAGAS 辅助（后续） |
 | 部署 | Docker Compose（当前只起依赖服务） |
 
 ## 快速开始
@@ -67,6 +74,7 @@ cd apps/api
 cp .env.example .env
 uv sync
 uv run python ../../scripts/make_sample_pdf.py
+uv run python ../../scripts/migrate_db.py
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
@@ -76,7 +84,19 @@ uv run uvicorn app.main:app --reload --port 8000
 cd apps/api && uv run arq app.worker.WorkerSettings
 ```
 
-打开 <http://127.0.0.1:8000>。完整命令、API 示例与版本更新/回滚见 [开发说明](docs/development.md)。
+打开 <http://127.0.0.1:8000>。上传资料 → 提问 → 点击 `[S1]` 跳到 PDF 页码；列表中可“更新版本”。
+
+验收与评测：
+
+```bash
+cd apps/api
+uv run python ../../scripts/smoke_test.py           # A/B/C，跑完清理
+uv run python ../../scripts/smoke_test.py --keep    # 保留演示文档
+uv run python ../../scripts/evaluate.py --dataset ../../eval/sample_questions.jsonl \
+  --modes dense,bm25,hybrid,hybrid_rerank --out ../../eval/runs/demo
+```
+
+完整命令、API 示例与版本更新/回滚见 [开发说明](docs/development.md)。
 
 ## 文档
 
@@ -97,7 +117,9 @@ apps/api/
     api/          文档、问答、会话、健康检查
     ingestion/    解析、切分、Embedding、入库流水线
     retrieval/    BM25、Qdrant、RRF、Reranker、检索服务
-    generation/   LLM 适配、引用解析与校验
+    generation/   LLM 适配、引用解析与校验、支持性验证
+    species.py    品种解析与识别
+    migrations.py 轻量增量迁移
     models.py     8 张 PostgreSQL 表
   tests/          单元测试
   pyproject.toml
@@ -105,6 +127,11 @@ infra/
   docker-compose.yml   Postgres + Qdrant + Redis
 scripts/
   make_sample_pdf.py   生成演示用合成 PDF
+  smoke_test.py        A/B/C 端到端验收
+  evaluate.py          批量评测、导出 CSV/JSON
+  migrate_db.py        建表 + 增量迁移
+eval/
+  sample_questions.jsonl  合成测试集（非论文 Ground Truth）
 docs/
   adr/
 data/             文档、解析产物、示例（不入库）
@@ -114,5 +141,6 @@ data/             文档、解析产物、示例（不入库）
 
 - 示例 PDF 是合成的演示资料，**不构成养殖或用药依据**。
 - 当前版本没有认证，只适合本机开发。
-- 修改表结构前先引入 Alembic；开发期使用的 `create_all` 不是迁移方案。
+- 当前迁移只支持加列；改列类型/删列前引入 Alembic。
+- `eval/sample_questions.jsonl` 是合成数据，不能当作论文 Ground Truth。
 - 进入论文实验前，必须把 Hash embedder 换成 BGE-M3，并固定模型快照与参数。
