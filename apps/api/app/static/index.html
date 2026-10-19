@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>水产养殖 RAG · 开发演示</title>
+  <style>
+    :root {
+      --bg: #f5f7f6;
+      --card: #ffffff;
+      --ink: #17211c;
+      --muted: #62736a;
+      --line: #dce5df;
+      --brand: #126b4e;
+      --brand-soft: #e6f2ec;
+      --warn: #9a5b00;
+      --bad: #a52a2a;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+      background: linear-gradient(180deg, #eef4f0 0, var(--bg) 260px);
+      color: var(--ink);
+    }
+    header {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 20px 12px;
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 22px; margin: 0; letter-spacing: .3px; }
+    header .sub { color: var(--muted); font-size: 13px; }
+    #health { margin-left: auto; font-size: 12px; color: var(--muted); }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 10px 20px 48px;
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(23, 33, 28, .05);
+    }
+    .card h2 {
+      font-size: 14px;
+      margin: 0;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      letter-spacing: .2px;
+    }
+    .card .body { padding: 14px 16px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 5px; }
+    input[type=text], select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fbfcfb;
+      border-radius: 9px;
+      padding: 9px 10px;
+      font: inherit;
+      font-size: 13px;
+      color: var(--ink);
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: #8dbfa9; box-shadow: 0 0 0 3px #e6f2ec; }
+    input[type=file] { font-size: 12px; width: 100%; }
+    button {
+      border: 0;
+      background: var(--brand);
+      color: #fff;
+      border-radius: 9px;
+      padding: 9px 14px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.06); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    button.ghost { background: var(--brand-soft); color: var(--brand); }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row > * { flex: 1; }
+    .row > button { flex: 0 0 auto; }
+    .hint { font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 8px; }
+    .progress { height: 7px; background: #edf1ee; border-radius: 99px; overflow: hidden; margin: 10px 0 4px; display: none; }
+    .progress > i { display: block; height: 100%; width: 0%; background: var(--brand); transition: width .3s; }
+    .job { font-size: 12px; color: var(--muted); min-height: 18px; }
+    .job.bad { color: var(--bad); }
+    #docs { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 10px; }
+    .doc {
+      padding: 9px 0;
+      border-bottom: 1px solid #eef2ef;
+      font-size: 12px;
+    }
+    .doc:last-child { border-bottom: 0; }
+    .doc .title { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+    .doc .meta { color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+    .doc a { color: var(--brand); text-decoration: none; }
+    .tag {
+      display: inline-block;
+      background: var(--brand-soft);
+      color: var(--brand);
+      border-radius: 99px;
+      padding: 1px 7px;
+      font-size: 11px;
+    }
+    .chat { display: flex; flex-direction: column; min-height: 72vh; }
+    #messages { padding: 18px; display: flex; flex-direction: column; gap: 14px; min-height: 48vh; max-height: 64vh; overflow-y: auto; }
+    .msg { max-width: 88%; line-height: 1.75; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+    .msg.user { align-self: flex-end; background: var(--brand); color: #fff; padding: 10px 13px; border-radius: 13px 13px 4px 13px; }
+    .msg.assistant { align-self: flex-start; background: #f7faf8; border: 1px solid var(--line); padding: 12px 14px; border-radius: 13px 13px 13px 4px; }
+    .msg.assistant .cite { color: var(--brand); font-weight: 700; }
+    .msg .meta { display: block; color: var(--muted); font-size: 11px; margin-top: 8px; white-space: normal; }
+    .sources { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .source {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: normal;
+    }
+    .source .head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+    .source .head b { font-size: 12px; }
+    .source .head a { color: var(--brand); text-decoration: none; }
+    .source .quote { color: #33453b; margin-top: 4px; }
+    .statusline { font-size: 11px; color: var(--muted); padding: 0 18px 8px; min-height: 16px; }
+    .composer { border-top: 1px solid var(--line); padding: 12px 14px; display: flex; gap: 9px; align-items: flex-end; }
+    .composer textarea { resize: none; height: 44px; max-height: 120px; }
+    .composer button { height: 40px; padding: 0 16px; }
+    .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 26px 10px; line-height: 1.8; }
+    .badge { font-size: 11px; padding: 2px 7px; border-radius: 99px; background: #eef2ef; color: var(--muted); }
+    .badge.ok { background: var(--brand-soft); color: var(--brand); }
+    .badge.bad { background: #fbe9e9; color: var(--bad); }
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      #messages { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>水产养殖 RAG 知识问答</h1>
+  <span class="sub">开发骨架 · 示例资料 · 非论文最终界面</span>
+  <span id="health">检查服务中…</span>
+</header>
+
+<main>
+  <section class="card">
+    <h2>知识库</h2>
+    <div class="body">
+      <label for="file">上传 PDF</label>
+      <input id="file" type="file" accept="application/pdf,.pdf" />
+      <label for="title">标题（可选）</label>
+      <input id="title" type="text" placeholder="默认使用文件名" />
+      <label for="category">分类</label>
+      <select id="category">
+        <option value="中华绒螯蟹">中华绒螯蟹</option>
+        <option value="凡纳滨对虾">凡纳滨对虾</option>
+        <option value="水质管理">水质管理</option>
+        <option value="病害防控">病害防控</option>
+        <option value="未分类" selected>未分类</option>
+      </select>
+      <div style="margin-top:12px"><button id="uploadBtn">上传并入库</button></div>
+      <div class="progress" id="progress"><i></i></div>
+      <div class="job" id="job"></div>
+      <div class="hint">上传后由 ARQ worker 解析、切分、向量化并激活版本。示例数据仅用于系统演示，不作为养殖依据。</div>
+      <div id="docs"><div class="empty">还没有文档</div></div>
+    </div>
+  </section>
+
+  <section class="card chat">
+    <h2 style="display:flex;align-items:center;gap:10px">
+      问答
+      <span class="badge" id="provider">mock</span>
+      <button class="ghost" id="newChat" style="margin-left:auto;padding:5px 10px;font-size:12px">新会话</button>
+    </h2>
+    <div id="messages">
+      <div class="empty" id="emptyChat">上传资料后提问，例如：<br />“中华绒螯蟹养殖对溶解氧有什么要求？”</div>
+    </div>
+    <div class="statusline" id="statusline"></div>
+    <div class="composer">
+      <textarea id="question" placeholder="输入问题，Enter 发送，Shift+Enter 换行"></textarea>
+      <button id="sendBtn">发送</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let sessionId = localStorage.getItem("aqua_session_id") || null;
+let busy = false;
+
+function esc(text) {
+  return String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function citeHtml(text) {
+  return esc(text).replace(/\[S(\d+)\]/g, '<span class="cite">[S$1]</span>');
+}
+function setStatus(text) { $("statusline").textContent = text || ""; }
+
+async function checkHealth() {
+  try {
+    const res = await fetch("/api/health");
+    const data = await res.json();
+    const ok = data.status === "ok";
+    $("health").innerHTML = `<span class="badge ${ok ? "ok" : "bad"}">${ok ? "服务正常" : "部分服务异常"}</span>`;
+    $("provider").textContent = data.llm_provider === "deepseek" ? "DeepSeek" : "mock";
+    if (!ok) $("health").title = JSON.stringify(data.components);
+  } catch (e) {
+    $("health").textContent = "无法连接 API";
+  }
+}
+
+async function loadDocs() {
+  try {
+    const res = await fetch("/api/documents");
+    const docs = await res.json();
+    const box = $("docs");
+    if (!docs.length) { box.innerHTML = '<div class="empty">还没有文档</div>'; return; }
+    box.innerHTML = docs.map((d) => {
+      const link = d.current_version_id
+        ? `<a href="/api/documents/${d.id}/file" target="_blank" rel="noopener">打开 PDF</a>`
+        : "";
+      return `<div class="doc">
+        <div class="title">${esc(d.title)}</div>
+        <div class="meta">
+          <span class="tag">${esc(d.category)}</span>
+          <span>${d.page_count ? d.page_count + " 页" : "解析中"}</span>
+          <span>v${d.current_version_no ?? "-"}</span>
+          <span>${esc(d.status)}</span>
+          ${link}
+        </div>
+      </div>`;
+    }).join("");
+  } catch (e) { /* ignore */ }
+}
+
+async function pollJob(jobId) {
+  const bar = $("progress"), fill = bar.querySelector("i"), label = $("job");
+  bar.style.display = "block";
+  label.className = "job";
+  for (let i = 0; i < 180; i++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    const res = await fetch(`/api/jobs/${jobId}`);
+    if (!res.ok) { label.textContent = "任务状态查询失败"; label.className = "job bad"; break; }
+    const job = await res.json();
+    fill.style.width = `${job.progress || 0}%`;
+    label.textContent = `${job.current_stage} · ${job.progress || 0}%`;
+    if (job.status === "succeeded") {
+      label.textContent = "入库完成";
+      await loadDocs();
+      break;
+    }
+    if (job.status === "failed") {
+      label.textContent = `失败：${job.error_message || job.error_code || "未知错误"}`;
+      label.className = "job bad";
+      break;
+    }
+  }
+  setTimeout(() => { bar.style.display = "none"; }, 1200);
+}
+
+$("uploadBtn").addEventListener("click", async () => {
+  const file = $("file").files[0];
+  if (!file) { $("job").textContent = "请先选择 PDF"; return; }
+  const btn = $("uploadBtn");
+  btn.disabled = true;
+  $("job").textContent = "上传中…";
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    if ($("title").value.trim()) fd.append("title", $("title").value.trim());
+    fd.append("category", $("category").value);
+    const res = await fetch("/api/documents", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = typeof data.detail === "string" ? data.detail : (data.detail?.message || "上传失败");
+      throw new Error(msg);
+    }
+    $("job").textContent = "已入队，等待 worker…";
+    await pollJob(data.job_id);
+  } catch (e) {
+    $("job").textContent = `上传失败：${e.message}`;
+    $("job").className = "job bad";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function addMessage(role, text) {
+  $("emptyChat")?.remove();
+  const el = document.createElement("div");
+  el.className = `msg ${role}`;
+  el.textContent = text;
+  $("messages").appendChild(el);
+  $("messages").scrollTop = $("messages").scrollHeight;
+  return el;
+}
+
+function renderSources(sources, container) {
+  if (!sources || !sources.length) return;
+  const box = document.createElement("div");
+  box.className = "sources";
+  box.innerHTML = sources.map((s) => {
+    const page = s.page ? `第 ${s.page} 页` : "";
+    const url = `/api/documents/${s.document_id}/file?version_id=${s.version_id}#page=${s.page || 1}`;
+    return `<div class="source">
+      <div class="head"><b>[${esc(s.source_id)}] ${esc(s.title)}</b><span class="badge">${page}</span><a href="${url}" target="_blank" rel="noopener">原文</a></div>
+      <div class="quote">${esc(s.quote || "")}</div>
+    </div>`;
+  }).join("");
+  container.appendChild(box);
+}
+
+async function send() {
+  const input = $("question");
+  const question = input.value.trim();
+  if (!question || busy) return;
+  busy = true;
+  $("sendBtn").disabled = true;
+  input.value = "";
+  setStatus("检索中…");
+  addMessage("user", question);
+  const assistant = addMessage("assistant", "…");
+  let answer = "";
+  let sources = [];
+
+  try {
+    const res = await fetch("/api/chat/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, session_id: sessionId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buffer.indexOf("\n\n")) >= 0) {
+        const block = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        let event = "message", data = "";
+        for (const line of block.split("\n")) {
+          if (line.startsWith("event:")) event = line.slice(6).trim();
+          else if (line.startsWith("data:")) data += line.slice(5).trim();
+        }
+        if (!data) continue;
+        let payload;
+        try { payload = JSON.parse(data); } catch (e) { continue; }
+        if (event === "meta") {
+          sessionId = payload.session_id;
+          localStorage.setItem("aqua_session_id", sessionId);
+        } else if (event === "status") {
+          setStatus(payload.stage === "retrieved" ? `已检索 ${payload.sources} 条证据，生成中…` : payload.stage);
+        } else if (event === "sources") {
+          sources = payload.sources || [];
+          assistant.textContent = "";
+          assistant.innerHTML = '<span style="color:#62736a">正在生成回答…</span>';
+        } else if (event === "token") {
+          answer += payload.text || "";
+          assistant.textContent = answer;
+          $("messages").scrollTop = $("messages").scrollHeight;
+        } else if (event === "citation_check") {
+          const c = payload;
+          const badge = c.valid ? "引用有效" : `无效引用：${(c.invalid_indices || []).join(", ")}`;
+          setStatus(`${badge} · 事实引用覆盖率 ${(c.coverage * 100).toFixed(0)}%`);
+        } else if (event === "error") {
+          throw new Error(payload.message || "生成失败");
+        } else if (event === "done") {
+          const t = payload.timings || {};
+          assistant.innerHTML = citeHtml(answer);
+          assistant.insertAdjacentHTML("beforeend",
+            `<span class="meta">${esc(payload.model || "")} · 总耗时 ${Math.round(t.total_ms || 0)} ms · TTFT ${Math.round(t.ttft_ms || 0)} ms${payload.citation_check ? " · 引用校验：" + (payload.citation_check.valid ? "通过" : "有无效编号") : ""}</span>`);
+          renderSources(sources, assistant);
+          setStatus("");
+          $("messages").scrollTop = $("messages").scrollHeight;
+        }
+      }
+    }
+  } catch (e) {
+    assistant.innerHTML = `<span style="color:#a52a2a">出错了：${esc(e.message)}</span>`;
+    setStatus("请求失败");
+  } finally {
+    busy = false;
+    $("sendBtn").disabled = false;
+    input.focus();
+  }
+}
+
+$("sendBtn").addEventListener("click", send);
+$("question").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+});
+$("newChat").addEventListener("click", () => {
+  sessionId = null;
+  localStorage.removeItem("aqua_session_id");
+  $("messages").innerHTML = '<div class="empty" id="emptyChat">新会话已开始。上传资料后提问。</div>';
+  setStatus("");
+});
+
+checkHealth();
+loadDocs();
+</script>
+</body>
+</html>
