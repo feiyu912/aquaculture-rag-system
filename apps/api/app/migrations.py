@@ -38,6 +38,10 @@ MIGRATIONS: list[tuple[str, str]] = [
         "0007_query_log_cost",
         "ALTER TABLE query_logs ADD COLUMN IF NOT EXISTS cost_usd double precision",
     ),
+    (
+        "0008_chunk_context_text",
+        "ALTER TABLE kb_chunks ADD COLUMN IF NOT EXISTS context_text text",
+    ),
 ]
 
 

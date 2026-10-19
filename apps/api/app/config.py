@@ -47,6 +47,17 @@ class Settings(BaseSettings):
     evidence_min_weight: float = 3.0
     evidence_min_coverage: float = 0.3
 
+    # Incremental enhancements. Defaults keep the baseline reproducible; turn
+    # them on explicitly for ablation experiments.
+    enable_query_ir: bool = True
+    enable_claim_verification: bool = True
+    enable_contextual_retrieval: bool = False
+    enable_evidence_requirements: bool = False
+    enable_targeted_retrieval: bool = False
+    enable_graph_expansion: bool = False
+    enable_adaptive_routing: bool = False
+    max_targeted_retrieval: int = 1
+
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
     bm25_avg_len: float = 300.0

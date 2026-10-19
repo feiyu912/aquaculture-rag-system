@@ -15,6 +15,7 @@ from app.api.sessions import touch_session
 from app.config import settings
 from app.db import SessionLocal, get_db
 from app.generation.citations import validate_answer
+from app.generation.claims import summarize_claims, verify_claims
 from app.generation.llm import Generator, MockGenerator, build_generator
 from app.ingestion.embedder import get_embedder
 from app.models import ChatCitation, ChatMessage, ChatSession, KbDocument, QueryLog
@@ -133,6 +134,7 @@ async def chat_stream(
                 "sufficient": retrieval.sufficient,
                 "retrieval_mode": retrieval.config.get("retrieval_mode"),
                 "species_filter": retrieval.config.get("species_filter"),
+                "query_ir": retrieval.config.get("query_ir"),
                 "gate": retrieval.gate,
             },
         )
@@ -173,7 +175,12 @@ async def chat_stream(
             )
             return
 
-        report = validate_answer(answer, len(evidence))
+        citation_report = validate_answer(answer, len(evidence))
+        report = citation_report.as_dict()
+        if settings.enable_claim_verification:
+            claims = verify_claims(answer, [item.as_source() for item in evidence])
+            report["claims"] = claims
+            report["claim_summary"] = summarize_claims(claims)
         now = time.perf_counter()
         timings = {
             **retrieval.timings,
@@ -182,7 +189,7 @@ async def chat_stream(
             "total_ms": round((now - started) * 1000, 1),
         }
         cost_usd = _estimate_cost(generator.last_usage, generator.name)
-        yield _sse("citation_check", report.as_dict())
+        yield _sse("citation_check", report)
         await _persist_success(
             assistant_id=assistant_id,
             request_id=request_id,
@@ -191,7 +198,7 @@ async def chat_stream(
             answer=answer,
             evidence=evidence,
             retrieval=retrieval,
-            report=report.as_dict(),
+            report=report,
             timings=timings,
             usage=generator.last_usage,
             model=generator.name,
@@ -206,9 +213,10 @@ async def chat_stream(
                 "cost_usd": cost_usd,
                 "timings": timings,
                 "retrieval_mode": retrieval.config.get("retrieval_mode"),
+                "query_ir": retrieval.config.get("query_ir"),
                 "sufficient": retrieval.sufficient,
                 "gate": retrieval.gate,
-                "citation_check": report.as_dict(),
+                "citation_check": report,
             },
         )
 

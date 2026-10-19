@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.ingestion.embedder import Embedder
 from app.models import KbChunk, KbDocument, KbDocumentVersion
+from app.query.ir import QueryIR, build_query_ir
 from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, tokenize
 from app.retrieval.rerank import NoopReranker, Reranker
 from app.retrieval.rrf import rrf_fuse
@@ -147,6 +148,14 @@ async def retrieve(
     started = time.perf_counter()
     mode = normalize_mode(mode)
     active_versions, species_options = await _active_version_rows(db)
+    query_ir: QueryIR | None = None
+    if settings.enable_query_ir:
+        query_ir = build_query_ir(
+            question,
+            species_options,
+            explicit_species=species,
+            explicit_category=category,
+        )
     if not active_versions:
         gate = Sufficiency(False, "no_active_versions", [], [], 0.0, 0.0, 0.0, None)
         return RetrievalResult(
@@ -154,14 +163,19 @@ async def retrieve(
             active_versions=[],
             timings={"retrieval_ms": 0},
             rankings={},
-            config=_config(mode, None, "none", gate),
+            config=_config(mode, None, None, "none", gate, query_ir),
             sufficient=False,
             gate=gate.as_dict(),
         )
 
-    species_filter = parse_species(species)[0] if species and species.strip() else None
-    if species_filter is None:
-        species_filter = detect_species(question, species_options)
+    if query_ir is not None:
+        species_filter = query_ir.species_filter
+        category_filter = query_ir.category_filter
+    else:
+        species_filter = parse_species(species)[0] if species and species.strip() else None
+        if species_filter is None:
+            species_filter = detect_species(question, species_options)
+        category_filter = category
 
     client = get_client()
     query_dense = embedder.embed_query(question)
@@ -179,7 +193,7 @@ async def retrieve(
                 query_dense,
                 active_versions,
                 settings.dense_top_k,
-                category,
+                category_filter,
                 species_filter,
             )
             dense_ms = (time.perf_counter() - dense_started) * 1000
@@ -191,7 +205,7 @@ async def retrieve(
                 query_sparse,
                 active_versions,
                 settings.bm25_top_k,
-                category,
+                category_filter,
                 species_filter,
             )
             sparse_ms = (time.perf_counter() - sparse_started) * 1000
@@ -230,7 +244,7 @@ async def retrieve(
             active_versions=active_versions,
             timings=timings,
             rankings=rankings,
-            config=_config(mode, species_filter, "none", gate),
+            config=_config(mode, species_filter, category_filter, "none", gate, query_ir),
             sufficient=False,
             gate=gate.as_dict(),
         )
@@ -352,7 +366,7 @@ async def retrieve(
         active_versions=active_versions,
         timings=timings,
         rankings=rankings,
-        config=_config(mode, species_filter, reranker_name, gate),
+        config=_config(mode, species_filter, category_filter, reranker_name, gate, query_ir),
         sufficient=gate.sufficient,
         gate=gate.as_dict(),
     )
@@ -361,8 +375,10 @@ async def retrieve(
 def _config(
     mode: str,
     species_filter: str | None,
+    category_filter: str | None,
     reranker: str,
     gate: Sufficiency,
+    query_ir: QueryIR | None = None,
 ) -> dict:
     return {
         "dense_top_k": settings.dense_top_k,
@@ -373,7 +389,9 @@ def _config(
         "collection": settings.qdrant_collection,
         "retrieval_mode": mode,
         "species_filter": species_filter,
+        "category_filter": category_filter,
         "reranker": reranker,
+        "query_ir": query_ir.model_dump() if query_ir else None,
         "evidence_min_terms": settings.evidence_min_terms,
         "evidence_min_weight": settings.evidence_min_weight,
         "evidence_min_coverage": settings.evidence_min_coverage,

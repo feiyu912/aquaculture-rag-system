@@ -8,9 +8,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
+from app.generation.claims import summarize_claims, verify_claims
 from app.generation.support import verify_support
 from app.models import ChatCitation, ChatMessage, ChatSession
-from app.schemas import CitationOut, CitationVerifyRequest, MessageOut, SessionOut, SupportOut
+from app.schemas import (
+    CitationOut,
+    CitationVerifyRequest,
+    ClaimVerificationOut,
+    MessageOut,
+    SessionOut,
+    SupportOut,
+)
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 
@@ -123,6 +131,34 @@ async def verify_citation(
         score=result.score,
         method=result.method,
         matched_terms=result.matched_terms,
+    )
+
+
+@router.post("/messages/{message_id}/verify-claims", response_model=ClaimVerificationOut)
+async def verify_message_claims(
+    message_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> ClaimVerificationOut:
+    message = await db.get(ChatMessage, message_id)
+    if message is None:
+        raise HTTPException(status_code=404, detail="消息不存在")
+    citations = (
+        (
+            await db.execute(
+                select(ChatCitation)
+                .where(ChatCitation.message_id == message_id)
+                .order_by(ChatCitation.source_index.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    evidence = [{"index": item.source_index, "quote": item.quote} for item in citations]
+    claims = verify_claims(message.content, evidence)
+    return ClaimVerificationOut(
+        message_id=message_id,
+        summary=summarize_claims(claims),
+        claims=claims,
     )
 
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.retrieval.bm25 import CUSTOM_TERMS, tokenize
 
@@ -59,6 +59,7 @@ class Sufficiency:
     total_weight: float
     coverage: float
     best_index: int | None
+    missing_terms: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return {
@@ -70,6 +71,7 @@ class Sufficiency:
             "total_weight": self.total_weight,
             "coverage": round(self.coverage, 3),
             "best_index": self.best_index,
+            "missing_terms": self.missing_terms,
         }
 
 
@@ -187,4 +189,14 @@ def assess_evidence(
             coverage=best.coverage,
             best_index=best.best_index,
         )
-    return best
+    return Sufficiency(
+        sufficient=False,
+        reason=best.reason,
+        query_terms=best.query_terms,
+        matched_terms=best.matched_terms,
+        matched_weight=best.matched_weight,
+        total_weight=best.total_weight,
+        coverage=best.coverage,
+        best_index=best.best_index,
+        missing_terms=[term for term in best.query_terms if term not in best.matched_terms],
+    )

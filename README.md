@@ -36,11 +36,17 @@
 - 引用支持性验证接口（当前 `lexical_overlap_v0`，不是 NLI）
 - 查询日志保留两路排名、证据、模型、token 与成本
 - 轻量增量迁移、失败任务重试、worker 启动回收超时任务
-- 38 个单元测试 + A/B/C 端到端冒烟测试 + 批量评测 CLI
+- **Typed Query IR（规则 v1）**：意图/品种/阶段/水质指标/年份标记，硬约束确定性编译
+- **Contextual Retrieval（可开关）**：索引辅助文本与引用原文分离
+- **声明级引用检查（v0）**：句子级 `[S1]` 映射与词面支持性，不冒充 NLI
+- **检索 Trace**：按 request_id 查看排名、证据、IR、gate 与耗时
+- 52 个单元测试 + A/B/C 端到端冒烟测试 + 批量评测 CLI
 
 > ⚠️ 当前 Dense 使用 `HashingEmbedder` 开发占位，**不是 BGE-M3，不能用于论文实验**。
 > PyMuPDF 只是 MinerU 的临时降级解析器。Reranker 默认 `noop`；PDF.js 高亮、真实 DeepSeek 调用尚未验证。
 > `hybrid_rerank` 在接入 BGE-Reranker 前等价于 RRF，不能作为真实重排结果写论文。
+> 图扩展、多跳分解、LangGraph 自适应路由、PDF.js 高亮尚未接入默认链路（Phase 2/3），
+> 不要在当前论文结果中声称已完成。
 
 ## 技术栈（固定基线）
 
@@ -107,6 +113,7 @@ uv run python ../../scripts/evaluate.py --dataset ../../eval/sample_questions.js
 | [ADR-0001 混合检索](docs/adr/0001-hybrid-retrieval.md) | 为什么是 Dense + BM25 + RRF |
 | [ADR-0002 版本化索引](docs/adr/0002-versioned-index.md) | 为什么不依赖 PostgreSQL/Qdrant 跨库事务 |
 | [ADR-0003 引用验证](docs/adr/0003-citation-validation.md) | 引用有效性、支持性、事实正确性的分层 |
+| [增强架构与状态](docs/architecture-enhancement.md) | 12 项增强能力的实现状态、Phase 2/3 计划、论文口径边界 |
 | [待定项](docs/open-items.md) | 数据来源、硬件、模板等尚未锁死的事项 |
 
 ## 仓库结构
@@ -117,7 +124,8 @@ apps/api/
     api/          文档、问答、会话、健康检查
     ingestion/    解析、切分、Embedding、入库流水线
     retrieval/    BM25、Qdrant、RRF、Reranker、检索服务
-    generation/   LLM 适配、引用解析与校验、支持性验证
+    generation/   LLM 适配、引用解析、声明级检查、支持性验证
+    query/        Typed Query IR、硬约束编译、确定性路由
     species.py    品种解析与识别
     migrations.py 轻量增量迁移
     models.py     8 张 PostgreSQL 表

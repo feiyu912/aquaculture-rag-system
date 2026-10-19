@@ -216,6 +216,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 let sessionId = localStorage.getItem("aqua_session_id") || null;
+let requestId = null;
 let busy = false;
 
 function esc(text) {
@@ -450,6 +451,7 @@ async function send() {
         try { payload = JSON.parse(data); } catch (e) { continue; }
         if (event === "meta") {
           sessionId = payload.session_id;
+          requestId = payload.request_id;
           localStorage.setItem("aqua_session_id", sessionId);
         } else if (event === "status") {
           if (payload.sufficient === false) {
@@ -471,7 +473,10 @@ async function send() {
             setStatus("证据不足：未生成事实性引用");
           } else {
             const badge = c.valid ? "引用编号有效（支持性未验证）" : `无效引用：${(c.invalid_indices || []).join(", ")}`;
-            setStatus(`${badge} · 事实引用覆盖率 ${(c.coverage * 100).toFixed(0)}%`);
+            const claim = c.claim_summary
+              ? ` · 声明支持 ${c.claim_summary.supported}/${c.claim_summary.total}（词面v0）`
+              : "";
+            setStatus(`${badge} · 事实引用覆盖率 ${(c.coverage * 100).toFixed(0)}%${claim}`);
           }
         } else if (event === "error") {
           throw new Error(payload.message || "生成失败");
@@ -479,11 +484,18 @@ async function send() {
           const t = payload.timings || {};
           const sufficient = payload.sufficient !== false && sources.length > 0;
           assistant.innerHTML = citeHtml(answer, sources);
+          const claims = payload.citation_check?.claim_summary;
+          const claimText = claims ? ` · 声明支持 ${claims.supported}/${claims.total}（词面v0）` : "";
           const verification = sufficient && payload.citation_check
-            ? " · 引用有效性：" + (payload.citation_check.valid ? "通过" : "有无效编号") + " · 支持性：未验证"
+            ? " · 引用有效性：" + (payload.citation_check.valid ? "通过" : "有无效编号") + " · 支持性：未验证" + claimText
             : " · 证据不足";
+          const ir = payload.query_ir;
+          const route = ir ? ` · ${esc(ir.intent)}/${esc(ir.strategy)}` : "";
+          const trace = requestId
+            ? ` · <a href="/api/debug/query-logs/${encodeURIComponent(requestId)}" target="_blank" rel="noopener">检索详情</a>`
+            : "";
           assistant.insertAdjacentHTML("beforeend",
-            `<span class="meta">${esc(payload.model || "")} · ${esc(payload.retrieval_mode || "")} · 总耗时 ${Math.round(t.total_ms || 0)} ms · TTFT ${Math.round(t.ttft_ms || 0)} ms${verification}</span>`);
+            `<span class="meta">${esc(payload.model || "")} · ${esc(payload.retrieval_mode || "")} · 总耗时 ${Math.round(t.total_ms || 0)} ms · TTFT ${Math.round(t.ttft_ms || 0)} ms${verification}${route}${trace}</span>`);
           renderSources(sources, assistant);
           setStatus(sufficient ? "" : "证据不足：未生成事实性引用");
           $("messages").scrollTop = $("messages").scrollHeight;

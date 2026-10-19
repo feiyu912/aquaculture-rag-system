@@ -1,7 +1,7 @@
 # 开发说明（可运行骨架）
 
-> 对应技术方案第 12 节的阶段 1–2 纵向切片。
-> 目标不是功能完整，而是把「上传 → 解析 → 切分 → 索引 → 混合检索 → 引用 → SSE」整条链路真实跑通，后续替换模型和组件时不改主流程。
+> 对应技术方案第 12 节的阶段 1–2 纵向切片 + Phase 1 可关闭增强。
+> 先把「上传 → 解析 → 切分 → 索引 → 混合检索 → 引用 → SSE」真实跑通，再逐步增加 Query IR、Contextual Retrieval、声明级检查等可选模块。
 
 ## 1. 当前实现状态
 
@@ -18,6 +18,11 @@
 | 生成 | ✅ / ⏳ | 默认 `mock` 抽取式回答；DeepSeek 适配器已写，需 Key 验证 |
 | 检索模式 | ✅ | `dense` / `bm25` / `hybrid` / `hybrid_rerank` 可切换 |
 | 多品种元数据 | ✅ | 文档可关联多个品种；Qdrant 品种过滤；问题中自动识别单一品种 |
+| Typed Query IR | ✅（规则 v1） | 意图、品种、阶段、水质指标、年份/规范标记；只有可信字段编译为硬过滤 |
+| Contextual Retrieval | ✅（可开关） | `context_text` 与原文分开存储；索引文本可切换，引用仍用原文 |
+| 声明级引用检查 | ✅（v0） | 回答拆句、映射 `[S1]`、词面支持性；明确不是 NLI |
+| 检索 Trace | ✅（本地调试） | `GET /api/debug/query-logs/{request_id}` |
+| 图扩展 / 多跳 / 自适应路由 | ⏳ Phase 2 | 本次未接默认链路；先保留开关与 IR/route 接口 |
 | 文档版本更新 | ✅ | 新版本入库成功后才激活，旧版本归档 |
 | 版本回滚 | ✅ | 校验 Qdrant 中该版本仍有向量 |
 | 后台任务恢复 | ✅ | ARQ 重试 + 失败重试接口 + worker 启动回收超时任务 |
@@ -299,6 +304,50 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 - 未通过时 `evidence=[]`、`sufficient=false`，生成器走资料不足分支，不产生引用。
 - 阈值在 `.env` 的 `EVIDENCE_MIN_TERMS` / `EVIDENCE_MIN_WEIGHT` / `EVIDENCE_MIN_COVERAGE`，论文中必须报告。
 
+### 9.8 Typed Query IR（规则 v1）
+
+`app/query/ir.py` 把问题解析为 `QueryIR`：
+
+- 意图：`fact` / `complex` / `regulation` / `calculation`
+- 品种、养殖阶段、水质指标、疾病/症状、年份
+- `strategy`：`simple` / `semantic_expansion` / `multi_hop` / `regulation` / `calculation`
+- 仅当**唯一**品种被确认时编译为 Qdrant 硬过滤；多品种、年份、规范状态只作为软约束/告警
+- 明确不支持“把 2026 当成 `published_year=2026`”的偷懒过滤；`unsupported_constraints` 会记录 `published_year`、`effective_date`、`regulation_status`
+- 原始问题始终保留在 `original_question`
+
+当前是规则实现，不调用 LLM，因此不会凭空生成品种/日期；LLM IR 可作为后续实验开关。
+
+### 9.9 声明级引用检查（v0）
+
+`app/generation/claims.py`：
+
+- 将回答按段落/句子拆成 claim；
+- 映射 claim 中的 `[S1]` / `[1]` 到 source；
+- 复用 `lexical_overlap_v0` 判断词面支持；
+- 状态：`supported` / `weak` / `unverified` / `uncited`；
+- `citation_check.claim_summary` 写入 SSE、`chat_messages.meta`、`query_logs.citation_check`；
+- 可重算：`POST /api/messages/{message_id}/verify-claims`。
+
+这只是可解释的 v0 基线，**不能报告为 NLI 或事实正确性**。
+
+### 9.10 Contextual Retrieval（可开关）
+
+- `kb_chunks.context_text` 保存“文档标题 + 章节路径 + 适用品种 + 原文”的索引辅助文本；
+- 原始 `content` 不变，引用快照仍来自原文；
+- `ENABLE_CONTEXTUAL_RETRIEVAL=true` 时，Dense/BM25 使用 `context_text` 建索引；默认 `false`，便于对照实验；
+- 只影响新入库版本；旧版本没有 context 时回退原文；
+- `chunk_config_hash` 包含该开关，避免混用不同索引配置。
+
+### 9.11 检索 Trace
+
+`GET /api/debug/query-logs/{request_id}` 返回：
+
+- Query IR、硬过滤、gate、missing terms；
+- dense/sparse 排名列表、融合候选数；
+- 最终 evidence、引用检查、模型、成本、耗时。
+
+该接口仅用于本地调试，没有鉴权，不要暴露到公网。
+
 ## 10. 已知限制
 
 1. **Hash embedder 不是 BGE-M3**，检索质量不代表最终系统。
@@ -313,6 +362,10 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 10. **品种过滤是文档级**；混排多种品种的文档必须拆档，否则会污染过滤。
 11. **证据不足是词面规则**，会误拒/误放；阈值和失败案例必须写进论文。
 12. **表格/跨页 bbox** 只保证规范化和页码降级，不保证每个复杂表格的框都精确。
+13. **Query IR 是规则 v1**，不处理复杂否定、指代和隐含条件；LLM IR 尚未接入。
+14. **声明级检查是词面 v0**，会把“同词不同义”判成支持，也会漏掉改写；需要 NLI/人工标注验证。
+15. **Contextual Retrieval 默认关闭**；开启后必须重建索引，且收益需要在真实数据上验证。
+16. **图扩展、多跳分解、自适应 LangGraph 路由尚未实现**；当前只有 IR 的 strategy 字段和确定性 route 函数，不应在论文中声称已完成。
 
 ## 11. 下一阶段建议
 
@@ -324,8 +377,9 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 4. 完成 PDF.js 查看器：页码跳转 + bbox 高亮 + 多 location 切换。
 5. 增加 `reindex` 与旧版本清理任务、Qdrant/PostgreSQL 对账。
 6. 建立 200 条人工评测集（含 gold chunk / 证据句），跑检索消融 E1；把支持性验证从词面 v0 升级到 NLI 或人工标注。
-7. 前端迁移到 Next.js，保留当前演示页作为联调工具。
-8. 与陶江老师确认品种清单和数据来源后，再扩充品种；当前不预收集几十个品种。
+7. **Phase 2**：实现 PostgreSQL 轻量领域图（实体/别名/关系/来源/审核状态）、Graph-to-Chunk 召回、多查询/问题分解、证据缺口定向补检，并加 `ENABLE_GRAPH_EXPANSION` 等开关。
+8. **Phase 3**：用 LangGraph 编排 `SIMPLE / SEMANTIC_EXPANSION / MULTI_HOP / REGULATION / CALCULATION`，加 PDF.js bbox 高亮与 Next.js 前端。
+9. 与陶江老师确认品种清单和数据来源后，再扩充品种；当前不预收集几十个品种。
 
 ## 12. 常见问题
 

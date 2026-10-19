@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import SessionLocal
 from app.ingestion.chunker import build_chunks
+from app.ingestion.context import build_context_text
 from app.ingestion.embedder import get_embedder
 from app.ingestion.parser import ParsedDocument, PyMuPDFParser
 from app.models import KbChunk, KbDocument, KbDocumentVersion, KbIngestJob
@@ -34,7 +35,8 @@ def _now() -> datetime:
 def _chunk_config_hash() -> str:
     raw = (
         f"{settings.parent_target_chars}:{settings.child_target_chars}:"
-        f"{settings.child_overlap_chars}:{settings.embedding_model}:{PIPELINE_VERSION}"
+        f"{settings.child_overlap_chars}:{settings.embedding_model}:"
+        f"{settings.enable_contextual_retrieval}:{PIPELINE_VERSION}"
     )
     return hashlib.sha256(raw.encode()).hexdigest()
 
@@ -107,6 +109,16 @@ async def ingest_version(ctx: dict, version_id: str) -> dict:
             children = [chunk for chunk in drafts if chunk.role == "child"]
             if not children:
                 raise ValueError("No chunks produced from PDF")
+            context_by_id = {
+                draft.id: build_context_text(
+                    title=doc.title,
+                    heading_path=draft.heading_path,
+                    species=doc.species,
+                    content=draft.content,
+                    block_type=draft.block_type,
+                )
+                for draft in drafts
+            }
 
             await db.execute(delete(KbChunk).where(KbChunk.document_version_id == version.id))
             for draft in drafts:
@@ -118,6 +130,7 @@ async def ingest_version(ctx: dict, version_id: str) -> dict:
                         chunk_role=draft.role,
                         ordinal=draft.ordinal,
                         content=draft.content,
+                        context_text=context_by_id[draft.id],
                         content_hash=hashlib.sha256(draft.content.encode()).hexdigest(),
                         heading_path=draft.heading_path,
                         block_type=draft.block_type,
@@ -134,10 +147,12 @@ async def ingest_version(ctx: dict, version_id: str) -> dict:
             bm25 = BM25SparseEncoder(
                 k1=settings.bm25_k1, b=settings.bm25_b, avg_len=settings.bm25_avg_len
             )
-            dense_vectors = await asyncio.to_thread(
-                embedder.embed_documents, [chunk.content for chunk in children]
-            )
-            sparse_vectors = [bm25.document_vector(chunk.content) for chunk in children]
+            if settings.enable_contextual_retrieval:
+                index_texts = [context_by_id[chunk.id] for chunk in children]
+            else:
+                index_texts = [chunk.content for chunk in children]
+            dense_vectors = await asyncio.to_thread(embedder.embed_documents, index_texts)
+            sparse_vectors = [bm25.document_vector(text) for text in index_texts]
 
             await _set_stage(db, job, "upsert", 75)
             client = get_client()
@@ -209,9 +224,7 @@ async def _activate(db: AsyncSession, document_id: uuid.UUID, version_id: uuid.U
 
     # A retried older job must not overwrite a newer active version.
     current = (
-        await db.get(KbDocumentVersion, doc.current_version_id)
-        if doc.current_version_id
-        else None
+        await db.get(KbDocumentVersion, doc.current_version_id) if doc.current_version_id else None
     )
     if current is not None and current.version_no > version.version_no:
         version.status = "archived"

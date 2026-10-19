@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from app.api import chat, documents, health, sessions
+from app.api import chat, debug, documents, health, sessions
 from app.config import settings
 from app.db import engine, init_db
 from app.queue import create_arq_pool
@@ -54,6 +54,7 @@ app.include_router(health.router)
 app.include_router(documents.router)
 app.include_router(sessions.router)
 app.include_router(chat.router)
+app.include_router(debug.router)
 
 
 @app.get("/", include_in_schema=False)

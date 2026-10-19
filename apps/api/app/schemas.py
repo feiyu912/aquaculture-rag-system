@@ -100,6 +100,21 @@ class SupportOut(BaseModel):
     matched_terms: list[str]
 
 
+class ClaimCheckOut(BaseModel):
+    claim: str
+    cited_indices: list[int]
+    status: str
+    score: float
+    method: str
+    matched_terms: list[str]
+
+
+class ClaimVerificationOut(BaseModel):
+    message_id: uuid.UUID
+    summary: dict
+    claims: list[ClaimCheckOut]
+
+
 class UploadResponse(BaseModel):
     document_id: uuid.UUID
     version_id: uuid.UUID

@@ -91,6 +91,7 @@ class KbChunk(Base, TimestampMixin):
     chunk_role: Mapped[str] = mapped_column(String(16), nullable=False)
     ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    context_text: Mapped[str | None] = mapped_column(Text)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     heading_path: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     block_type: Mapped[str] = mapped_column(String(32), nullable=False, default="text")
