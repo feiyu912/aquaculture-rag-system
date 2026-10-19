@@ -1,0 +1,41 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+.next/
+out/
+.turbo/
+
+# Data & artifacts
+data/
+models/
+*.pdf
+!docs/**/*.pdf
+parsed.json
+normalized.json
+
+# Runtime
+logs/
+*.log
+redis/
+pgdata/
+qdrant_storage/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
