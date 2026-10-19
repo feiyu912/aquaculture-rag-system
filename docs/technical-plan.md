@@ -158,7 +158,7 @@ PostgreSQL 与 Qdrant 之间**没有跨库 ACID 事务**，系统正确性由“
 - 新版本完整成功后才允许激活。
 - PostgreSQL 记录 `current_version_id`。
 - 检索时按当前生效版本集合过滤 Qdrant。
-- 生成前再次校验证据版本仍有效。
+- 生成前再次校验证据版本仍在**本次查询开始时固定的生效快照**内；若期间发生版本切换，回答仍按快照完成，并在消息元数据中标记 `superseded`，下一轮使用新版本。
 - 旧版本归档后异步清理。
 
 **理由**：PostgreSQL 与 Qdrant 没有跨库事务。若先删旧向量再切换，删除失败会留下不可控状态；若先切换再删，删除失败最多留下不可见数据，不影响回答正确性。
@@ -471,11 +471,16 @@ data/
 BEGIN;
   SELECT ... FROM kb_documents WHERE id = :doc_id FOR UPDATE;
   -- 校验目标版本 status = ready 且属于本文档
-  UPDATE kb_documents SET current_version_id = :new_version_id, updated_at = now()
+  UPDATE kb_documents
+    SET current_version_id = :new_version_id, status = 'active', updated_at = now()
     WHERE id = :doc_id;
-  UPDATE kb_document_versions SET status = 'archived', archived_at = now()
+  UPDATE kb_document_versions
+    SET activated_at = now()
+    WHERE id = :new_version_id;
+  UPDATE kb_document_versions
+    SET status = 'archived', archived_at = now()
     WHERE document_id = :doc_id AND id <> :new_version_id AND status = 'ready';
-  COMMIT;
+COMMIT;
 ```
 
 Qdrant 写入失败时版本保持 `processing/failed`，不激活；Qdrant 写入成功但激活失败时，产生不可见的孤儿 point，由清理任务回收。
