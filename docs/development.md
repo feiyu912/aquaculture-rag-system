@@ -2,6 +2,62 @@
 
 > 对应技术方案第 12 节的阶段 1–2 纵向切片 + Phase 1 可关闭增强。
 > 先把「上传 → 解析 → 切分 → 索引 → 混合检索 → 引用 → SSE」真实跑通，再逐步增加 Query IR、Contextual Retrieval、声明级检查等可选模块。
+>
+> **前端说明**：新的 Next.js 前端位于 `apps/web`，与后端完全分离、只通过 HTTP 联调。
+> 旧的单页演示 `apps/api/app/static/index.html` 仍然保留在 8000 端口，两者互不影响。
+
+## 0. 前端（apps/web）
+
+```bash
+cd apps/web
+npm install          # postinstall 会复制 pdf.js 的 worker / cmaps / standard_fonts 到 public/
+npm run dev          # http://127.0.0.1:3000
+```
+
+浏览器端只需要知道后端地址，**没有任何密钥进入前端**：
+
+```bash
+# apps/web/.env.local
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
+四个模块与对应后端接口：
+
+| 页面 | 路由 | 使用到的接口 |
+|---|---|---|
+| 智能问答 | `/chat` | `POST /api/chat/stream`（SSE）、`GET/POST/DELETE /api/sessions`、`GET /api/sessions/{id}/messages`、`GET /api/species`、`GET /api/documents` |
+| 知识库 | `/knowledge` | `GET /api/documents`、`GET /api/documents/{id}`、`POST /api/documents`、`POST /api/documents/{id}/versions`、`POST /api/documents/{id}/rollback`、`DELETE /api/documents/{id}`、`GET/POST /api/jobs/{id}` |
+| 文献阅读 | `/reader` | `GET /api/documents/{id}/file`、`GET /api/documents/{id}/citations`、`GET /api/documents` |
+| 检索调试 | `/debug` | `GET /api/debug/query-logs/{request_id}`、`GET /api/debug/stats` |
+
+问答接口是 **POST + 流式响应**，浏览器 `EventSource` 不支持 POST，因此前端用
+`fetch` 读取 `ReadableStream` 并自行解析 SSE 帧（`src/lib/api/chat.ts`），
+支持中途取消。
+
+设计规范见 [前端设计系统](design-system.md)。
+
+### PDF 引用高亮的坐标约定
+
+后端 `chat_citations.bbox` 记录的是**规范 bbox**：
+
+- 单位：PDF 点（1/72 inch）
+- 原点：**左下角**（与 PDF user space 一致），`origin: "bottom-left"`
+- 相对 **CropBox** 左下角，未旋转
+
+前端换算见 `apps/web/src/lib/pdf/coords.ts`。注意：PyMuPDF 的 `get_text` 返回的是
+**左上角原点**坐标，后端在写入时已经翻过一次，因此前端**不能再翻转 y 轴**。
+`scripts/verify-highlight.mjs` 会渲染页面并把高亮框的像素位置与理论值比对，
+可用来验证坐标换算是否正确。
+
+### 视觉回归
+
+```bash
+cd apps/web
+node scripts/review.mjs "/chat" --w 1440 --h 900 --out chat-desktop
+node scripts/review.mjs "/chat" --w 390 --h 844 --out chat-mobile --dark
+```
+
+脚本会在真实后端下渲染页面、截图，并报告横向溢出元素与控制台错误。
 
 ## 1. 当前实现状态
 

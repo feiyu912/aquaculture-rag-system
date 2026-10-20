@@ -8,8 +8,9 @@
 > **本机默认运行态（2026-10-20，不是论文实验态）**：Dense=`BAAI/bge-m3`（FlagEmbedding/MPS/fp16）；
 > Reranker=`BAAI/bge-reranker-v2-m3`（本地权重）；LLM=`openai-compatible-model`（OpenAI 兼容网关，真实调用）；
 > Parser=`PyMuPDF`；
-> 前端=静态单页。当前索引为独立集合 `kb_chunks_bge_m3_v1`（5 个文档、155 个向量点，含 2 份真实地方标准）。
-> MinerU、LangGraph、PDF.js 尚未启用。详见 [真实模型验证记录](docs/real-model-validation-2026-10-20.md)
+> 前端=`apps/web`（Next.js 15 + TS + Tailwind v4 + shadcn/ui + Lucide，已接入真实接口；
+> 旧的静态单页仍保留在 8000 端口）。当前索引为独立集合 `kb_chunks_bge_m3_v1`（5 个文档、155 个向量点，含 2 份真实地方标准）。
+> MinerU、LangGraph 尚未启用；PDF.js 已在文献阅读模块接入（含 CropBox 相对 bbox 高亮）。详见 [真实模型验证记录](docs/real-model-validation-2026-10-20.md)
 > 与 [架构审计](docs/audit-2026-10-20.md)（后者是切换 BGE 前的历史快照）。
 
 ## 项目定位
@@ -64,8 +65,8 @@
 
 | 层 | 选型 |
 |---|---|
-| 前端 | Next.js + TypeScript + Tailwind CSS（当前为临时演示页） |
-| PDF 展示 | PDF.js（待接入） |
+| 前端 | Next.js 15 + TypeScript + Tailwind CSS v4 + shadcn/ui + Lucide（`apps/web`，已接入真实接口） |
+| PDF 展示 | PDF.js（已接入，含 CropBox 相对 bbox 精确高亮） |
 | 后端 | FastAPI + Pydantic |
 | 关系库 | PostgreSQL |
 | 向量库 | Qdrant |
@@ -104,6 +105,19 @@ cd apps/api && uv run arq app.worker.WorkerSettings
 
 打开 <http://127.0.0.1:8000>。上传资料 → 提问 → 点击 `[S1]` 跳到 PDF 页码；列表中可“更新版本”。
 
+再开一个终端启动 Web 前端：
+
+```bash
+cd apps/web
+npm install
+npm run dev          # http://127.0.0.1:3000
+```
+
+前端通过 `NEXT_PUBLIC_API_BASE_URL`（默认 `http://127.0.0.1:8000`）访问后端，
+**不携带任何密钥**。四个模块：智能问答（`/chat`）、知识库（`/knowledge`）、
+文献阅读（`/reader`，PDF.js 引用高亮）、检索调试（`/debug`）。
+设计规范见 [前端设计系统](docs/design-system.md)。
+
 验收与评测：
 
 ```bash
@@ -127,6 +141,7 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 |---|---|
 | [技术方案（定稿）](docs/technical-plan.md) | 架构、数据模型、引用协议、实验设计、开发计划、验收清单 |
 | [开发说明](docs/development.md) | 启动、API、代码结构、已知限制、下一阶段 |
+| [前端设计系统](docs/design-system.md) | 色彩/字体/间距/组件规范、布局规则、视觉回归检查 |
 | [ADR-0001 混合检索](docs/adr/0001-hybrid-retrieval.md) | 为什么是 Dense + BM25 + RRF |
 | [ADR-0002 版本化索引](docs/adr/0002-versioned-index.md) | 为什么不依赖 PostgreSQL/Qdrant 跨库事务 |
 | [ADR-0003 引用验证](docs/adr/0003-citation-validation.md) | 引用有效性、支持性、事实正确性的分层 |
@@ -138,18 +153,9 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 ## 仓库结构
 
 ```text
-apps/api/
-  app/
-    api/          文档、问答、会话、健康检查
-    ingestion/    解析、切分、Embedding、入库流水线
-    retrieval/    BM25、Qdrant、RRF、Reranker、检索服务
-    generation/   LLM 适配、引用解析、声明级检查、支持性验证
-    query/        Typed Query IR、硬约束编译、确定性路由
-    species.py    品种解析与识别
-    migrations.py 轻量增量迁移
-    models.py     13 张 PostgreSQL 表（含图/日志）
-  tests/          单元测试
-  pyproject.toml
+apps/
+  api/                FastAPI 后端（RAG、SSE、知识库、引用、调试接口）
+  web/                Next.js 前端（智能问答 / 知识库 / 文献阅读 / 检索调试）
 infra/
   docker-compose.yml   Postgres + Qdrant + Redis
 scripts/
@@ -164,6 +170,7 @@ eval/
   real_questions_v1.*     65 条真实文档题（AI 辅助、待人工复核）
 docs/
   adr/
+  design-system.md     前端设计系统（色彩/字体/间距/组件/视觉回归）
 data/             文档、解析产物、示例（不入库）
 ```
 
