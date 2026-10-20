@@ -15,6 +15,7 @@ from app.ingestion.embedder import Embedder
 from app.models import KbChunk, KbDocument, KbDocumentVersion
 from app.query.decompose import decompose_question
 from app.query.ir import QueryIR, build_query_ir
+from app.query.router import select_modules
 from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, tokenize
 from app.retrieval.requirements import (
     Requirement,
@@ -168,6 +169,17 @@ async def retrieve(
             explicit_category=category,
         )
     adaptive_route = query_ir.strategy if query_ir else "simple"
+    base_modules = {
+        "graph": settings.enable_graph_expansion,
+        "decomposition": settings.enable_query_decomposition,
+        "requirements": settings.enable_evidence_requirements,
+        "targeted": settings.enable_targeted_retrieval,
+    }
+    modules = (
+        select_modules(query_ir, **base_modules)
+        if settings.enable_adaptive_routing
+        else base_modules
+    )
     if not active_versions:
         gate = Sufficiency(False, "no_active_versions", [], [], 0.0, 0.0, 0.0, None)
         return RetrievalResult(
@@ -197,6 +209,7 @@ async def retrieve(
                     gate,
                     query_ir,
                     route=adaptive_route,
+                    modules=modules,
                 ),
                 sufficient=False,
                 gate=gate.as_dict(),
@@ -214,7 +227,7 @@ async def retrieve(
     graph_expansion = None
     graph_ids: list[str] = []
     graph_ms = 0.0
-    if settings.enable_graph_expansion:
+    if modules["graph"]:
         graph_started = time.perf_counter()
         graph = await load_graph(db)
         if graph.entities:
@@ -234,7 +247,7 @@ async def retrieve(
         graph_ms = (time.perf_counter() - graph_started) * 1000
 
     query_variants = [query_text]
-    if settings.enable_query_decomposition and query_ir is not None:
+    if modules["decomposition"] and query_ir is not None:
         for variant in decompose_question(question, query_ir):
             if variant not in query_variants:
                 query_variants.append(variant)
@@ -246,40 +259,72 @@ async def retrieve(
     variant_trace: list[dict] = []
     dense_ms = 0.0
     sparse_ms = 0.0
+
+    async def _dense_search(text: str) -> tuple[list[SearchHit], float]:
+        started_at = time.perf_counter()
+        vector = await asyncio.to_thread(embedder.embed_query, text)
+        hits = await asyncio.to_thread(
+            search_dense,
+            client,
+            vector,
+            active_versions,
+            settings.dense_top_k,
+            category_filter,
+            species_filter,
+        )
+        return hits, (time.perf_counter() - started_at) * 1000
+
+    async def _sparse_search(text: str) -> tuple[list[SearchHit], float]:
+        started_at = time.perf_counter()
+        vector = bm25.query_vector(text)
+        hits = await asyncio.to_thread(
+            search_sparse,
+            client,
+            vector,
+            active_versions,
+            settings.bm25_top_k,
+            category_filter,
+            species_filter,
+        )
+        return hits, (time.perf_counter() - started_at) * 1000
+
+    async def _run_variant(
+        index: int, variant: str
+    ) -> tuple[dict, list[SearchHit], list[SearchHit], float, float]:
+        weight = 1.0 if index == 0 else 0.8
+        trace = {"query": variant, "weight": weight, "dense": 0, "sparse": 0}
+        need_dense = mode in {"dense", "hybrid", "hybrid_rerank"}
+        need_sparse = mode in {"bm25", "hybrid", "hybrid_rerank"}
+        dense_task = _dense_search(variant) if need_dense else None
+        sparse_task = _sparse_search(variant) if need_sparse else None
+        if dense_task and sparse_task:
+            (dense_hits, dense_elapsed), (sparse_hits, sparse_elapsed) = await asyncio.gather(
+                dense_task, sparse_task
+            )
+        elif dense_task:
+            dense_hits, dense_elapsed = await dense_task
+            sparse_hits, sparse_elapsed = [], 0.0
+        elif sparse_task:
+            dense_hits, dense_elapsed = [], 0.0
+            sparse_hits, sparse_elapsed = await sparse_task
+        else:
+            dense_hits, dense_elapsed = [], 0.0
+            sparse_hits, sparse_elapsed = [], 0.0
+        trace["dense"] = len(dense_hits)
+        trace["sparse"] = len(sparse_hits)
+        return trace, dense_hits, sparse_hits, dense_elapsed, sparse_elapsed
+
     try:
-        for index, variant in enumerate(query_variants):
-            weight = 1.0 if index == 0 else 0.8
-            trace = {"query": variant, "weight": weight, "dense": 0, "sparse": 0}
-            if mode in {"dense", "hybrid", "hybrid_rerank"}:
-                dense_started = time.perf_counter()
-                hits = await asyncio.to_thread(
-                    search_dense,
-                    client,
-                    embedder.embed_query(variant),
-                    active_versions,
-                    settings.dense_top_k,
-                    category_filter,
-                    species_filter,
-                )
-                dense_ms += (time.perf_counter() - dense_started) * 1000
-                if hits:
-                    dense_rankings.append((hits, weight))
-                    trace["dense"] = len(hits)
-            if mode in {"bm25", "hybrid", "hybrid_rerank"}:
-                sparse_started = time.perf_counter()
-                hits = await asyncio.to_thread(
-                    search_sparse,
-                    client,
-                    bm25.query_vector(variant),
-                    active_versions,
-                    settings.bm25_top_k,
-                    category_filter,
-                    species_filter,
-                )
-                sparse_ms += (time.perf_counter() - sparse_started) * 1000
-                if hits:
-                    sparse_rankings.append((hits, weight))
-                    trace["sparse"] = len(hits)
+        variant_results = await asyncio.gather(
+            *(_run_variant(index, variant) for index, variant in enumerate(query_variants))
+        )
+        for trace, dense_hits, sparse_hits, dense_elapsed, sparse_elapsed in variant_results:
+            dense_ms += dense_elapsed
+            sparse_ms += sparse_elapsed
+            if dense_hits:
+                dense_rankings.append((dense_hits, trace["weight"]))
+            if sparse_hits:
+                sparse_rankings.append((sparse_hits, trace["weight"]))
             variant_trace.append(trace)
     finally:
         client.close()
@@ -335,6 +380,7 @@ async def retrieve(
                 query_ir,
                 graph_expansion.as_dict() if graph_expansion else None,
                 route=adaptive_route,
+                modules=modules,
             ),
             sufficient=False,
             gate=gate.as_dict(),
@@ -441,7 +487,7 @@ async def retrieve(
             break
 
     requirements: list[Requirement] = []
-    if settings.enable_evidence_requirements:
+    if modules["requirements"]:
         requirements = assess_requirements(
             build_requirements(query_ir), [item.content for item in evidence]
         )
@@ -454,11 +500,7 @@ async def retrieve(
     )
 
     targeted_trace: dict | None = None
-    if (
-        not gate.sufficient
-        and settings.enable_targeted_retrieval
-        and _attempt < settings.max_targeted_retrieval
-    ):
+    if not gate.sufficient and modules["targeted"] and _attempt < settings.max_targeted_retrieval:
         supplement = build_supplemental_query(
             question,
             requirements,
@@ -512,6 +554,7 @@ async def retrieve(
         query_ir,
         graph_expansion.as_dict() if graph_expansion else None,
         route=adaptive_route,
+        modules=modules,
     )
     if requirements:
         config["evidence_requirements"] = [item.as_dict() for item in requirements]
@@ -614,6 +657,7 @@ def _config(
     query_ir: QueryIR | None = None,
     graph_expansion: dict | None = None,
     route: str | None = None,
+    modules: dict | None = None,
 ) -> dict:
     return {
         "dense_top_k": settings.dense_top_k,
@@ -621,6 +665,14 @@ def _config(
         "rrf_k": settings.rrf_k,
         "rerank_top_k": settings.rerank_top_k,
         "embedding": settings.embedding_model,
+        "embedding_dimension": settings.qdrant_vector_size,
+        "bm25": {
+            "k1": settings.bm25_k1,
+            "b": settings.bm25_b,
+            "avg_len": settings.bm25_avg_len,
+            "tokenizer": "jieba+custom_terms",
+        },
+        "reranker_model": settings.reranker_model,
         "collection": settings.qdrant_collection,
         "retrieval_mode": mode,
         "species_filter": species_filter,
@@ -629,10 +681,12 @@ def _config(
         "query_ir": query_ir.model_dump() if query_ir else None,
         "graph_expansion": graph_expansion,
         "graph_top_k": settings.graph_top_k,
+        "graph_rrf_weight": settings.graph_rrf_weight,
         "query_decomposition": settings.enable_query_decomposition,
         "max_query_variants": settings.max_query_variants,
         "adaptive_route": route,
         "adaptive_routing_enabled": settings.enable_adaptive_routing,
+        "adaptive_modules": modules or {},
         "evidence_min_terms": settings.evidence_min_terms,
         "evidence_min_weight": settings.evidence_min_weight,
         "evidence_min_coverage": settings.evidence_min_coverage,

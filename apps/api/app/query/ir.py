@@ -80,6 +80,8 @@ REGULATION_TERMS = (
 )
 CALCULATION_TERMS = ("计算", "浓度", "用量", "用量", "换水", "投喂量", "亩", "立方", "ppm", "mg/L")
 COMPLEX_MARKERS = ("同时", "并且", "分别", "以及", "有哪些", "如何", "为什么", "影响")
+MULTI_HOP_MARKERS = ("先", "然后", "再", "最后")
+WATER_ALIASES = (("do", "溶解氧"), ("ph", "酸碱度"), ("溶氧", "溶解氧"))
 YEAR_RE = re.compile(r"(?<!\d)((?:19|20)\d{2})\s*年?")
 
 
@@ -156,6 +158,11 @@ def build_query_ir(
 
     stages = _contains_any(normalized, GROWTH_STAGES)
     parameters = _contains_any(normalized, WATER_PARAMETERS)
+    water_alias_used = False
+    for alias, canonical in WATER_ALIASES:
+        if alias in normalized.lower() and canonical not in parameters:
+            parameters.append(canonical)
+            water_alias_used = True
     diseases = _contains_any(normalized, DISEASE_TERMS)
     regulation_hits = _contains_any(normalized, REGULATION_TERMS)
     calculation_hits = _contains_any(normalized, CALCULATION_TERMS)
@@ -163,11 +170,15 @@ def build_query_ir(
     requested_year = int(year_match.group(1)) if year_match else None
 
     facets = sum(bool(value) for value in (species, stages, parameters, diseases))
+    multi_hop = (
+        len(parameters) + len(diseases) + len(stages) >= 2
+        and any(marker in normalized for marker in MULTI_HOP_MARKERS)
+    )
     if regulation_hits:
         intent: Intent = "regulation"
     elif calculation_hits and any(term in normalized for term in ("计算", "用量", "浓度")):
         intent = "calculation"
-    elif facets >= 3 or any(marker in normalized for marker in COMPLEX_MARKERS):
+    elif facets >= 3 or multi_hop or any(marker in normalized for marker in COMPLEX_MARKERS):
         intent = "complex"
     else:
         intent = "fact"
@@ -176,9 +187,9 @@ def build_query_ir(
         strategy: Strategy = "regulation"
     elif intent == "calculation":
         strategy = "calculation"
-    elif intent == "complex" and facets >= 2:
+    elif multi_hop or (intent == "complex" and facets >= 2):
         strategy = "multi_hop"
-    elif aliases:
+    elif aliases or water_alias_used:
         strategy = "semantic_expansion"
     else:
         strategy = "simple"
