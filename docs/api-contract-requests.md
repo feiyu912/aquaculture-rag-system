@@ -161,6 +161,56 @@ worker 或 API 启动时把**超过一定时间仍处于 `streaming`** 的消息
 
 ---
 
+## R5 调试页已消费 `source_aware_retrieval` 追踪，需要固定字段形状
+
+### 当前事实
+
+「按来源锚定检索」这一阶段的 trace 位于 `retrieval_config.source_aware_retrieval`。
+2026-10-20 实测服务端返回的形状是：
+
+```json
+{
+  "enabled": true,
+  "cited":   [{"raw": "DB36", "code": "DB36", "position": 0},
+              {"raw": "DB46", "code": "DB46", "position": 7}],
+  "slots":   2,
+  "active":  true,
+  "reason":  null,
+  "anchors": [{"raw": "DB36", "code": "DB36", "queries": ["..."],
+               "position": 0, "resolved": true, "selected": ["9029f4…"]}]
+}
+```
+
+前端调试页已经把这个 trace 渲染到「执行阶段」列表和「按来源锚定检索」卡片里
+（`apps/web/src/components/debug/source-aware-card.tsx`），
+并且**不会**在字段缺失时编造值——只显示服务端真实给出的部分。
+
+### 期望（只要求稳定，不要求新功能）
+
+请在 `apps/api/app/retrieval/service.py` 的 `_config()` 里保持以下字段语义不变：
+
+| 字段 | 含义 | 前端依赖 |
+|---|---|---|
+| `active` | 是否真的为每个被引用标准预留了证据位 | 阶段状态「已启用/未生效」 |
+| `reason` | 未生效原因（`null` 表示已生效） | 直接显示在卡片上 |
+| `cited[]` | 问题中解析出的标准代号 | 阶段列表里显示 `DB36、DB46` |
+| `anchors[].resolved` | 该标准是否解析到了在用版本 | 每个标准标签的「已解析/未解析」 |
+| `slots` | 每个来源预留的证据位数 | 卡片副标题 |
+
+另外，当锚定阶段没有产出明细时，当前实现会退化成
+`{"enabled": true}`（`service.py` 里 `source_aware or {"enabled": ...}` 的兜底）。
+建议统一成带 `active: false` + `reason` 的完整对象，前端就不必再区分两种形状
+（前端目前已能兼容，但统一后契约更干净）。
+
+### 验收
+
+```bash
+curl -s "http://127.0.0.1:8000/api/debug/query-logs/<request_id>" \
+  | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['retrieval_config']['source_aware_retrieval'], ensure_ascii=False, indent=2))"
+```
+
+---
+
 ## 优先级
 
 | 编号 | 主题 | 优先级 | 前端影响 |
@@ -169,3 +219,7 @@ worker 或 API 启动时把**超过一定时间仍处于 `streaming`** 的消息
 | R2 | Trace 列表接口 | 中 | 调试页无法浏览历史请求 |
 | R3 | 中断消息的状态收敛 | 低 | 前端已能兜底显示 |
 | R4 | 引用上限透出 | 已完成 | — |
+| R5 | `source_aware_retrieval` 字段形状固定 | 中 | 调试页已消费，需防止形状漂移 |
+
+> 状态核对（2026-10-20）：R1（`as_source()` 仍只返回 `location`）与
+> R2（仍只有 `GET /api/debug/query-logs/{request_id}`，无列表接口）**尚未实现**。
