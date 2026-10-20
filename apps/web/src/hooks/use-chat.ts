@@ -21,7 +21,8 @@ function citationToSource(citation: CitationOut): Source {
     page: citation.page,
     quote: citation.quote,
     heading_path: [],
-    location: (citation.bbox as Source["location"]) ?? null,
+    // `location` is canonical; `bbox` keeps older rows working.
+    location: citation.location ?? citation.bbox ?? null,
   };
 }
 

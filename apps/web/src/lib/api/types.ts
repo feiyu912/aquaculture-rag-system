@@ -56,7 +56,13 @@ export interface CitationOut {
   document_version_id: string;
   quote: string;
   page: number | null;
+  /**
+   * Historical compatibility field: older rows store the whole `location`
+   * object here. New responses also carry a dedicated `location` field.
+   */
   bbox: BBoxLocation | null;
+  location?: BBoxLocation | null;
+  chunk_id?: string | null;
   score: number | null;
   support_status: string;
   support_score: number | null;

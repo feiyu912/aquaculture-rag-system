@@ -388,7 +388,47 @@ const rect = {
 
 `cost_usd` 仅在配置了价格时非零；当前通用 OpenAI 兼容网关没有价格配置，因此可能为 0，不能把 0 当免费证据。
 
-#### 2.5.9 `error`
+#### 2.5.9 `graph_expansion`
+
+`GRAPH_EXPANSION=true` 时，`status`/`done` 的 `graph_expansion` 是结构化检索路径，不是最终事实：
+
+```json
+{
+  "seed_entity_ids": ["..."],
+  "expanded_entity_ids": ["..."],
+  "seed_terms": ["浮头"],
+  "expanded_terms": ["增氧", "水质", "溶解氧"],
+  "max_hops": 2,
+  "bidirectional": true,
+  "relation_trace": [
+    {
+      "source": "浮头",
+      "target": "溶解氧",
+      "relation_type": "ASSOCIATED_WITH",
+      "direction": "forward",
+      "hop": 1,
+      "path": ["浮头", "溶解氧"],
+      "path_entity_ids": ["...", "..."]
+    },
+    {
+      "source": "溶解氧",
+      "target": "增氧",
+      "relation_type": "MANAGEMENT_FOR",
+      "direction": "reverse",
+      "hop": 2,
+      "path": ["浮头", "溶解氧", "增氧"],
+      "path_entity_ids": ["...", "...", "..."]
+    }
+  ]
+}
+```
+
+- 只遍历 `review_status=verified` 的关系；图谱默认关闭。
+- `hop` 从 1 开始；`direction=reverse` 表示从关系的 target 反向走到 source。
+- `max_hops` 默认 2，`graph_max_related` 默认 12，防止扩展爆炸。
+- 图谱扩展只帮助召回候选 chunk，**不等于证据充分**；仍必须经过 `gate` 和引用校验。
+
+#### 2.5.10 `error`
 
 ```json
 {
@@ -689,6 +729,18 @@ GET /api/documents/{document_id}/file?version_id={version_id}
 - 前端用 `sources[].version_id` 或 `CitationOut.document_version_id` 作为参数，确保引用版本与页面一致。
 - 当前无 Range 请求特殊处理；PDF.js 按整文件加载即可。
 - 需要认证时再补；当前本地无鉴权。
+
+### 6.1 文档的引用历史
+
+```http
+GET /api/documents/{document_id}/citations?limit=50
+```
+
+- 返回该文档在历史回答中被引用过的全部记录，按引用时间倒序。
+- `limit` 默认 50，最大 200。
+- 每条记录在 `CitationOut` 基础上追加：`message_id`、`session_id`、`question`（来源会话标题）、`answer_preview`、`cited_at`。
+- 文献阅读器用它渲染「引用高亮」侧栏：点击一条即可跳到对应页码并高亮 bbox；`session_id` 可用于回到原始会话。
+- 404：文档不存在或已删除。
 
 ## 7. Debug Trace 与统计
 
