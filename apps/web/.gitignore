@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+build
+.DS_Store
+*.pem
+npm-debug.log*
+.env*.local
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Visual review artefacts
+.review/
+
+# pdf.js worker is copied from node_modules by scripts/copy-pdf-worker.mjs
+public/pdf.worker.min.mjs

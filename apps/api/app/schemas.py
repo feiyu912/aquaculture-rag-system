@@ -137,3 +137,13 @@ class UploadResponse(BaseModel):
     version_id: uuid.UUID
     job_id: uuid.UUID
     status: str
+
+
+class DocumentCitationOut(CitationOut):
+    """A citation that points at a document, plus the answer it came from."""
+
+    message_id: uuid.UUID
+    session_id: uuid.UUID
+    question: str
+    answer_preview: str
+    cited_at: datetime

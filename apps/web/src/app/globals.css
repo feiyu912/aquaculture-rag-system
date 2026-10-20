@@ -1,0 +1,458 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ==========================================================================
+   Aqua RAG — Design System
+   Single source of truth for colour, type, spacing, radius, elevation, motion.
+   Every page and component MUST consume these tokens. No ad-hoc hex values.
+   ========================================================================== */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- 1. Colour primitives ---------------------------------------- */
+
+:root {
+  /* Brand — deep teal-cyan. Single accent for the whole product. */
+  --primary-50: 185 84% 96.5%;
+  --primary-100: 185 78% 92.5%;
+  --primary-200: 185 70% 85%;
+  --primary-300: 187 63% 74%;
+  --primary-400: 189 58% 60%;
+  --primary-500: 190 62% 45%;
+  --primary-600: 191 66% 36%;
+  --primary-700: 192 70% 29%;
+  --primary-800: 193 64% 23%;
+  --primary-900: 194 56% 17%;
+
+  /* Filled-brand tokens. Kept separate from the accent scale because the
+     scale is inverted in dark mode (for accent text) while a filled button
+     needs its own foreground to stay legible. */
+  --primary-btn: 192 70% 29%;
+  --primary-btn-hover: 193 64% 23%;
+  --primary-fg: 0 0% 100%;
+  --primary-soft: 185 84% 96.5%;
+  --primary-soft-fg: 194 56% 17%;
+
+  /* Neutrals — cool slate, very low saturation. */
+  --background: 210 33% 98%;
+  --surface: 0 0% 100%;
+  --surface-muted: 214 28% 96.5%;
+  --surface-inset: 215 25% 93.5%;
+  --surface-overlay: 0 0% 100%;
+  --border: 214 20% 89%;
+  --border-strong: 214 16% 80%;
+  --foreground: 222 28% 13%;
+  --muted-foreground: 215 13% 44%;
+  --subtle-foreground: 214 11% 58%;
+
+  /* Semantic — used for state only, never for decoration. */
+  --success: 152 58% 33%;
+  --success-soft: 150 52% 94%;
+  --warning: 33 88% 38%;
+  --warning-soft: 40 92% 93%;
+  --danger: 358 62% 46%;
+  --danger-soft: 358 78% 96%;
+  --info: 214 76% 48%;
+  --info-soft: 214 88% 95%;
+
+  /* Instrument surfaces — the "dark console" motif used by the retrieval
+     debugger and the PDF canvas. Same token family, always dark. */
+  --instrument: 222 32% 11%;
+  --instrument-raised: 222 28% 15%;
+  --instrument-inset: 222 26% 18%;
+  --instrument-border: 220 20% 24%;
+  --instrument-foreground: 210 32% 94%;
+  --instrument-muted: 215 16% 62%;
+
+  /* Typography */
+  --font-sans: var(--font-inter), "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+
+  /* Elevation — layered, never harsh. */
+  --shadow-xs: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(16 24 40 / 0.07), 0 1px 2px -1px rgb(16 24 40 / 0.05);
+  --shadow-md: 0 4px 12px -2px rgb(16 24 40 / 0.09), 0 2px 5px -3px rgb(16 24 40 / 0.05);
+  --shadow-lg: 0 14px 34px -10px rgb(16 24 40 / 0.16), 0 4px 10px -6px rgb(16 24 40 / 0.07);
+  --shadow-xl: 0 24px 56px -14px rgb(16 24 40 / 0.22), 0 8px 16px -10px rgb(16 24 40 / 0.08);
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 280ms;
+
+  /* Layout metrics */
+  --rail-width: 68px;
+  --topbar-height: 56px;
+  --context-width: 288px;
+}
+
+.dark {
+  --background: 222 28% 8%;
+  --surface: 221 24% 11%;
+  --surface-muted: 220 20% 14%;
+  --surface-inset: 220 18% 17%;
+  --surface-overlay: 221 26% 13%;
+  --border: 220 16% 21%;
+  --border-strong: 220 14% 29%;
+  --foreground: 210 30% 94%;
+  --muted-foreground: 216 14% 64%;
+  --subtle-foreground: 216 12% 51%;
+
+  --success: 150 52% 52%;
+  --success-soft: 152 40% 16%;
+  --warning: 38 88% 60%;
+  --warning-soft: 36 45% 16%;
+  --danger: 358 70% 63%;
+  --danger-soft: 358 40% 17%;
+  --info: 210 90% 68%;
+  --info-soft: 214 45% 17%;
+
+  --primary-50: 190 40% 12%;
+  --primary-100: 190 38% 15%;
+  --primary-200: 190 34% 21%;
+  --primary-300: 189 38% 30%;
+  --primary-400: 189 52% 47%;
+  --primary-500: 190 58% 56%;
+  --primary-600: 191 62% 66%;
+  --primary-700: 192 66% 76%;
+  --primary-800: 193 70% 86%;
+  --primary-900: 194 74% 94%;
+
+  --primary-btn: 190 62% 45%;
+  --primary-btn-hover: 189 58% 52%;
+  --primary-fg: 196 90% 7%;
+  --primary-soft: 190 40% 14%;
+  --primary-soft-fg: 190 70% 82%;
+
+  --instrument: 222 30% 9%;
+  --instrument-raised: 222 26% 12%;
+  --instrument-inset: 222 24% 15%;
+  --instrument-border: 220 18% 21%;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.32);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.36), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 14px -2px rgb(0 0 0 / 0.44), 0 2px 6px -3px rgb(0 0 0 / 0.32);
+  --shadow-lg: 0 16px 38px -12px rgb(0 0 0 / 0.6), 0 6px 12px -8px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 28px 60px -16px rgb(0 0 0 / 0.68), 0 10px 20px -12px rgb(0 0 0 / 0.45);
+}
+
+/* ---------- 2. Tailwind theme mapping ---------------------------------- */
+
+@theme inline {
+  --color-primary-50: hsl(var(--primary-50));
+  --color-primary-100: hsl(var(--primary-100));
+  --color-primary-200: hsl(var(--primary-200));
+  --color-primary-300: hsl(var(--primary-300));
+  --color-primary-400: hsl(var(--primary-400));
+  --color-primary-500: hsl(var(--primary-500));
+  --color-primary-600: hsl(var(--primary-600));
+  --color-primary-700: hsl(var(--primary-700));
+  --color-primary-800: hsl(var(--primary-800));
+  --color-primary-900: hsl(var(--primary-900));
+  --color-primary-btn: hsl(var(--primary-btn));
+  --color-primary-btn-hover: hsl(var(--primary-btn-hover));
+  --color-primary-fg: hsl(var(--primary-fg));
+  --color-primary-soft: hsl(var(--primary-soft));
+  --color-primary-soft-fg: hsl(var(--primary-soft-fg));
+
+  --color-background: hsl(var(--background));
+  --color-surface: hsl(var(--surface));
+  --color-surface-muted: hsl(var(--surface-muted));
+  --color-surface-inset: hsl(var(--surface-inset));
+  --color-surface-overlay: hsl(var(--surface-overlay));
+  --color-border: hsl(var(--border));
+  --color-border-strong: hsl(var(--border-strong));
+  --color-foreground: hsl(var(--foreground));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-subtle-foreground: hsl(var(--subtle-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-success-soft: hsl(var(--success-soft));
+  --color-warning: hsl(var(--warning));
+  --color-warning-soft: hsl(var(--warning-soft));
+  --color-danger: hsl(var(--danger));
+  --color-danger-soft: hsl(var(--danger-soft));
+  --color-info: hsl(var(--info));
+  --color-info-soft: hsl(var(--info-soft));
+
+  --color-instrument: hsl(var(--instrument));
+  --color-instrument-raised: hsl(var(--instrument-raised));
+  --color-instrument-inset: hsl(var(--instrument-inset));
+  --color-instrument-border: hsl(var(--instrument-border));
+  --color-instrument-foreground: hsl(var(--instrument-foreground));
+  --color-instrument-muted: hsl(var(--instrument-muted));
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  --ease-soft: var(--ease-out-soft);
+  --ease-standard: var(--ease-standard);
+
+  --radius-rail: var(--rail-width);
+  --radius-topbar: var(--topbar-height);
+}
+
+/* ---------- 3. Base ------------------------------------------------------ */
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.011em;
+    color: hsl(var(--foreground));
+  }
+
+  /* Numeric readouts (scores, timings, counters) must align. */
+  [data-numeric],
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary-200));
+    color: hsl(var(--primary-900));
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary-500));
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border-strong) / 0.7);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--subtle-foreground) / 0.65);
+    background-clip: content-box;
+  }
+}
+
+/* ---------- 4. Component primitives ------------------------------------- */
+
+@layer components {
+  /* Section eyebrow — small caps label used above titles. */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--subtle-foreground));
+  }
+
+  /* Hairline separator used between dense rows. */
+  .hairline {
+    height: 1px;
+    background-color: hsl(var(--border));
+  }
+
+  /* Card surface — the single card treatment for the whole product. */
+  .surface-card {
+    background-color: hsl(var(--surface));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Instrument panel — dark console variant used by the retrieval debugger. */
+  .instrument-panel {
+    background-color: hsl(var(--instrument));
+    border: 1px solid hsl(var(--instrument-border));
+    border-radius: var(--radius-xl);
+  }
+
+  /* Focus ring used by inputs, buttons, menu items. */
+  .ring-focus {
+    box-shadow: 0 0 0 3px hsl(var(--primary-500) / 0.16);
+  }
+
+  /* Markdown body copy inside assistant answers. */
+  .prose-aqua {
+    color: hsl(var(--foreground));
+    font-size: 14.5px;
+    line-height: 1.78;
+  }
+  .prose-aqua > * + * {
+    margin-top: 0.85em;
+  }
+  .prose-aqua h1,
+  .prose-aqua h2,
+  .prose-aqua h3,
+  .prose-aqua h4 {
+    font-weight: 600;
+    line-height: 1.4;
+    margin-top: 1.4em;
+  }
+  .prose-aqua h1 {
+    font-size: 1.2rem;
+  }
+  .prose-aqua h2 {
+    font-size: 1.075rem;
+  }
+  .prose-aqua h3 {
+    font-size: 1rem;
+  }
+  .prose-aqua p {
+    margin: 0;
+  }
+  .prose-aqua ul,
+  .prose-aqua ol {
+    padding-left: 1.25em;
+    margin: 0;
+  }
+  .prose-aqua ul {
+    list-style: disc;
+  }
+  .prose-aqua ol {
+    list-style: decimal;
+  }
+  .prose-aqua li::marker {
+    color: hsl(var(--subtle-foreground));
+  }
+  .prose-aqua li + li {
+    margin-top: 0.35em;
+  }
+  .prose-aqua strong {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+  .prose-aqua code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: hsl(var(--surface-inset));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-xs);
+    padding: 0.1em 0.35em;
+  }
+  .prose-aqua pre {
+    background: hsl(var(--surface-inset));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .prose-aqua pre code {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: inherit;
+  }
+  .prose-aqua blockquote {
+    border-left: 2px solid hsl(var(--primary-400));
+    padding-left: 0.9em;
+    color: hsl(var(--muted-foreground));
+  }
+  .prose-aqua table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+  }
+  .prose-aqua th,
+  .prose-aqua td {
+    border: 1px solid hsl(var(--border));
+    padding: 0.4em 0.6em;
+    text-align: left;
+  }
+  .prose-aqua th {
+    background: hsl(var(--surface-muted));
+    font-weight: 600;
+  }
+  .prose-aqua a {
+    color: hsl(var(--primary-600));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .prose-aqua hr {
+    border: 0;
+    border-top: 1px solid hsl(var(--border));
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  /* Fades a scroll container edge to signal more content. */
+  .mask-fade-r {
+    mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ---------- 5. Motion preferences --------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

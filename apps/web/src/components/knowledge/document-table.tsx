@@ -1,0 +1,235 @@
+"use client";
+
+import * as React from "react";
+import {
+  BookOpen,
+  FileText,
+  History,
+  MoreHorizontal,
+  RotateCcw,
+  Trash2,
+  Upload,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { DocumentOut } from "@/lib/api/types";
+import { cn, formatDateTime, truncate } from "@/lib/utils";
+
+function DocumentStatusBadge({ document }: { document: DocumentOut }) {
+  if (!document.current_version_id) {
+    return <Badge variant="warning">未激活</Badge>;
+  }
+  return <Badge variant="success">生效中</Badge>;
+}
+
+export function DocumentTable({
+  documents,
+  onOpen,
+  onNewVersion,
+  onRollback,
+  onDelete,
+  onRead,
+  loading,
+}: {
+  documents: DocumentOut[];
+  onOpen: (document: DocumentOut) => void;
+  onNewVersion: (document: DocumentOut) => void;
+  onRollback: (document: DocumentOut) => void;
+  onDelete: (document: DocumentOut) => void;
+  onRead: (document: DocumentOut) => void;
+  loading?: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Skeleton key={index} className="h-16 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  if (documents.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-strong bg-surface px-6 py-16 text-center">
+        <FileText className="size-6 text-subtle-foreground/70" />
+        <p className="mt-3 text-[14px] font-medium text-foreground">没有匹配的文档</p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          上传 PDF 后即可被检索与引用。
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+      <div className="hidden grid-cols-[minmax(0,1fr)_150px_96px_96px_150px_44px] items-center gap-3 border-b border-border bg-surface-muted px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.06em] text-subtle-foreground lg:grid">
+        <span>文档</span>
+        <span>分类 / 品种</span>
+        <span>版本</span>
+        <span>页数</span>
+        <span>状态</span>
+        <span className="text-right">操作</span>
+      </div>
+
+      <ul className="divide-y divide-border">
+        {documents.map((document) => (
+          <li
+            key={document.id}
+            className="group grid grid-cols-1 items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-surface-muted lg:grid-cols-[minmax(0,1fr)_150px_96px_96px_150px_44px]"
+          >
+            <button
+              type="button"
+              onClick={() => onOpen(document)}
+              className="flex min-w-0 items-center gap-3 text-left"
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface shadow-xs">
+                <FileText className="size-4 text-danger/80" />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-[13.5px] font-medium text-foreground">
+                  {document.title}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] text-subtle-foreground">
+                  {formatDateTime(document.created_at)}
+                </span>
+              </span>
+            </button>
+
+            <div className="flex flex-wrap items-center gap-1">
+              <Badge variant="neutral">{document.category}</Badge>
+              {(document.species ?? []).map((species) => (
+                <Badge key={species} variant="outline">
+                  {species}
+                </Badge>
+              ))}
+            </div>
+
+            <span className="text-[12.5px] tabular-nums text-muted-foreground">
+              v{document.current_version_no ?? "—"}
+            </span>
+
+            <span className="text-[12.5px] tabular-nums text-muted-foreground">
+              {document.page_count ?? "—"}
+            </span>
+
+            <div className="flex items-center gap-2">
+              <DocumentStatusBadge document={document} />
+            </div>
+
+            <div className="flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`${truncate(document.title, 16)} 的操作`}
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>文档操作</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={() => onOpen(document)}>
+                    <History className="size-4 text-muted-foreground" />
+                    版本历史
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => onRead(document)}
+                    disabled={!document.current_version_id}
+                  >
+                    <BookOpen className="size-4 text-muted-foreground" />
+                    在阅读器中打开
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onNewVersion(document)}>
+                    <Upload className="size-4 text-muted-foreground" />
+                    上传新版本
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => onRollback(document)}
+                    disabled={!document.current_version_id}
+                  >
+                    <RotateCcw className="size-4 text-muted-foreground" />
+                    回滚版本
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => onDelete(document)}
+                    className="text-danger focus:bg-danger-soft focus:text-danger"
+                  >
+                    <Trash2 className="size-4" />
+                    删除文档
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function StatCard({
+  label,
+  value,
+  hint,
+  icon: Icon,
+  tone = "default",
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tone?: "default" | "success" | "warning";
+}) {
+  return (
+    <div className="surface-card flex items-center gap-3 px-4 py-3.5">
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-lg",
+          tone === "success"
+            ? "bg-success-soft text-success"
+            : tone === "warning"
+              ? "bg-warning-soft text-warning"
+              : "bg-primary-soft text-primary-soft-fg",
+        )}
+      >
+        <Icon className="size-4" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11.5px] font-medium text-subtle-foreground">{label}</p>
+        <p className="mt-0.5 text-[18px] font-semibold leading-6 tabular-nums text-foreground">
+          {value}
+        </p>
+        {hint && <p className="mt-0.5 truncate text-[11px] text-subtle-foreground">{hint}</p>}
+      </div>
+    </div>
+  );
+}
+
+export function DocumentRowHint({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="cursor-default">{text}</span>
+      </TooltipTrigger>
+      <TooltipContent side="right">{text}</TooltipContent>
+    </Tooltip>
+  );
+}

@@ -23,9 +23,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db import get_db
-from app.models import KbDocument, KbDocumentVersion, KbIngestJob
+from app.models import (
+    ChatCitation,
+    ChatMessage,
+    ChatSession,
+    KbDocument,
+    KbDocumentVersion,
+    KbIngestJob,
+)
 from app.retrieval.vector_store import count_version_points, get_client
 from app.schemas import (
+    DocumentCitationOut,
     DocumentDetail,
     DocumentOut,
     JobOut,
@@ -414,6 +422,79 @@ async def list_documents(
     return [
         _doc_out(doc, version_by_id.get(doc.current_version_id) if doc.current_version_id else None)
         for doc in docs
+    ]
+
+
+@router.get("/documents/{document_id}/citations", response_model=list[DocumentCitationOut])
+async def list_document_citations(
+    document_id: uuid.UUID,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+) -> list[DocumentCitationOut]:
+    """Citations in past answers that point at this document.
+
+    The reader uses this to show *why* a document was cited and to jump back
+    to the originating conversation.
+    """
+    doc = await db.get(KbDocument, document_id)
+    if doc is None or doc.status == "deleted":
+        raise HTTPException(status_code=404, detail="文档不存在")
+
+    rows = (
+        (
+            await db.execute(
+                select(ChatCitation, ChatMessage, ChatSession)
+                .join(ChatMessage, ChatMessage.id == ChatCitation.message_id)
+                .join(ChatSession, ChatSession.id == ChatMessage.session_id)
+                .where(
+                    ChatCitation.document_id == document_id,
+                    ChatMessage.role == "assistant",
+                )
+                .order_by(ChatCitation.created_at.desc())
+                .limit(max(1, min(limit, 200)))
+            )
+        )
+        .all()
+    )
+    if not rows:
+        return []
+
+    version_ids = {row[0].document_version_id for row in rows}
+    versions = (
+        (
+            await db.execute(
+                select(KbDocumentVersion).where(KbDocumentVersion.id.in_(version_ids))
+            )
+        )
+        .scalars()
+        .all()
+        if version_ids
+        else []
+    )
+    version_numbers = {version.id: version.version_no for version in versions}
+
+    return [
+        DocumentCitationOut(
+            id=citation.id,
+            source_index=citation.source_index,
+            document_id=citation.document_id,
+            document_version_id=citation.document_version_id,
+            quote=citation.quote,
+            page=citation.page,
+            bbox=citation.bbox,
+            score=citation.score,
+            support_status=citation.support_status,
+            support_score=citation.support_score,
+            title=doc.title,
+            version_no=version_numbers.get(citation.document_version_id),
+            species=normalize_species_list(doc.species),
+            message_id=message.id,
+            session_id=session.id,
+            question=session.title,
+            answer_preview=(message.content or "")[:200],
+            cited_at=citation.created_at,
+        )
+        for citation, message, session in rows
     ]
 
 
