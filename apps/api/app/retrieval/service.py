@@ -395,6 +395,11 @@ async def retrieve(
             inherited = str(task.get("effective_query") or "").strip()
             if inherited and inherited not in query_variants:
                 query_variants.append(inherited)
+            # Each task also needs the document-side alias (e.g. 溶解氧→溶氧量);
+            # otherwise a correct task can miss the exact source wording.
+            for task_variant in alias_variants(inherited, query_ir, limit=1):
+                if task_variant not in query_variants:
+                    query_variants.append(task_variant)
         if not query_ir.planner_tasks:
             for variant in query_ir.planner_subquestions:
                 inherited = _inherit_constraints(variant, query_ir)
@@ -654,6 +659,7 @@ async def retrieve(
         species_options,
         fallback_reason=None,
     )
+    gate = _apply_current_regulation_gate(query_ir, gate)
 
     targeted_trace: dict | None = None
     if not gate.sufficient and modules["targeted"] and _attempt < settings.max_targeted_retrieval:
@@ -696,6 +702,7 @@ async def retrieve(
                         species_options,
                         fallback_reason=None,
                     )
+                    gate = _apply_current_regulation_gate(query_ir, gate)
                 rankings = _merge_rankings(rankings, second.rankings)
                 timings["targeted_ms"] = second.timings.get("retrieval_ms", 0)
 
@@ -744,6 +751,50 @@ def _inherit_constraints(subquestion: str, ir: QueryIR) -> str:
     return " ".join(parts)
 
 
+def _apply_current_regulation_gate(query_ir, gate: Sufficiency) -> Sufficiency:
+    """Refuse "latest/current" claims when no effective-date metadata exists.
+
+    The index currently stores publication year, not an enforceable effective
+    date or regulation status.  Lexical overlap with a document cannot prove
+    that the list is the *current* one, so do not let such an answer through.
+    """
+    if query_ir is None or not getattr(query_ir, "requires_current_regulation", False):
+        return gate
+    if not gate.sufficient:
+        return gate
+    return Sufficiency(
+        False,
+        "current_regulation_unverified",
+        gate.query_terms,
+        gate.matched_terms,
+        gate.matched_weight,
+        gate.total_weight,
+        gate.coverage,
+        gate.best_index,
+        gate.missing_terms,
+    )
+
+
+def _evidence_gate_text(item: Evidence) -> str:
+    """Include provenance/heading terms without inventing content.
+
+    A parent body may omit the section title (e.g. "8.1水质指标") that the user
+    actually asked about.  Headings and title are source metadata, not generated
+    text, so using them here fixes false ``weak_overlap`` refusals without
+    lowering the gate thresholds.
+    """
+    return "\n".join(
+        part
+        for part in (
+            item.title,
+            " ".join(item.heading_path),
+            item.quote,
+            item.content,
+        )
+        if part
+    )
+
+
 def _assess_with_requirements(
     question: str,
     evidence: list[Evidence],
@@ -754,7 +805,7 @@ def _assess_with_requirements(
 ) -> Sufficiency:
     gate = assess_evidence(
         question,
-        [item.content for item in evidence],
+        [_evidence_gate_text(item) for item in evidence],
         min_terms=settings.evidence_min_terms,
         min_weight=settings.evidence_min_weight,
         min_coverage=settings.evidence_min_coverage,

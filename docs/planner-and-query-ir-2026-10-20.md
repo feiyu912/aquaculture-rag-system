@@ -130,3 +130,36 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_HUB_DISABLE_XET=1 \
 ```
 
 输出在 `eval/runs/planner_probes_v1/` 和 `eval/runs/planner_retrieval_ab.json`；manifest 记录模型、开关、时间、数据 SHA-256（脚本补充后生效）。
+
+## 7. 索引一致性修复（2026-10-20）
+
+真实排查 R061（DB36/DB46 溶解氧比较）时发现一个**不是 Planner 的问题**：
+
+- `90c4263f…`（DB36 8.1 水质指标，gold child）在 Qdrant 里的 BM25 稀疏向量缺少 `溶氧量` token；同一段正文用当前 tokenizer 重新编码后应包含该 token。
+- 对 `kb_chunks_bge_m3_v1` 全量审计 190 个点：**2 个点的 BM25 稀疏向量与当前正文不一致**；Dense 向量未变。
+- 修复脚本：`scripts/rebuild_sparse_vectors.py`（默认 dry-run；`--apply` 才写 Qdrant；只更新 `bm25` 命名向量，不碰 `dense`）。
+- 已执行 `--apply`，扫描 190 / 变更 2 / 缺失 0。
+
+修复后，R061 的 LLM task 增加“文档侧别名变体”（`溶解氧→溶氧量`）时，DB36 gold parent `e25f6ae4…` 可进入最终 evidence；仅靠原始问题的“DB36+DB46”混合 query 仍会被 DB46 结果挤掉。这说明：
+
+1. **manifest 必须把 tokenizer/BM25 配置纳入一致性校验**，不能只记录 dense embedding 模型；
+2. Planner 的 value 不只是“拆子问题”，还包括**按文档措辞做别名展开**；
+3. 任何索引修复都必须同时重跑检索指标，不能把修复后的结果和修复前混在同一张表里。
+
+> 本节是工程修复记录，不是论文结果。R061 单条修复后的指标见 `eval/runs/planner_retrieval_r061_after_repair.json`（已 gitignore，需在论文中单独给出命令与日期）。
+
+修复后 R061 单条（同一 gold、`hybrid_rerank`、top_k=10）：
+
+| 指标 | rules | LLM（含 task alias） |
+|---|---:|---:|
+| Recall@5 | 0.0000 | 0.0000 |
+| Recall@10 | 0.0000 | **0.5000** |
+| nDCG@10 | 0.0000 | **0.6131** |
+| MRR@10 | 0.0000 | **0.1429** |
+
+解释：LLM task `DB36 … 溶解氧` 经 alias 变体 `DB36 … 溶氧量` 后，DB36 gold parent 进入最终 evidence，但排在第 7，故 Recall@5 仍为 0；DB46 gold 仍未被拉入。该结果只能说明**索引+task alias 修复有效**，不能说明 Planner 在 R061 上“解决”了跨文档比较。
+
+## 8. Gate 修复
+
+- `_evidence_gate_text()` 现在把 **title + heading_path + quote + content** 一起送入词面 gate；标题/章节是来源元数据，不是生成文本。此前 parent 正文缺少“扣蟹培育”等词时会误判 `weak_overlap`；阈值没有降低。
+- `requires_current_regulation=true` 且没有 effective-date/regulation-status 元数据时，新增 `current_regulation_unverified` 拒绝，修复 R064“2026 最新禁用渔药名单”泄漏；这是保守拒绝，不是“答案正确”。
