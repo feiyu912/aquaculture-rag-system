@@ -304,6 +304,21 @@ cd apps/api
 - 该 chunk 的 `context_text` heading 被解析成上一段的长句，是上下文噪声的一个直接来源；不能通过放宽 gate 掩盖。
 - 结论：Contextual Retrieval 继续默认关闭；在修正 heading/表格结构并做 70 题同 qrels 消融前，不声称收益。
 
+### 图谱多跳 smoke
+
+`expand_entities("浮头怎么办？", max_hops=2, bidirectional=True)` 在人工审核的 11 实体/8 关系图上返回：
+
+`浮头 -> 溶解氧 -> 水质`（2 跳）与 `浮头 -> 溶解氧 -> 增氧`（反向 2 跳），每条 trace 都带 `path`、`direction`、`hop`。这证明多跳遍历和 provenance 代码路径可用。
+
+但把 `GRAPH_EXPANSION=true` 用于真实检索时，该 query 没有返回证据 chunk；当前图关系主要来自示例/合成资料的 mention，尚未覆盖 DB36/DB46/DB32 的足够实体。不能据此声称图谱提升了真实问答效果，只能声称“机制和 trace 已验证”。
+
+### DB32 SSE 真模型 smoke
+
+默认 `hybrid_rerank` 对“DB32/T 5292—2025 生态育苗的水温和pH适宜范围是多少？”的 SSE 结果：
+
+- `sources[0]` 是 DB32 第 6 页 `6.4 水质控制`，quote 含“适宜水温为18 ℃~21 ℃。适宜pH为6.5~8.5”；答案给出 18~21 ℃、6.5~8.5，并引用 `[S1]`。
+- `citation_check.valid=true`，`cited_indices=[1,5]`，`coverage=1.0`；但 `claim_summary.support_rate=0.167`，因为答案中的 Markdown 表格行没有被抽取成 claim，两个表头/说明句也被标成 `uncited`。这再次说明 citation coverage/support rate 只是**词面检查**，不是事实正确率。
+
 ### 尚未解决
 
 - planner 尚未与首轮 dense/BM25 检索并行执行；开启后总延迟会增加一次规划耗时。
