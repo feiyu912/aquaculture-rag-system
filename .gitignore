@@ -41,3 +41,7 @@ qdrant_storage/
 .vscode/
 # Evaluation artifacts
 eval/runs/
+
+# Playwright artifacts
+apps/web/test-results/
+apps/web/playwright-report/

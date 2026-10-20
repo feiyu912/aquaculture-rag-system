@@ -19,6 +19,18 @@ export interface DebugStats {
 }
 
 /**
+ * Mirrors the `source_aware_retrieval` trace in
+ * `apps/api/app/retrieval/service.py` — per-source evidence reservation for
+ * questions that explicitly cite two or more standards.
+ */
+export interface SourceAwareTrace {
+  cited: { code: string; [key: string]: unknown }[];
+  resolved: Record<string, string[]>;
+  active: boolean;
+  reason: string | null;
+}
+
+/**
  * Mirrors the `llm_planner` trace in
  * `apps/api/app/retrieval/service.py` / `apps/api/app/query/planner.py`.
  */

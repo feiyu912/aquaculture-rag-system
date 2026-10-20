@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  Anchor,
   CheckCircle2,
   CircleSlash,
   Cpu,
@@ -96,6 +97,7 @@ export function PipelineStages({
 }
 
 export const STAGE_ICONS = {
+  anchor: Anchor,
   ir: ListTree,
   planner: Sparkles,
   decompose: Split,

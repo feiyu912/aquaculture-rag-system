@@ -199,6 +199,7 @@ export interface ChatStatusEvent {
   query_ir: QueryIR | null;
   /** Planner trace; `null` when the rule-based IR was used. */
   llm_planner?: import("./debug-types").PlannerTrace | null;
+  source_aware_retrieval?: import("./debug-types").SourceAwareTrace | null;
   adaptive_route: string | null;
   targeted_retrieval: unknown;
   graph_expansion: unknown;
@@ -305,6 +306,7 @@ export interface QueryTrace {
   retrieval_config: TraceRetrievalConfig;
   query_ir: QueryIR | null;
   llm_planner?: import("./debug-types").PlannerTrace | null;
+  source_aware_retrieval?: import("./debug-types").SourceAwareTrace | null;
   active_versions: string[];
   gate: EvidenceGate | null;
   timings: Record<string, number | null>;

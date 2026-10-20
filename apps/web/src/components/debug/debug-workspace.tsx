@@ -31,6 +31,7 @@ import {
 } from "@/components/debug/pipeline-stages";
 import { PlannerCard } from "@/components/debug/planner-card";
 import { QueryIrCard } from "@/components/debug/query-ir-card";
+import { SourceAwareCard } from "@/components/debug/source-aware-card";
 import { RawTrace, Section } from "@/components/debug/section";
 import { StatsStrip } from "@/components/debug/stats-strip";
 import { Badge } from "@/components/ui/badge";
@@ -168,6 +169,8 @@ export function DebugWorkspace({ initialRequestId = "" }: { initialRequestId?: s
                 <QueryIrCard trace={trace} />
                 <PlannerCard trace={trace} />
               </div>
+
+              <SourceAwareCard trace={trace} />
 
               <Section
                 title="候选与融合"
@@ -407,6 +410,21 @@ function buildStages(trace: QueryTrace | undefined): StageDefinition[] {
               ? `回退规则 IR（${planner.error}）`
               : "规则 IR"
         : "未启用",
+    },
+    {
+      key: "source-aware",
+      label: "按来源锚定",
+      icon: STAGE_ICONS.anchor,
+      state: trace?.source_aware_retrieval?.active
+        ? "on"
+        : trace?.source_aware_retrieval
+          ? "skipped"
+          : "off",
+      detail: trace?.source_aware_retrieval?.active
+        ? (trace.source_aware_retrieval.cited ?? []).map((a) => a.code).join("、")
+        : trace?.source_aware_retrieval?.reason
+          ? `未生效：${trace.source_aware_retrieval.reason}`
+          : "未触发",
     },
     {
       key: "decompose",
