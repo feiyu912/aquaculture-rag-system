@@ -1,7 +1,7 @@
 # Aquaculture RAG 后端 API Contract
 
-> 版本：2026-10-20
-> 依据：`apps/api` 当前真实代码与 `GET /openapi.json`，不是设计稿。
+> 版本：2026-10-20（rev. 2026-10-20b）
+> 依据：`apps/api` 当前真实代码与 `GET /openapi.json`，不是设计稿；`apps/api/tests/test_api_contract.py` 固定 18 个已挂载路由。
 > 面向：Qoder 的 Next.js 前端。前端只依赖本文列出的接口；未列出的路径不要假设存在。
 > Base URL（本地）：`http://127.0.0.1:8000`
 > 所有业务接口前缀：`/api`；日期时间均为 UTC ISO-8601（例如 `2026-10-20T02:44:51.257558Z`）。
@@ -730,7 +730,7 @@ GET /api/documents/{document_id}/file?version_id={version_id}
 - 成功返回 `application/pdf`，`Content-Disposition: inline; filename="<title>.pdf"`。
 - 404：文档不存在/已删除、版本不存在、文件丢失。
 - 前端用 `sources[].version_id` 或 `CitationOut.document_version_id` 作为参数，确保引用版本与页面一致。
-- 当前无 Range 请求特殊处理；PDF.js 按整文件加载即可。
+- 当前 `FileResponse` 支持单段 `Range: bytes=...`：返回 `206 Partial Content`、`Accept-Ranges: bytes`、`Content-Range`，并带 `ETag`/`Last-Modified`；PDF.js 可以按 Range 加载，不需要先下载整文件。
 - 需要认证时再补；当前本地无鉴权。
 
 ### 6.1 文档的引用历史
@@ -825,12 +825,15 @@ GET /api/health
   "llm_configured": true,
   "embedding_model": "BAAI/bge-m3",
   "embedding_device": "mps",
-  "reranker_model": "BAAI/bge-reranker-v2-m3"
+  "reranker_model": "BAAI/bge-reranker-v2-m3",
+  "max_sources": 5,
+  "rerank_top_k": 8
 }
 ```
 
 - `status=ok` 仅当三个组件都 ok；否则 `degraded`。
 - `llm_configured` 只检查配置字段是否存在，**不发起付费调用**；真正可用性要看一次聊天或 `/scripts/check_llm.py`。
+- `max_sources` / `rerank_top_k` 是当前检索配置上限，前端应据此显示“最多 N 条来源”，不要把它当成固定返回条数；实际 `sources` 数量还受证据和 gate 约束。
 - 该接口不返回 key、数据库 URL 等敏感信息。
 
 ## 9. QueryIR / Planner / Gate 可读结构
@@ -852,7 +855,8 @@ GET /api/health
 | planner_confidence | LLM 计划置信度 |
 | planner_assumptions | 模型推断但未确认的假设 |
 | planner_constraints | 每条约束的 `source`/`strength`/`accepted_as_hard`/`filter_applied`/`scope` |
-| planner_subquestions | 规划出的子问题 |
+| planner_subquestions | 规划出的子问题文本（向后兼容） |
+| planner_tasks | 结构化检索任务：`question`/`facet`/`inherits`/`inherited_constraints`/`applicable_constraints`/`effective_query`/`soft_constraints` |
 | rewritten_query | 保留原意的检索改写（可为空） |
 
 `status.llm_planner`：
@@ -865,8 +869,22 @@ GET /api/health
   "duration_ms": 30927.4,
   "attempts": 1,
   "plan": {"intent": "complex", "...": "..."},
+  "original_question": "…",
   "hard_filter": "中华绒螯蟹",
-  "subquestions": ["..."]
+  "subquestions": ["..."],
+  "tasks": [
+    {
+      "question": "…",
+      "facet": "水质",
+      "inherits": ["species", "growth_stage"],
+      "inherited_constraints": {"species": ["中华绒螯蟹"], "growth_stage": ["扣蟹培育"]},
+      "effective_query": "中华绒螯蟹 扣蟹培育 …",
+      "soft_constraints": [],
+      "source": "llm"
+    }
+  ],
+  "constraints": [],
+  "assumptions": []
 }
 ```
 
@@ -876,6 +894,8 @@ GET /api/health
 - `accepted_as_hard` 只表示通过校验；`filter_applied=true` 才表示该约束真的进入了 Qdrant 过滤。
 - `scope` 取 `document_filter` / `retrieval_requirement` / `soft_context`；目前真正用于 Qdrant 硬过滤的仍只有文档级 `species_filter` 和请求显式 `category`。
 - `planner_source=llm` 不等于“IR 一定正确”；失败会安全回退 `rules`，并在 `error` 中记录。
+- `planner_tasks[].effective_query` 是子问题实际送入统一 Retrieval Engine 的检索文本；`inherited_constraints` 只记录被自动补入的字段，子问题原文已包含的字段不会重复拼接，避免把同义阶段/指标错误扩展成兄弟值。
+- 仅实现文档级 `species_filter`（以及请求显式 `category`）的硬过滤；模型声称的其它 hard 约束会被降级为 `soft_context` 并写 warning `llm_constraint_not_implemented_as_hard`。
 - 规则 IR 与 LLM IR 的对照评测见后续 `eval/`，当前不能宣称 LLM 一定更优。
 
 ## 10. 前端必须处理的异常
@@ -911,3 +931,5 @@ GET /api/health
 | 日期 | 变更 |
 |---|---|
 | 2026-10-20 | 初版；按真实 FastAPI/OpenAPI 整理；新增 `GET /api/debug/stats`、文档 source 元数据字段、`chunk_id`/`location`/`bbox` 顶层字段；文档列表支持 `q/status/limit/offset` |
+| 2026-10-20b | 复核真实响应：补充 `/api/health` 的 `max_sources`/`rerank_top_k`；修正 PDF 原文件接口已支持 Range/206（不是“无特殊处理”）；补充 18 路由回归测试说明 |
+| 2026-10-20c | Planner 结构化任务：新增 `planner_tasks`，记录子问题 facet/继承字段/effective_query；明确非 species hard 约束降级规则 |
