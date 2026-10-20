@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     debug: bool = True
 
     database_url: str = "postgresql+asyncpg://aquaculture:aquaculture@127.0.0.1:5432/aquaculture"
+    # Connection pool: the eval harness can run many cases in flight (each
+    # request holds a connection while it waits on MPS), so make the size
+    # explicit instead of relying on SQLAlchemy's 5+10 default.
+    database_pool_size: int = 10
+    database_max_overflow: int = 20
+    database_pool_timeout: float = 30.0
     auto_create_tables: bool = True
 
     qdrant_url: str = "http://127.0.0.1:6333"
