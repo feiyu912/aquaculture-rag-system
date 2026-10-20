@@ -233,7 +233,7 @@ uv run pytest -q
 uv run ruff check app tests ../../scripts
 ```
 
-当前默认 **93 个单元测试**（另有 2 个真实 BGE 集成测试默认跳过）覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词/权重、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/一跳扩展、证据要求/定向补检、自适应路由守卫、消融指标与模块选择、别名扩展、LLM Planner 校验/回退。
+当前默认 **96 个单元测试**（另有 2 个真实 BGE 集成测试默认跳过）覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词/权重、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/多跳扩展、证据要求/定向补检、自适应路由守卫、消融指标与模块选择、别名扩展、LLM Planner 校验/回退。
 
 真实模型集成测试：
 
@@ -471,7 +471,7 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 
 ## 10. 已知限制
 
-1. **BGE-M3 已真实接入**，但当前只有 5 个文档（2 份真实地方标准）；检索指标仍不足以代表领域效果。
+1. **BGE-M3 已真实接入**，但当前只有 6 个 active 文档（3 份真实地方标准）；检索指标仍不足以代表领域效果。
 2. **PyMuPDF 解析器只适合文本型 PDF**；扫描件、复杂双栏、公式需要 MinerU。
 3. **BGE-Reranker 已真实接入**；`hybrid_rerank` 的 trace 记录真实模型。`noop` 仅作消融对照，不能把 noop 结果写成 BGE 重排结果。
 4. **原生 DeepSeek endpoint 未做真实 Key 验证**；OpenAI 兼容网关已用真实 SSE 验证。默认 mock 仅离线回归，所有单元测试不依赖外网。缺少 key 时 `build_generator` 抛错，API 返回 503，不会静默回退 Mock；空可见输出返回 `empty_generation`。
