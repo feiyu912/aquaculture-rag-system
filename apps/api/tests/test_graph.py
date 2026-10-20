@@ -91,3 +91,52 @@ def test_seed_graph_connects_species_to_water_quality():
 
     assert ("中华绒螯蟹", "水质", "SPECIES_HABITAT") in SEED_RELATIONS
     assert ("凡纳滨对虾", "水质", "SPECIES_HABITAT") in SEED_RELATIONS
+
+
+def test_relation_trace_carries_edge_provenance():
+    graph, ids = _data()
+    version_id = uuid.uuid4()
+    graph.relations[0] = RelationData(
+        ids["溶解氧"], ids["水质"], "INDICATOR_OF", provenance_version_id=version_id, confidence=0.82
+    )
+    expansion = expand_entities("溶解氧偏低怎么办？", graph, max_hops=1, bidirectional=False)
+    edge = next(item for item in expansion.relation_trace if item["target"] == "水质")
+    assert edge["provenance_version_id"] == str(version_id)
+    assert edge["confidence"] == 0.82
+
+
+def test_evidence_source_exposes_graph_provenance_only_when_present():
+    import uuid as _uuid
+
+    from app.retrieval.service import Evidence
+
+    def make(**kwargs):
+        values = {
+            "source_index": 1,
+            "document_id": _uuid.uuid4(),
+            "version_id": _uuid.uuid4(),
+            "parent_chunk_id": _uuid.uuid4(),
+            "child_chunk_id": _uuid.uuid4(),
+            "title": "DB36/T 水质标准",
+            "version_no": 1,
+            "page": 3,
+            "quote": "溶解氧不低于 5 mg/L",
+            "content": "溶解氧不低于 5 mg/L",
+            "location": None,
+            "score": 0.9,
+        }
+        values.update(kwargs)
+        return Evidence(**values)
+
+    plain = make().as_source()
+    assert plain["graph_provenance"] is None
+    sourced = make(
+        graph_provenance={
+            "matched_entities": ["溶解氧"],
+            "paths": [["溶解氧", "水质"]],
+            "mention_count": 2,
+            "seed_terms": ["溶解氧"],
+        }
+    ).as_source()
+    assert sourced["graph_provenance"]["matched_entities"] == ["溶解氧"]
+    assert sourced["graph_provenance"]["paths"] == [["溶解氧", "水质"]]

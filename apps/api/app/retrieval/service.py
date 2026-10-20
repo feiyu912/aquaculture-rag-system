@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.graph.service import expand_entities, graph_chunk_ids, load_graph
+from app.graph.service import expand_entities, graph_chunk_matches, load_graph
 from app.ingestion.embedder import Embedder
 from app.ingestion.pipeline import chunk_config_hash
 from app.models import KbChunk, KbDocument, KbDocumentVersion
@@ -34,7 +34,8 @@ from app.retrieval.requirements import (
     Requirement,
     assess_requirements,
     build_requirements,
-    build_supplemental_query,
+    build_targeted_queries,
+    term_present,
 )
 from app.retrieval.rerank import NoopReranker, Reranker
 from app.retrieval.rrf import rrf_fuse
@@ -62,6 +63,10 @@ class Evidence:
     score: float
     species: list[str] = field(default_factory=list)
     heading_path: list[str] = field(default_factory=list)
+    # Populated only for chunks reached through a verified graph edge: which
+    # entity matched, the relation path that reached it, and the edge
+    # provenance.  None keeps ordinary vector hits distinguishable.
+    graph_provenance: dict | None = None
 
     def as_source(self) -> dict:
         location = self.location or {}
@@ -78,6 +83,7 @@ class Evidence:
             "page": self.page,
             "quote": self.quote,
             "heading_path": self.heading_path,
+            "graph_provenance": self.graph_provenance,
             "location": self.location,
             # Convenience fields for PDF.js; ``location`` remains the canonical
             # full record for backward compatibility.
@@ -113,6 +119,16 @@ def _excerpt(text: str, limit: int = 300) -> str:
     return text if len(text) <= limit else text[:limit].rstrip() + "…"
 
 
+# Retrying these cannot add evidence: the question itself has no domain terms,
+# the first pass had no hits at all, or the gate already rejected the answer as
+# a time-sensitive regulation with no verified current version.
+TARGETED_SKIP_REASONS = {
+    "no_query_terms",
+    "no_evidence",
+    "current_regulation_unverified",
+}
+
+
 EVIDENCE_ALIASES = {
     "溶氧": "溶解氧",
     "溶氧量": "溶解氧",
@@ -120,6 +136,28 @@ EVIDENCE_ALIASES = {
     "ph": "酸碱度",
     "ph值": "酸碱度",
 }
+
+
+def _covering_first(items: list[Evidence], terms: list[str]) -> list[Evidence]:
+    """Move evidence that states a missing facet into the visible slots.
+
+    The retry pool is larger than ``max_sources``; a chunk that covers the
+    missing facet can rank below the cut after merging.  Keeping it in the
+    visible window is what makes ``sufficient_after=true`` honest: the gate
+    judged evidence the answer can actually cite.
+    """
+    covering = [
+        item
+        for item in items
+        if any(
+            term_present(term, f"{item.content}\n{' '.join(item.heading_path)}")
+            for term in terms
+        )
+    ]
+    if not covering:
+        return items
+    seen = {id(item) for item in covering}
+    return covering + [item for item in items if id(item) not in seen]
 
 
 def _canonical_term(token: str) -> str:
@@ -248,6 +286,7 @@ async def retrieve(
     mode: str = "hybrid",
     search_question: str | None = None,
     _attempt: int = 0,
+    keep_insufficient_evidence: bool = False,
 ) -> RetrievalResult:
     started = time.perf_counter()
     mode = normalize_mode(mode)
@@ -422,6 +461,7 @@ async def retrieve(
 
     graph_expansion = None
     graph_ids: list[str] = []
+    graph_provenance_by_child: dict[str, dict] = {}
     graph_ms = 0.0
     if modules["graph"]:
         graph_started = time.perf_counter()
@@ -435,17 +475,35 @@ async def retrieve(
                 bidirectional=settings.graph_bidirectional,
             )
             if graph_expansion.expanded_entity_ids:
-                graph_ids = [
-                    str(chunk_id)
-                    for chunk_id in await graph_chunk_ids(
-                        db,
-                        graph_expansion.expanded_entity_ids,
-                        active_versions,
-                        category=category_filter,
-                        species=species_filter,
-                        limit=settings.graph_top_k,
-                    )
-                ]
+                matches = await graph_chunk_matches(
+                    db,
+                    graph_expansion.expanded_entity_ids,
+                    active_versions,
+                    category=category_filter,
+                    species=species_filter,
+                    limit=settings.graph_top_k,
+                )
+                graph_ids = [str(item["chunk_id"]) for item in matches]
+                entity_names = {entity.id: entity.name for entity in graph.entities.values()}
+                paths_by_entity: dict[str, list[str]] = {
+                    str(entity_id): [entity_names[entity_id]]
+                    for entity_id in graph_expansion.seed_entity_ids
+                    if entity_id in entity_names
+                }
+                for edge in graph_expansion.relation_trace:
+                    path_ids = edge.get("path_entity_ids") or []
+                    if path_ids:
+                        paths_by_entity[path_ids[-1]] = list(edge.get("path") or [])
+                for match in matches:
+                    matched = [str(item) for item in match["entity_ids"]]
+                    graph_provenance_by_child[str(match["chunk_id"])] = {
+                        "matched_entities": [
+                            entity_names.get(item, item) for item in match["entity_ids"]
+                        ],
+                        "paths": [paths_by_entity.get(item, [entity_names.get(item, item)]) for item in matched],
+                        "mention_count": match["mention_count"],
+                        "seed_terms": graph_expansion.seed_terms,
+                    }
         graph_ms = (time.perf_counter() - graph_started) * 1000
 
     query_variants = [query_text]
@@ -853,6 +911,7 @@ async def retrieve(
                 score=by_parent_id.get(parent.id, 0.0),
                 species=normalize_species_list(doc.species),
                 heading_path=list(parent.heading_path or []),
+                graph_provenance=graph_provenance_by_child.get(str(child.id)),
             )
         )
         if len(evidence) >= (top_k or settings.max_sources):
@@ -861,7 +920,11 @@ async def retrieve(
     requirements: list[Requirement] = []
     if modules["requirements"]:
         requirements = assess_requirements(
-            build_requirements(query_ir), [item.content for item in evidence]
+            build_requirements(query_ir),
+            # A facet can be stated in the section heading rather than the
+            # chunk body ("扣蟹培育" / "8.1水质指标"); the heading is part of
+            # the evidence a human reader sees, so it counts for coverage.
+            [f"{item.content}\n{' '.join(item.heading_path)}" for item in evidence],
         )
     gate = _assess_with_requirements(
         question,
@@ -873,13 +936,23 @@ async def retrieve(
     gate = _apply_current_regulation_gate(query_ir, gate)
 
     targeted_trace: dict | None = None
-    if not gate.sufficient and modules["targeted"] and _attempt < settings.max_targeted_retrieval:
-        supplement = build_supplemental_query(
+    # Generated once per request.  Recursive calls must not start a nested
+    # loop, otherwise two gaps would trigger up to 2x2 retrievals.
+    if (
+        not gate.sufficient
+        and modules["targeted"]
+        and _attempt == 0
+        and gate.reason not in TARGETED_SKIP_REASONS
+    ):
+        initial_reason = gate.reason
+        targets = build_targeted_queries(
             question,
             requirements,
             gate.missing_terms,
+            max_targets=settings.max_targeted_retrieval,
         )
-        if supplement:
+        attempts: list[dict] = []
+        for target in targets:
             second = await retrieve(
                 db,
                 question,
@@ -891,33 +964,63 @@ async def retrieve(
                 category=category,
                 species=species,
                 mode=mode,
-                search_question=supplement,
+                search_question=target["query"],
                 _attempt=_attempt + 1,
+                # Return the raw pool: the outer loop re-gates the *merged*
+                # evidence, so a retry that is insufficient on its own can
+                # still contribute the one facet the first pass missed.
+                keep_insufficient_evidence=True,
             )
-            targeted_trace = {
-                "attempt": _attempt + 1,
-                "supplement": supplement,
-                "insufficient_reason": gate.reason,
+            attempt = {
+                "requirement": target["key"],
+                "label": target["label"],
+                "terms": target["terms"],
+                "supplement": target["query"],
                 "second_sufficient": second.sufficient,
+                "second_gate_reason": (second.gate or {}).get("reason"),
+                "added_sources": 0,
             }
-            if second.sufficient:
-                merged = _merge_evidence(evidence, second.evidence)
-                if merged:
-                    evidence = merged[: settings.max_sources]
-                    for index, item in enumerate(evidence, start=1):
-                        item.source_index = index
-                    gate = _assess_with_requirements(
-                        question,
-                        evidence,
-                        requirements,
-                        species_options,
-                        fallback_reason=None,
-                    )
-                    gate = _apply_current_regulation_gate(query_ir, gate)
-                rankings = _merge_rankings(rankings, second.rankings)
-                timings["targeted_ms"] = second.timings.get("retrieval_ms", 0)
+            attempts.append(attempt)
+            rankings = _merge_rankings(rankings, second.rankings)
+            timings["targeted_ms"] = timings.get("targeted_ms", 0) + second.timings.get(
+                "retrieval_ms", 0
+            )
+            merged = _merge_evidence(evidence, second.evidence) if second.evidence else []
+            if not merged:
+                continue
+            added = max(0, len(merged) - len(evidence))
+            merged = _covering_first(merged, target["terms"])
+            evidence = merged[: settings.max_sources]
+            for index, item in enumerate(evidence, start=1):
+                item.source_index = index
+            attempt["added_sources"] = added
+            # Coverage flags are computed from the evidence set; the merged
+            # set changed, so they must be re-assessed before the gate reads
+            # them.  Without this the retry can add the missing facet and the
+            # gate still refuses on the stale flag.
+            requirements = assess_requirements(
+                requirements,
+                [f"{item.content}\n{' '.join(item.heading_path)}" for item in evidence],
+            )
+            gate = _assess_with_requirements(
+                question,
+                evidence,
+                requirements,
+                species_options,
+                fallback_reason=None,
+            )
+            gate = _apply_current_regulation_gate(query_ir, gate)
+            if gate.sufficient:
+                break
+        targeted_trace = {
+            "mode": "requirement_targeted",
+            "insufficient_reason": initial_reason,
+            "targets": attempts,
+            "sufficient_before": False,
+            "sufficient_after": gate.sufficient,
+        }
 
-    if not gate.sufficient:
+    if not gate.sufficient and not keep_insufficient_evidence:
         evidence = []
 
     if source_trace is not None:

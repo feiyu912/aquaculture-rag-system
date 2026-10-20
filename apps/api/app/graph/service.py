@@ -33,6 +33,8 @@ class RelationData:
     source_id: uuid.UUID
     target_id: uuid.UUID
     relation_type: str
+    provenance_version_id: uuid.UUID | None = None
+    confidence: float = 1.0
 
 
 @dataclass(slots=True)
@@ -98,6 +100,8 @@ async def load_graph(db: AsyncSession) -> GraphData:
                 source_id=relation.source_entity_id,
                 target_id=relation.target_entity_id,
                 relation_type=relation.relation_type,
+                provenance_version_id=relation.provenance_document_version_id,
+                confidence=relation.confidence,
             )
             for relation in relations
         ],
@@ -145,16 +149,16 @@ def expand_entities(
     mentions = mention_entities(question, graph)
     seed_ids = list(mentions)
     expanded = set(seed_ids)
-    adjacency: dict[uuid.UUID, list[tuple[uuid.UUID, str, str]]] = {}
+    adjacency: dict[uuid.UUID, list[tuple[uuid.UUID, str, str, RelationData]]] = {}
     for relation in graph.relations:
         if relation.source_id not in graph.entities or relation.target_id not in graph.entities:
             continue
         adjacency.setdefault(relation.source_id, []).append(
-            (relation.target_id, relation.relation_type, "forward")
+            (relation.target_id, relation.relation_type, "forward", relation)
         )
         if bidirectional:
             adjacency.setdefault(relation.target_id, []).append(
-                (relation.source_id, relation.relation_type, "reverse")
+                (relation.source_id, relation.relation_type, "reverse", relation)
             )
 
     def name(entity_id: uuid.UUID) -> str:
@@ -166,7 +170,7 @@ def expand_entities(
     for hop in range(1, max_hops + 1):
         next_frontier: list[uuid.UUID] = []
         for source_id in frontier:
-            for target_id, relation_type, direction in adjacency.get(source_id, []):
+            for target_id, relation_type, direction, relation in adjacency.get(source_id, []):
                 if target_id in expanded:
                     continue
                 expanded.add(target_id)
@@ -181,6 +185,14 @@ def expand_entities(
                         "hop": hop,
                         "path": [name(item) for item in path],
                         "path_entity_ids": [str(item) for item in path],
+                        # Edge provenance: which document version asserted the
+                        # relation and how confident the extractor was.
+                        "provenance_version_id": (
+                            str(relation.provenance_version_id)
+                            if relation.provenance_version_id
+                            else None
+                        ),
+                        "confidence": relation.confidence,
                     }
                 )
                 next_frontier.append(target_id)
@@ -227,7 +239,7 @@ async def link_chunks(
     return rows
 
 
-async def graph_chunk_ids(
+async def graph_chunk_matches(
     db: AsyncSession,
     entity_ids: list[uuid.UUID],
     active_versions: list[uuid.UUID],
@@ -235,7 +247,13 @@ async def graph_chunk_ids(
     category: str | None = None,
     species: str | None = None,
     limit: int = 10,
-) -> list[uuid.UUID]:
+) -> list[dict]:
+    """Return graph-linked chunks together with the entities that linked them.
+
+    ``graph_chunk_ids`` throws the entity away, which makes a graph hit
+    indistinguishable from an ordinary vector hit in the trace.  Keeping the
+    matched entity ids is what lets the API expose provenance.
+    """
     if not entity_ids or not active_versions:
         return []
     rows = (
@@ -243,6 +261,7 @@ async def graph_chunk_ids(
             select(
                 KbChunkEntity.chunk_id,
                 KbChunkEntity.mention_count,
+                KbChunkEntity.entity_id,
                 KbDocument.species,
                 KbDocument.category,
             )
@@ -258,8 +277,8 @@ async def graph_chunk_ids(
             .distinct()
         )
     ).all()
-    ranked: dict[uuid.UUID, int] = {}
-    for chunk_id, count, doc_species, doc_category in rows:
+    ranked: dict[uuid.UUID, dict] = {}
+    for chunk_id, count, entity_id, doc_species, doc_category in rows:
         if category and doc_category != category:
             continue
         if (
@@ -268,5 +287,37 @@ async def graph_chunk_ids(
             and GENERAL_SPECIES not in (doc_species or [])
         ):
             continue
-        ranked[chunk_id] = max(ranked.get(chunk_id, 0), count)
-    return [chunk_id for chunk_id, _ in sorted(ranked.items(), key=lambda item: -item[1])[:limit]]
+        entry = ranked.setdefault(
+            chunk_id, {"chunk_id": chunk_id, "entity_ids": set(), "mention_count": 0}
+        )
+        entry["entity_ids"].add(entity_id)
+        entry["mention_count"] = max(entry["mention_count"], count)
+    ordered = sorted(ranked.values(), key=lambda item: (-item["mention_count"], str(item["chunk_id"])))
+    return [
+        {
+            "chunk_id": item["chunk_id"],
+            "entity_ids": sorted(item["entity_ids"]),
+            "mention_count": item["mention_count"],
+        }
+        for item in ordered[:limit]
+    ]
+
+
+async def graph_chunk_ids(
+    db: AsyncSession,
+    entity_ids: list[uuid.UUID],
+    active_versions: list[uuid.UUID],
+    *,
+    category: str | None = None,
+    species: str | None = None,
+    limit: int = 10,
+) -> list[uuid.UUID]:
+    matches = await graph_chunk_matches(
+        db,
+        entity_ids,
+        active_versions,
+        category=category,
+        species=species,
+        limit=limit,
+    )
+    return [item["chunk_id"] for item in matches]

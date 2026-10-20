@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     semantic_claim_threshold: float = 0.65
     enable_contextual_retrieval: bool = False
     enable_evidence_requirements: bool = False
-    enable_targeted_retrieval: bool = False
+    enable_targeted_retrieval: bool = True
     enable_graph_expansion: bool = False
     graph_top_k: int = 10
     graph_rrf_weight: float = 0.7
@@ -87,7 +87,9 @@ class Settings(BaseSettings):
     enable_query_decomposition: bool = False
     max_query_variants: int = 6
     enable_adaptive_routing: bool = False
-    max_targeted_retrieval: int = 1
+    # One focused retry per uncovered requirement (capped); each retry is
+    # re-gated with the unchanged thresholds, so this cannot lower the bar.
+    max_targeted_retrieval: int = 2
     # Soft-deleted documents keep their DB rows, PDFs and vectors for this many
     # days so a mistaken delete can be undone without re-ingesting.
     soft_delete_retention_days: int = 7

@@ -256,6 +256,7 @@ data: <单行 JSON>
       "page": 7,
       "quote": "8.1水质指标溶氧量5mg/L以上，pH值7.5~8.5，透明度30cm~50cm，氨氮低于0.5mg/L，亚硝酸盐低于0.05mg/L。",
       "heading_path": ["中华绒螯蟹池塘培育扣蟹技术规程", "8.1水质指标"],
+      "graph_provenance": null,
       "location": {
         "page": 7,
         "bbox": [70.92, 170.01, 543.85, 213.39],
@@ -290,6 +291,7 @@ Source 字段说明：
 | page | 1-based PDF 页码 |
 | quote | 展示给用户并用于引用的原文片段 |
 | heading_path | 标题路径，可能为空 |
+| graph_provenance | 仅图谱命中的 source 非空：`matched_entities`、`paths`、`mention_count`、`seed_terms`；普通向量命中为 `null` |
 | location | 规范坐标对象 |
 | bbox | `[x0,y0,x1,y1]`，PDF points，**左下角原点** |
 | coordinate_system | 当前固定 `pdf_points` |
@@ -410,7 +412,9 @@ const rect = {
       "direction": "forward",
       "hop": 1,
       "path": ["浮头", "溶解氧"],
-      "path_entity_ids": ["...", "..."]
+      "path_entity_ids": ["...", "..."],
+      "provenance_version_id": "3f534c05-99c9-493e-9e18-323f9ee9a3c1",
+      "confidence": 0.9
     },
     {
       "source": "溶解氧",
@@ -427,8 +431,39 @@ const rect = {
 
 - 只遍历 `review_status=verified` 的关系；图谱默认关闭。
 - `hop` 从 1 开始；`direction=reverse` 表示从关系的 target 反向走到 source。
+- `provenance_version_id`/`confidence` 是该条边的来源文档版本与抽取置信度（边级 provenance）；
+  某条 source 是经由图谱召回时，其 `graph_provenance.paths` 给出到达该 chunk 的实体路径。
 - `max_hops` 默认 2，`graph_max_related` 默认 12，防止扩展爆炸。
 - 图谱扩展只帮助召回候选 chunk，**不等于证据充分**；仍必须经过 `gate` 和引用校验。
+
+#### 2.5.9a `targeted_retrieval`
+
+`ENABLE_TARGETED_RETRIEVAL=true`（默认）且首轮 gate 不通过时，按“未覆盖的 evidence
+requirement”逐条补检索；每次补检索都重新走同一 gate，阈值不变：
+
+```json
+{
+  "mode": "requirement_targeted",
+  "insufficient_reason": "missing_requirements",
+  "targets": [
+    {
+      "requirement": "water:0",
+      "label": "水质指标",
+      "terms": ["盐度"],
+      "supplement": "…原问题… 盐度",
+      "second_sufficient": false,
+      "second_gate_reason": "weak_overlap",
+      "added_sources": 0
+    }
+  ],
+  "sufficient_before": false,
+  "sufficient_after": false
+}
+```
+
+- 上限 `MAX_TARGETED_RETRIEVAL=2`；每次只补一个 requirement，避免一条稀释查询。
+- `no_query_terms` / `no_evidence` / `current_regulation_unverified` 直接跳过补检索。
+- `sufficient_after=false` 时最终 `sources=[]`；补检索不会放宽阈值，也不会把弱证据放进回答。
 
 #### 2.5.10 `error`
 
