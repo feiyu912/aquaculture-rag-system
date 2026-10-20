@@ -16,9 +16,10 @@ from app.config import settings
 from app.db import SessionLocal, get_db
 from app.generation.citations import validate_answer
 from app.generation.claims import summarize_claims, verify_claims
-from app.generation.llm import Generator, MockGenerator, build_generator
+from app.generation.llm import Generator, LLMError, MockGenerator, build_generator
 from app.ingestion.embedder import get_embedder
 from app.models import ChatCitation, ChatMessage, ChatSession, KbDocument, QueryLog
+from app.query.planner import planner_from_generator
 from app.retrieval.bm25 import BM25SparseEncoder
 from app.retrieval.rerank import build_reranker
 from app.retrieval.service import Evidence, RetrievalResult, retrieve
@@ -31,6 +32,14 @@ SSE_HEADERS = {
     "Connection": "keep-alive",
     "X-Accel-Buffering": "no",
 }
+
+
+def _llm_model_name() -> str:
+    if settings.llm_provider == "deepseek":
+        return settings.deepseek_model
+    if settings.llm_provider in {"openai_compatible", "openai"}:
+        return settings.openai_model or settings.llm_provider
+    return "mock"
 
 
 def _sse(event: str, data: dict) -> str:
@@ -67,7 +76,7 @@ async def chat_stream(
         role="assistant",
         content="",
         status="streaming",
-        model=settings.llm_provider,
+        model=_llm_model_name(),
         meta={"request_id": request_id},
     )
     db.add_all([user_message, assistant_message])
@@ -76,13 +85,35 @@ async def chat_stream(
     session_id = session.id
     assistant_id = assistant_message.id
 
-    embedder = get_embedder(settings.embedding_model, settings.qdrant_vector_size)
+    embedder = get_embedder(
+        settings.embedding_model,
+        settings.qdrant_vector_size,
+        settings.embedding_device,
+        settings.embedding_use_fp16,
+        settings.embedding_batch_size,
+        settings.embedding_max_length,
+    )
     bm25 = BM25SparseEncoder(k1=settings.bm25_k1, b=settings.bm25_b, avg_len=settings.bm25_avg_len)
     reranker = (
-        build_reranker(settings.reranker_model)
+        build_reranker(
+            settings.reranker_model,
+            path=settings.reranker_path or None,
+            device=settings.reranker_device,
+            use_fp16=settings.reranker_use_fp16,
+        )
         if payload.retrieval_mode == "hybrid_rerank"
         else None
     )
+    planner = None
+    planner_generator = None
+    if settings.enable_llm_planner:
+        try:
+            planner_generator = build_generator()
+            planner = planner_from_generator(planner_generator)
+        except LLMError:
+            # The planner is optional; missing configuration falls back to the
+            # rule IR.  The generation leg will still fail explicitly later.
+            planner_generator = None
     try:
         retrieval: RetrievalResult = await retrieve(
             db,
@@ -90,6 +121,7 @@ async def chat_stream(
             embedder,
             bm25,
             reranker=reranker,
+            planner=planner,
             category=payload.category,
             species=payload.species,
             mode=payload.retrieval_mode,
@@ -110,9 +142,23 @@ async def chat_stream(
     for index, item in enumerate(evidence, start=1):
         item.source_index = index
 
-    generator: Generator = (
-        build_generator() if evidence or settings.llm_provider != "deepseek" else MockGenerator()
-    )
+    try:
+        generator: Generator = planner_generator or (
+            build_generator()
+            if evidence or settings.llm_provider != "deepseek"
+            else MockGenerator()
+        )
+    except LLMError as exc:
+        await _persist_failure(
+            assistant_id,
+            request_id,
+            question,
+            "",
+            f"generation_unavailable: {exc}",
+            started,
+            session_id,
+        )
+        raise HTTPException(status_code=503, detail="生成服务未配置或不可用") from exc
 
     async def event_stream():
         answer = ""
@@ -138,6 +184,7 @@ async def chat_stream(
                 "adaptive_route": retrieval.config.get("adaptive_route"),
                 "targeted_retrieval": retrieval.config.get("targeted_retrieval"),
                 "graph_expansion": retrieval.config.get("graph_expansion"),
+                "llm_planner": retrieval.config.get("llm_planner"),
                 "gate": retrieval.gate,
             },
         )
@@ -178,6 +225,27 @@ async def chat_stream(
             )
             return
 
+        if not answer.strip():
+            await _persist_failure(
+                assistant_id,
+                request_id,
+                question,
+                answer,
+                "empty_generation",
+                started,
+                session_id,
+                retrieval,
+            )
+            yield _sse(
+                "error",
+                {
+                    "code": "empty_generation",
+                    "message": "模型没有返回可见文本；请检查 max_tokens、推理预算或服务配置。",
+                    "retryable": True,
+                },
+            )
+            return
+
         citation_report = validate_answer(answer, len(evidence))
         report = citation_report.as_dict()
         if settings.enable_claim_verification:
@@ -204,14 +272,14 @@ async def chat_stream(
             report=report,
             timings=timings,
             usage=generator.last_usage,
-            model=generator.name,
+            model=_llm_model_name(),
             cost_usd=cost_usd,
         )
         yield _sse(
             "done",
             {
                 "message_id": str(assistant_id),
-                "model": generator.name,
+                "model": _llm_model_name(),
                 "usage": generator.last_usage,
                 "cost_usd": cost_usd,
                 "timings": timings,
@@ -220,6 +288,7 @@ async def chat_stream(
                 "adaptive_route": retrieval.config.get("adaptive_route"),
                 "targeted_retrieval": retrieval.config.get("targeted_retrieval"),
                 "graph_expansion": retrieval.config.get("graph_expansion"),
+                "llm_planner": retrieval.config.get("llm_planner"),
                 "sufficient": retrieval.sufficient,
                 "gate": retrieval.gate,
                 "citation_check": report,
@@ -230,15 +299,17 @@ async def chat_stream(
 
 
 def _estimate_cost(usage: dict, model: str) -> float:
-    if model != "deepseek":
+    if model == "deepseek":
+        input_price = settings.deepseek_price_input_per_m
+        output_price = settings.deepseek_price_output_per_m
+    elif model in {"openai_compatible", "openai"}:
+        input_price = settings.openai_price_input_per_m
+        output_price = settings.openai_price_output_per_m
+    else:
         return 0.0
     prompt = float(usage.get("prompt_tokens") or 0)
     completion = float(usage.get("completion_tokens") or 0)
-    return round(
-        prompt / 1_000_000 * settings.deepseek_price_input_per_m
-        + completion / 1_000_000 * settings.deepseek_price_output_per_m,
-        6,
-    )
+    return round(prompt / 1_000_000 * input_price + completion / 1_000_000 * output_price, 6)
 
 
 async def _persist_success(
@@ -330,6 +401,7 @@ async def _persist_success(
                     "adaptive_modules": retrieval.config.get("adaptive_modules"),
                     "targeted_retrieval": retrieval.config.get("targeted_retrieval"),
                     "graph_expansion": retrieval.config.get("graph_expansion"),
+                    "llm_planner": retrieval.config.get("llm_planner"),
                 },
                 cost_usd=cost_usd,
                 citation_check=report,

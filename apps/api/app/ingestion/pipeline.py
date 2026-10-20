@@ -6,7 +6,7 @@ import time
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -18,6 +18,7 @@ from app.ingestion.embedder import get_embedder
 from app.ingestion.parser import ParsedDocument, PyMuPDFParser
 from app.models import KbChunk, KbDocument, KbDocumentVersion, KbIngestJob
 from app.retrieval.bm25 import BM25SparseEncoder
+from app.retrieval.index_manifest import upsert_manifest
 from app.retrieval.vector_store import (
     count_version_points,
     delete_version_points,
@@ -33,12 +34,17 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def _chunk_config_hash() -> str:
+def chunk_config_hash() -> str:
     raw = (
         f"{settings.parent_target_chars}:{settings.child_target_chars}:"
         f"{settings.child_overlap_chars}:{settings.embedding_model}:"
         f"{settings.enable_contextual_retrieval}:{PIPELINE_VERSION}"
     )
+    if settings.enable_contextual_retrieval:
+        # Context is a dense-recall aid.  Keeping BM25 on the original text
+        # prevents title/species metadata from outranking the answer paragraph
+        # in hybrid mode.
+        raw += ":ctx_sparse=raw_v1"
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
@@ -155,16 +161,25 @@ async def ingest_version(ctx: dict, version_id: str) -> dict:
                 await db.commit()
 
             await _set_stage(db, job, "embed", 50)
-            embedder = get_embedder(settings.embedding_model, settings.qdrant_vector_size)
+            embedder = get_embedder(
+                settings.embedding_model,
+                settings.qdrant_vector_size,
+                settings.embedding_device,
+                settings.embedding_use_fp16,
+                settings.embedding_batch_size,
+                settings.embedding_max_length,
+            )
             bm25 = BM25SparseEncoder(
                 k1=settings.bm25_k1, b=settings.bm25_b, avg_len=settings.bm25_avg_len
             )
             if settings.enable_contextual_retrieval:
-                index_texts = [context_by_id[chunk.id] for chunk in children]
+                dense_texts = [context_by_id[chunk.id] for chunk in children]
+                sparse_texts = [chunk.content for chunk in children]
             else:
-                index_texts = [chunk.content for chunk in children]
-            dense_vectors = await asyncio.to_thread(embedder.embed_documents, index_texts)
-            sparse_vectors = [bm25.document_vector(text) for text in index_texts]
+                dense_texts = [chunk.content for chunk in children]
+                sparse_texts = dense_texts
+            dense_vectors = await asyncio.to_thread(embedder.embed_documents, dense_texts)
+            sparse_vectors = [bm25.document_vector(text) for text in sparse_texts]
 
             await _set_stage(db, job, "upsert", 75)
             client = get_client()
@@ -203,8 +218,9 @@ async def ingest_version(ctx: dict, version_id: str) -> dict:
                 "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
             }
             version.embedding_model = settings.embedding_model
-            version.chunk_config_hash = _chunk_config_hash()
+            version.chunk_config_hash = chunk_config_hash()
             await db.commit()
+            await _refresh_manifest(db)
             return {
                 "status": "ok",
                 "version_id": version_id,
@@ -221,6 +237,37 @@ def _path(raw: str) -> str:
     from pathlib import Path
 
     return str(Path(raw))
+
+
+async def _refresh_manifest(db: AsyncSession) -> None:
+    """Keep the collection manifest in sync after activation.
+
+    Qdrant remains a derived index: PostgreSQL is authoritative. A stale
+    manifest is worse than a missing one because it looks reproducible, so
+    point/document counts are refreshed after every activation.
+    """
+    client = get_client()
+    try:
+        ensure_collection(client)
+        point_count = client.count(collection_name=settings.qdrant_collection, exact=True).count
+    finally:
+        client.close()
+    document_count = (
+        await db.scalar(
+            select(func.count()).select_from(KbDocument).where(KbDocument.status == "active")
+        )
+    ) or 0
+    await upsert_manifest(
+        db,
+        collection=settings.qdrant_collection,
+        embedding_model=settings.embedding_model,
+        vector_size=settings.qdrant_vector_size,
+        chunk_config_hash=chunk_config_hash(),
+        status="active",
+        document_count=document_count,
+        point_count=point_count,
+    )
+    await db.commit()
 
 
 async def _activate(db: AsyncSession, document_id: uuid.UUID, version_id: uuid.UUID) -> None:

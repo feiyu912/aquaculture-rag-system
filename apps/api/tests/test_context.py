@@ -21,3 +21,14 @@ def test_empty_species_defaults_to_general():
         title="通用水质资料", heading_path=None, species=[], content="溶解氧保持在 5 mg/L 以上。"
     )
     assert "适用品种：通用" in text
+
+
+def test_contextual_index_hash_is_separate_from_raw_index(monkeypatch):
+    from app.config import settings
+    from app.ingestion.pipeline import chunk_config_hash
+
+    monkeypatch.setattr(settings, "enable_contextual_retrieval", False)
+    raw_hash = chunk_config_hash()
+    monkeypatch.setattr(settings, "enable_contextual_retrieval", True)
+    context_hash = chunk_config_hash()
+    assert raw_hash != context_hash

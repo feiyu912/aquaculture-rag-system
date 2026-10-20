@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "apps" / "api"))
 
 from app.config import settings
 from app.db import SessionLocal
-from app.models import KbDocument, KbDocumentVersion
+from app.models import IndexManifest, KbDocument, KbDocumentVersion
 from app.retrieval.vector_store import get_client
 
 
@@ -33,6 +33,7 @@ async def collect() -> dict:
                 .order_by(KbDocument.created_at)
             )
         ).all()
+        manifest = await db.get(IndexManifest, settings.qdrant_collection)
         active_document_ids = [doc.id for doc, _ in rows]
         allowed_version_ids = set(
             (
@@ -93,16 +94,32 @@ async def collect() -> dict:
         client.close()
 
     warnings: list[str] = []
+    manifest_ok = False
+    if manifest is None:
+        warnings.append("index manifest missing for configured collection")
+    else:
+        manifest_ok = (
+            manifest.embedding_model == settings.embedding_model
+            and manifest.vector_size == settings.qdrant_vector_size
+            and manifest.status == "active"
+        )
+        if not manifest_ok:
+            warnings.append("manifest differs from configured embedding/vector/status")
+        if manifest.point_count != points:
+            warnings.append(f"manifest point_count {manifest.point_count} != Qdrant {points}")
+    # Per-version metadata is historical when one document version has been
+    # indexed into several collections; the manifest is authoritative.
+    if not manifest_ok:
+        if len(models) > 1:
+            warnings.append("active versions use more than one embedding model")
+        if len(hashes) > 1:
+            warnings.append("active versions use more than one chunk configuration")
+        if missing_metadata:
+            warnings.append("some active versions have empty embedding/chunk metadata")
+        if models and settings.embedding_model not in models:
+            warnings.append("configured embedding model is not represented in active versions")
     if orphan_ids:
         warnings.append("Qdrant contains points from versions outside active documents")
-    if len(models) > 1:
-        warnings.append("active versions use more than one embedding model")
-    if len(hashes) > 1:
-        warnings.append("active versions use more than one chunk configuration")
-    if missing_metadata:
-        warnings.append("some active versions have empty embedding/chunk metadata")
-    if models and settings.embedding_model not in models:
-        warnings.append("configured embedding model is not represented in active versions")
     if vector_size is not None and vector_size != settings.qdrant_vector_size:
         warnings.append("Qdrant dense size differs from QDRANT_VECTOR_SIZE")
 
@@ -113,6 +130,16 @@ async def collect() -> dict:
         "collection_vector_size": vector_size,
         "collection_points": int(points),
         "active_versions": len(versions),
+        "manifest": None
+        if manifest is None
+        else {
+            "embedding_model": manifest.embedding_model,
+            "vector_size": manifest.vector_size,
+            "chunk_config_hash": manifest.chunk_config_hash,
+            "status": manifest.status,
+            "document_count": manifest.document_count,
+            "point_count": manifest.point_count,
+        },
         "orphan_version_ids": sorted(orphan_ids),
         "active_embedding_models": models,
         "active_chunk_config_hashes": hashes,

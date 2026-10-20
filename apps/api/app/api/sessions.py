@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.generation.claims import summarize_claims, verify_claims
 from app.generation.support import verify_support
-from app.models import ChatCitation, ChatMessage, ChatSession
+from app.models import ChatCitation, ChatMessage, ChatSession, KbDocument, KbDocumentVersion
 from app.schemas import (
     CitationOut,
     CitationVerifyRequest,
@@ -19,6 +19,7 @@ from app.schemas import (
     SessionOut,
     SupportOut,
 )
+from app.species import normalize_species_list
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 
@@ -84,6 +85,32 @@ async def list_messages(
         else []
     )
     by_message: dict[uuid.UUID, list[CitationOut]] = {}
+    # Display metadata for historical citations: the citation row only stores
+    # ids, so titles/species/versions are resolved with one extra query.
+    cited_document_ids = {citation.document_id for citation in citations}
+    cited_version_ids = {citation.document_version_id for citation in citations}
+    cited_documents = (
+        (await db.execute(select(KbDocument).where(KbDocument.id.in_(cited_document_ids))))
+        .scalars()
+        .all()
+        if cited_document_ids
+        else []
+    )
+    cited_versions = (
+        (
+            await db.execute(
+                select(KbDocumentVersion).where(KbDocumentVersion.id.in_(cited_version_ids))
+            )
+        )
+        .scalars()
+        .all()
+        if cited_version_ids
+        else []
+    )
+    doc_titles = {doc.id: doc.title for doc in cited_documents}
+    species_by_document = {doc.id: normalize_species_list(doc.species) for doc in cited_documents}
+    version_numbers = {version.id: version.version_no for version in cited_versions}
+
     for citation in citations:
         by_message.setdefault(citation.message_id, []).append(
             CitationOut(
@@ -91,12 +118,17 @@ async def list_messages(
                 source_index=citation.source_index,
                 document_id=citation.document_id,
                 document_version_id=citation.document_version_id,
+                chunk_id=citation.chunk_id,
                 quote=citation.quote,
                 page=citation.page,
                 bbox=citation.bbox,
+                location=citation.bbox if isinstance(citation.bbox, dict) else None,
                 score=citation.score,
                 support_status=citation.support_status,
                 support_score=citation.support_score,
+                title=doc_titles.get(citation.document_id),
+                version_no=version_numbers.get(citation.document_version_id),
+                species=species_by_document.get(citation.document_id, []),
             )
         )
     return [
@@ -107,6 +139,9 @@ async def list_messages(
             status=message.status,
             created_at=message.created_at,
             citations=by_message.get(message.id, []),
+            model=message.model,
+            latency_ms=message.latency_ms,
+            meta=message.meta or {},
         )
         for message in messages
     ]

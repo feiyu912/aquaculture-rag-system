@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import math
 import re
+import threading
 from functools import lru_cache
 from typing import Protocol
 
@@ -63,37 +64,111 @@ class HashingEmbedder:
         return self._embed(text)
 
 
+def resolve_device(requested: str | None) -> str | None:
+    value = (requested or "auto").strip().lower()
+    if value in {"", "auto"}:
+        try:
+            import torch
+        except ImportError:
+            return None
+        if torch.backends.mps.is_available():
+            return "mps"
+        if torch.cuda.is_available():
+            return "cuda"
+        return "cpu"
+    return value
+
+
 class BGEM3Embedder:
     """Adapter for BAAI/bge-m3.
 
-    Requires `pip install FlagEmbedding` and a model download. Kept out of the
-    default dependency set so the skeleton remains runnable offline.
+    Install with ``uv sync --extra bge``. The first call downloads the model;
+    pin the snapshot in experiment manifests before collecting thesis numbers.
     """
 
-    name = "BAAI/bge-m3"
-
-    def __init__(self, dimension: int = 1024, device: str | None = None) -> None:
+    def __init__(
+        self,
+        model_name: str = "BAAI/bge-m3",
+        dimension: int = 1024,
+        device: str | None = None,
+        *,
+        use_fp16: bool = False,
+        batch_size: int = 8,
+        max_length: int = 1024,
+    ) -> None:
         from FlagEmbedding import BGEM3FlagModel  # type: ignore[import-not-found]
 
+        self.name = model_name
         self.dimension = dimension
-        self._model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True, device=device)
+        self.batch_size = batch_size
+        self.max_length = max_length
+        self.device = resolve_device(device)
+        # MPS/CUDA inference is not safe under concurrent calls from ARQ jobs.
+        # Serialize here so multiple ingestions share one model without racing.
+        self._lock = threading.Lock()
+        self._model = BGEM3FlagModel(
+            model_name,
+            use_fp16=use_fp16,
+            device=self.device,
+        )
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        result = self._model.encode(texts, batch_size=8, max_length=1024)
-        return [list(map(float, row)) for row in result["dense_vecs"]]
+        if not texts:
+            return []
+        with self._lock:
+            result = self._model.encode(
+                texts,
+                batch_size=self.batch_size,
+                max_length=self.max_length,
+            )
+        vectors = [list(map(float, row)) for row in result["dense_vecs"]]
+        if vectors and len(vectors[0]) != self.dimension:
+            raise ValueError(
+                f"embedding dimension mismatch: model={len(vectors[0])} configured={self.dimension}"
+            )
+        return vectors
 
     def embed_query(self, text: str) -> list[float]:
         return self.embed_documents([text])[0]
 
 
-def build_embedder(model_name: str, dimension: int = 1024) -> Embedder:
+def build_embedder(
+    model_name: str,
+    dimension: int = 1024,
+    *,
+    device: str | None = None,
+    use_fp16: bool = False,
+    batch_size: int = 8,
+    max_length: int = 1024,
+) -> Embedder:
     if model_name.startswith("hashing"):
         return HashingEmbedder(dimension=dimension)
     if model_name in {"BAAI/bge-m3", "bge-m3"}:
-        return BGEM3Embedder(dimension=dimension)
+        return BGEM3Embedder(
+            model_name,
+            dimension=dimension,
+            device=device,
+            use_fp16=use_fp16,
+            batch_size=batch_size,
+            max_length=max_length,
+        )
     raise ValueError(f"Unknown embedding model: {model_name}")
 
 
 @lru_cache(maxsize=2)
-def get_embedder(model_name: str, dimension: int = 1024) -> Embedder:
-    return build_embedder(model_name, dimension)
+def get_embedder(
+    model_name: str,
+    dimension: int = 1024,
+    device: str | None = None,
+    use_fp16: bool = False,
+    batch_size: int = 8,
+    max_length: int = 1024,
+) -> Embedder:
+    return build_embedder(
+        model_name,
+        dimension,
+        device=device,
+        use_fp16=use_fp16,
+        batch_size=batch_size,
+        max_length=max_length,
+    )

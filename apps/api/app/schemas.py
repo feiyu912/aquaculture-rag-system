@@ -38,6 +38,11 @@ class DocumentOut(BaseModel):
     current_version_no: int | None = None
     page_count: int | None = None
     created_at: datetime
+    source_org: str | None = None
+    source_url: str | None = None
+    publish_year: int | None = None
+    document_status: str | None = None
+    region: str | None = None
 
 
 class DocumentDetail(DocumentOut):
@@ -60,12 +65,21 @@ class CitationOut(BaseModel):
     source_index: int
     document_id: uuid.UUID
     document_version_id: uuid.UUID
+    chunk_id: uuid.UUID | None = None
     quote: str
     page: int | None = None
+    # Stored as the full location record for old rows; ``location`` is the
+    # canonical object and ``bbox`` remains for backward compatibility.
     bbox: dict | list | None = None
+    location: dict | None = None
     score: float | None = None
     support_status: str
     support_score: float | None = None
+    # Denormalised display fields. Optional so older rows / older clients keep
+    # working; the web client uses them to label historical citations.
+    title: str | None = None
+    version_no: int | None = None
+    species: list[str] = Field(default_factory=list)
 
 
 class MessageOut(BaseModel):
@@ -75,6 +89,9 @@ class MessageOut(BaseModel):
     status: str
     created_at: datetime
     citations: list[CitationOut] = Field(default_factory=list)
+    model: str | None = None
+    latency_ms: int | None = None
+    meta: dict = Field(default_factory=dict)
 
 
 class SessionOut(BaseModel):

@@ -11,16 +11,17 @@
 | PDF 解析 | ✅（开发用） | PyMuPDF 适配器；MinerU 适配器留接口 |
 | 坐标归一化 | ✅ | PDF points、左下原点、CropBox、未旋转 |
 | 结构感知 + Parent-Child 切分 | ✅ | 标题路径、表格独立父块、跨页 location |
-| Dense 检索 | ⚠️ 开发占位 | `HashingEmbedder`，**不是 BGE-M3，不能用于论文实验** |
+| Dense 检索 | ✅ | `BAAI/bge-m3`（FlagEmbedding，MPS/fp16）；`HashingEmbedder` 仅保留离线回退 |
 | BM25 | ✅ | 应用侧 BM25 词项权重 + Qdrant 稀疏向量 IDF |
 | RRF | ✅ | 应用侧融合，保留两路排名日志 |
-| Reranker | ⏳ | `NoopReranker` 占位；BGE 适配器已写，未启用 |
-| 生成 | ✅ / ⏳ | 默认 `mock` 抽取式回答；DeepSeek 适配器已写，需 Key 验证 |
+| Reranker | ✅ | `BAAI/bge-reranker-v2-m3` 本地权重真实重排；`NoopReranker` 仅消融 |
+| 生成 | ✅ / ⏳ | 已验证 OpenAI 兼容网关真实 SSE；默认 mock 仅离线回归；原生 DeepSeek 未验证 |
 | 检索模式 | ✅ | `dense` / `bm25` / `hybrid` / `hybrid_rerank` 可切换 |
 | 多品种元数据 | ✅ | 文档可关联多个品种；Qdrant 品种过滤；问题中自动识别单一品种 |
 | Typed Query IR | ✅（规则 v1） | 意图、品种、阶段、水质指标、年份/规范标记；只有可信字段编译为硬过滤 |
 | Contextual Retrieval | ✅（可开关） | `context_text` 与原文分开存储；索引文本可切换，引用仍用原文 |
 | 声明级引用检查 | ✅（v0） | 回答拆句、映射 `[S1]`、词面支持性；明确不是 NLI |
+| 索引 manifest | ✅ | `index_manifests` 记录 collection/embedding/dim/chunk hash/点数；查询期拒绝混检 |
 | 检索 Trace | ✅（本地调试） | `GET /api/debug/query-logs/{request_id}` |
 | 轻量领域图 / 证据补检 | ✅（默认关闭） | 种子图、实体 mention、一跳 Graph-to-Chunk、facet 补检 |
 | 多跳 / LangGraph 路由 | ⏳ Phase 2b/3 | 已有规则问题分解 + 一跳图 + 确定性 route；真正多跳证据合并、LangGraph 未实现 |
@@ -176,7 +177,15 @@ uv run pytest -q
 uv run ruff check app tests ../../scripts
 ```
 
-当前 **67 个单元测试**覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/一跳扩展、证据要求/定向补检、自适应路由守卫与模块选择。
+当前默认 **89 个单元测试**（另有 2 个真实 BGE 集成测试默认跳过）覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词/权重、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/一跳扩展、证据要求/定向补检、自适应路由守卫、消融指标与模块选择、别名扩展、LLM Planner 校验/回退。
+
+真实模型集成测试：
+
+```bash
+RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 uv run pytest tests/test_bge_integration.py -q
+```
+
+索引 manifest 诊断：`check_index.py` 现在同时检查 manifest 与 Qdrant 点数。
 
 端到端测试（需要 API + worker 运行）：
 
@@ -277,18 +286,36 @@ eval/
 
 这仍然是 Qdrant 上的 BM25 稀疏检索，并且分词策略可测试、可复现。后续如果部署环境启用了 Qdrant 原生 BM25，可在 `vector_store.py` 内替换，不影响上层。
 
-### 9.2 开发占位 Embedder
-
-`HashingEmbedder` 用字符/词哈希生成 1024 维向量，只保证流程可跑，**没有语义能力**。切换 BGE-M3：
+### 9.2 真实 Embedding / Reranker
 
 ```bash
-uv add FlagEmbedding
+cd apps/api
+uv sync --extra bge
 # .env
 EMBEDDING_MODEL=BAAI/bge-m3
+EMBEDDING_DEVICE=mps          # 或 cuda / cpu / auto
+EMBEDDING_USE_FP16=true
 QDRANT_COLLECTION=kb_chunks_bge_m3_v1
+INDEX_MANIFEST_REQUIRED=true
+RERANKER_MODEL=BAAI/bge-reranker-v2-m3
+RERANKER_PATH=../../models/bge-reranker-v2-m3   # 可选；离线部署时使用
+RERANKER_DEVICE=mps
+RERANKER_USE_FP16=true
 ```
 
-然后重建集合并重新入库。旧 collection 不要复用，维度/模型都变了。
+从 PostgreSQL 的 active 文档重建一个**独立** collection：
+
+```bash
+uv run python ../../scripts/reindex_collection.py   --collection kb_chunks_bge_m3_v1   --embedding-model BAAI/bge-m3
+```
+
+脚本会拒绝覆盖当前配置集合；失败时删除半成品目标集合；成功后才写入 `index_manifests`。Contextual 版本必须另建集合：
+
+```bash
+uv run python ../../scripts/reindex_collection.py   --collection kb_chunks_bge_m3_ctx_v1   --embedding-model BAAI/bge-m3 --contextual
+```
+
+`HashingEmbedder` 仍保留为离线开发回退，但**不能用于论文结果**。模型缓存完成后，生产/评测进程应设置 `HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1`，避免运行期访问 Hugging Face 元数据超时。
 
 ### 9.3 版本激活顺序
 
@@ -317,7 +344,7 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 | `dense` | 只查 `dense` 向量 |
 | `bm25` | 只查 `bm25` 稀疏向量 |
 | `hybrid` | 两路独立召回，应用侧 RRF 融合 |
-| `hybrid_rerank` | RRF 后接 Reranker；当前默认 `noop`，接 BGE 后才是真正重排 |
+| `hybrid_rerank` | RRF 后接 BGE Reranker；trace 记录 `reranker=BAAI/bge-reranker-v2-m3`；`noop` 仅消融 |
 
 四路都写入 `query_logs.retrieval_rankings`，可直接用于消融。
 
@@ -388,10 +415,10 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 
 ## 10. 已知限制
 
-1. **Hash embedder 不是 BGE-M3**，检索质量不代表最终系统。
+1. **BGE-M3 已真实接入**，但当前只有 5 个文档（2 份真实地方标准）；检索指标仍不足以代表领域效果。
 2. **PyMuPDF 解析器只适合文本型 PDF**；扫描件、复杂双栏、公式需要 MinerU。
-3. **Reranker 默认是 `noop`**；`hybrid_rerank` 在接 BGE-Reranker 前等价于 RRF，不要把它当成真实重排结果。
-4. **DeepSeek 适配器未做真实 Key 验证**；默认 mock 便于离线开发，所有测试不依赖外网。
+3. **BGE-Reranker 已真实接入**；`hybrid_rerank` 的 trace 记录真实模型。`noop` 仅作消融对照，不能把 noop 结果写成 BGE 重排结果。
+4. **原生 DeepSeek endpoint 未做真实 Key 验证**；OpenAI 兼容网关已用真实 SSE 验证。默认 mock 仅离线回归，所有单元测试不依赖外网。缺少 key 时 `build_generator` 抛错，API 返回 503，不会静默回退 Mock；空可见输出返回 `empty_generation`。
 5. **没有 PDF.js 高亮**，只有页码跳转；bbox 已按规范入库，前端可后续接高亮。
 6. **没有认证/权限**，不要暴露到公网。
 7. **没有旧版本清理任务**，Qdrant 会保留归档版本向量；检索已过滤，不影响正确性。
@@ -409,9 +436,9 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 
 按依赖顺序：
 
-1. 用 BGE-M3 替换 Hash embedder，建立 `kb_chunks_bge_m3_v1`，重跑同一批问题对比。
-2. 接入 MinerU 适配器，用真实 PDF 校准 bbox；保留 PyMuPDF 作为降级。
-3. 接入 BGE-Reranker-v2-m3，先测 CPU/GPU 延迟，再定候选数；同时在评测中对比 `hybrid` 与 `hybrid_rerank`。
+1. 在 BGE-M3 + BGE-Reranker 基线上扩充真实文献和人工 qrels，重跑 Dense/BM25/Hybrid/+Reranker 对比。
+2. 接入 MinerU 适配器，用真实扫描件/表格/双栏 PDF 校准 bbox；保留 PyMuPDF 作为降级。
+3. 对 BGE-Reranker 的候选数、P50/P95 延迟和 nDCG 收益做系统测量，确定是否默认开启。
 4. 完成 PDF.js 查看器：页码跳转 + bbox 高亮 + 多 location 切换。
 5. 增加 `reindex` 与旧版本清理任务、Qdrant/PostgreSQL 对账。
 6. 建立 200 条人工评测集（含 gold chunk / 证据句），跑检索消融 E1；把支持性验证从词面 v0 升级到 NLI 或人工标注。

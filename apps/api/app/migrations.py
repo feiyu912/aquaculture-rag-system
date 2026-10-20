@@ -78,6 +78,20 @@ MIGRATIONS: list[tuple[str, str]] = [
         )""",
     ),
     (
+        "0013_index_manifests",
+        """CREATE TABLE IF NOT EXISTS index_manifests (
+            collection varchar(128) PRIMARY KEY,
+            embedding_model varchar(128) NOT NULL,
+            vector_size integer NOT NULL,
+            chunk_config_hash varchar(64) NOT NULL DEFAULT '',
+            status varchar(16) NOT NULL DEFAULT 'building',
+            document_count integer NOT NULL DEFAULT 0,
+            point_count integer NOT NULL DEFAULT 0,
+            created_at timestamptz NOT NULL DEFAULT now(),
+            updated_at timestamptz NOT NULL DEFAULT now()
+        )""",
+    ),
+    (
         "0012_chunk_entities",
         """CREATE TABLE IF NOT EXISTS kb_chunk_entities (
             chunk_id uuid NOT NULL REFERENCES kb_chunks(id) ON DELETE CASCADE,

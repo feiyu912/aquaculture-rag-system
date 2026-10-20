@@ -44,5 +44,20 @@ async def health(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
         "components": components,
         "collection": settings.qdrant_collection,
         "llm_provider": settings.llm_provider,
+        "llm_configured": (
+            bool(settings.deepseek_api_key.strip())
+            if settings.llm_provider == "deepseek"
+            else (
+                bool(
+                    settings.openai_api_key.strip()
+                    and settings.openai_base_url.strip()
+                    and settings.openai_model.strip()
+                )
+                if settings.llm_provider in {"openai_compatible", "openai"}
+                else True
+            )
+        ),
         "embedding_model": settings.embedding_model,
+        "embedding_device": settings.embedding_device,
+        "reranker_model": settings.reranker_model,
     }

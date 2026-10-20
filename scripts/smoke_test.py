@@ -24,7 +24,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def make_pdf(
-    source: Path, pages: list[int], title: str, species: str, nonce: str, update: str | None = None
+    source: Path,
+    pages: list[int],
+    title: str,
+    species: str,
+    nonce: str,
+    update: str | None = None,
 ) -> Path:
     src = pymupdf.open(source)
     doc = pymupdf.open()
@@ -48,7 +53,9 @@ def make_pdf(
             fontsize=10,
             color=(0.7, 0.05, 0.05),
         )
-    target = Path("/tmp") / f"aqua_smoke_{nonce}_{pages[0]}_{'v2' if update else 'v1'}.pdf"
+    target = (
+        Path("/tmp") / f"aqua_smoke_{nonce}_{pages[0]}_{'v2' if update else 'v1'}.pdf"
+    )
     doc.save(target, garbage=3, deflate=True)
     doc.close()
     return target
@@ -97,7 +104,9 @@ async def upload_version(
     return response.json()
 
 
-async def poll_job(client: httpx.AsyncClient, base: str, job_id: str, timeout: float = 90) -> dict:
+async def poll_job(
+    client: httpx.AsyncClient, base: str, job_id: str, timeout: float = 90
+) -> dict:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         response = await client.get(f"{base}/api/jobs/{job_id}")
@@ -148,14 +157,18 @@ async def delete_doc(client: httpx.AsyncClient, base: str, document_id: str) -> 
 async def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--sample", type=Path, default=ROOT / "data/samples/aquaculture_sample.pdf")
+    parser.add_argument(
+        "--sample", type=Path, default=ROOT / "data/samples/aquaculture_sample.pdf"
+    )
     parser.add_argument(
         "--keep", action="store_true", help="keep created documents for manual demo"
     )
     args = parser.parse_args()
 
     if not args.sample.exists():
-        print("sample PDF missing; run scripts/make_sample_pdf.py first", file=sys.stderr)
+        print(
+            "sample PDF missing; run scripts/make_sample_pdf.py first", file=sys.stderr
+        )
         return 2
 
     nonce = uuid.uuid4().hex[:8]
@@ -180,13 +193,28 @@ async def main() -> int:
             print("PASS health")
 
             general_job = await upload(
-                client, args.base_url, general, "水产养殖水质通用资料", "通用", "水质管理"
+                client,
+                args.base_url,
+                general,
+                "水产养殖水质通用资料",
+                "通用",
+                "水质管理",
             )
             crab_job = await upload(
-                client, args.base_url, crab, "中华绒螯蟹养殖示例资料", "中华绒螯蟹", "养殖技术"
+                client,
+                args.base_url,
+                crab,
+                "中华绒螯蟹养殖示例资料",
+                "中华绒螯蟹",
+                "养殖技术",
             )
             shrimp_job = await upload(
-                client, args.base_url, shrimp, "凡纳滨对虾养殖示例资料", "凡纳滨对虾", "养殖技术"
+                client,
+                args.base_url,
+                shrimp,
+                "凡纳滨对虾养殖示例资料",
+                "凡纳滨对虾",
+                "养殖技术",
             )
             created += [
                 general_job["document_id"],
@@ -200,14 +228,21 @@ async def main() -> int:
 
             for mode in ("dense", "bm25", "hybrid", "hybrid_rerank"):
                 result = await chat(
-                    client, args.base_url, "中华绒螯蟹养殖对溶解氧有什么要求？", mode, "中华绒螯蟹"
+                    client,
+                    args.base_url,
+                    "中华绒螯蟹养殖对溶解氧有什么要求？",
+                    mode,
+                    "中华绒螯蟹",
                 )
                 assert result["sources"], f"{mode}: no sources"
                 assert all(
-                    source["species"] in (["中华绒螯蟹"], ["通用"]) for source in result["sources"]
+                    source["species"] in (["中华绒螯蟹"], ["通用"])
+                    for source in result["sources"]
                 ), f"{mode}: species leak"
                 assert result["citation"]["valid"], f"{mode}: invalid citations"
-                assert "不足" not in result["answer"], f"{mode}: wrongly refused"
+                assert result["status"].get("sufficient") is True, (
+                    f"{mode}: evidence gate refused"
+                )
                 assert result["done"].get("retrieval_mode") == mode
             print("PASS four retrieval modes + species filter")
 
@@ -225,23 +260,31 @@ async def main() -> int:
             version_job = await upload_version(
                 client, args.base_url, crab_job["document_id"], crab_v2
             )
-            version_status = await poll_job(client, args.base_url, version_job["job_id"])
+            version_status = await poll_job(
+                client, args.base_url, version_job["job_id"]
+            )
             assert version_status["status"] == "succeeded", version_status
             detail = (
-                await client.get(f"{args.base_url}/api/documents/{crab_job['document_id']}")
+                await client.get(
+                    f"{args.base_url}/api/documents/{crab_job['document_id']}"
+                )
             ).json()
             assert detail["current_version_no"] == 2, detail
             after_update = await chat(
-                client, args.base_url, "中华绒螯蟹养殖对溶解氧有什么要求？", "hybrid", "中华绒螯蟹"
+                client,
+                args.base_url,
+                "中华绒螯蟹养殖对溶解氧有什么要求？",
+                "hybrid",
+                "中华绒螯蟹",
             )
             crab_sources = [
                 source
                 for source in after_update["sources"]
                 if source["document_id"] == crab_job["document_id"]
             ]
-            assert crab_sources and all(source["version_no"] == 2 for source in crab_sources), (
-                crab_sources
-            )
+            assert crab_sources and all(
+                source["version_no"] == 2 for source in crab_sources
+            ), crab_sources
             print("PASS version update activates v2 without old-version citations")
 
             rollback = await client.post(
@@ -251,19 +294,25 @@ async def main() -> int:
             rollback.raise_for_status()
             assert rollback.json()["current_version_no"] == 1
             after_rollback = await chat(
-                client, args.base_url, "中华绒螯蟹养殖对溶解氧有什么要求？", "hybrid", "中华绒螯蟹"
+                client,
+                args.base_url,
+                "中华绒螯蟹养殖对溶解氧有什么要求？",
+                "hybrid",
+                "中华绒螯蟹",
             )
             crab_sources = [
                 source
                 for source in after_rollback["sources"]
                 if source["document_id"] == crab_job["document_id"]
             ]
-            assert crab_sources and all(source["version_no"] == 1 for source in crab_sources), (
-                crab_sources
-            )
+            assert crab_sources and all(
+                source["version_no"] == 1 for source in crab_sources
+            ), crab_sources
             print("PASS rollback switches retrieval back to v1")
 
-            refusal = await chat(client, args.base_url, "今天上海天气怎么样？", "hybrid", None)
+            refusal = await chat(
+                client, args.base_url, "今天上海天气怎么样？", "hybrid", None
+            )
             assert refusal["status"].get("sufficient") is False, refusal["status"]
             assert not refusal["sources"], refusal["sources"]
             assert "不足" in refusal["answer"], refusal["answer"]

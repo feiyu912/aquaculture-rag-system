@@ -12,11 +12,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.graph.service import expand_entities, graph_chunk_ids, load_graph
 from app.ingestion.embedder import Embedder
+from app.ingestion.pipeline import chunk_config_hash
 from app.models import KbChunk, KbDocument, KbDocumentVersion
 from app.query.decompose import decompose_question
+from app.query.expand import alias_variants
 from app.query.ir import QueryIR, build_query_ir
+from app.query.planner import LLMQueryPlanner
 from app.query.router import select_modules
 from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, tokenize
+from app.retrieval.index_manifest import check_manifest
 from app.retrieval.requirements import (
     Requirement,
     assess_requirements,
@@ -51,18 +55,29 @@ class Evidence:
     heading_path: list[str] = field(default_factory=list)
 
     def as_source(self) -> dict:
+        location = self.location or {}
         return {
             "source_id": f"S{self.source_index}",
             "index": self.source_index,
             "document_id": str(self.document_id),
             "version_id": str(self.version_id),
             "version_no": self.version_no,
+            "chunk_id": str(self.parent_chunk_id),
+            "child_chunk_id": str(self.child_chunk_id),
             "title": self.title,
             "species": self.species,
             "page": self.page,
             "quote": self.quote,
             "heading_path": self.heading_path,
             "location": self.location,
+            # Convenience fields for PDF.js; ``location`` remains the canonical
+            # full record for backward compatibility.
+            "bbox": location.get("bbox"),
+            "coordinate_system": location.get("coordinate_system"),
+            "origin": location.get("origin"),
+            "rotation": location.get("rotation"),
+            "page_width": location.get("page_width"),
+            "page_height": location.get("page_height"),
         }
 
 
@@ -89,6 +104,19 @@ def _excerpt(text: str, limit: int = 300) -> str:
     return text if len(text) <= limit else text[:limit].rstrip() + "…"
 
 
+EVIDENCE_ALIASES = {
+    "溶氧": "溶解氧",
+    "溶氧量": "溶解氧",
+    "do": "溶解氧",
+    "ph": "酸碱度",
+    "ph值": "酸碱度",
+}
+
+
+def _canonical_term(token: str) -> str:
+    return EVIDENCE_ALIASES.get(token.lower(), token.lower())
+
+
 def best_sentence(text: str, query: str, limit: int = 220, max_sentences: int = 2) -> str:
     """Pick the sentences with the strongest query overlap, preserving order."""
     if not text:
@@ -98,11 +126,11 @@ def best_sentence(text: str, query: str, limit: int = 220, max_sentences: int = 
     sentences = [s.strip() for s in SENTENCE_RE.split(text) if s.strip()]
     if not sentences:
         return _excerpt(text, limit)
-    query_tokens = set(tokenize(query))
+    query_tokens = {_canonical_term(token) for token in tokenize(query)}
     domain_terms = set(CUSTOM_TERMS)
     scored: list[tuple[float, int, str]] = []
     for index, sentence in enumerate(sentences):
-        sentence_tokens = set(tokenize(sentence))
+        sentence_tokens = {_canonical_term(token) for token in tokenize(sentence)}
         shared = query_tokens & sentence_tokens
         weighted = sum(3.0 if token in domain_terms else 1.0 for token in shared)
         density = weighted / (len(sentence_tokens) + 1)
@@ -175,6 +203,7 @@ async def retrieve(
     embedder: Embedder,
     bm25: BM25SparseEncoder,
     reranker: Reranker | None = None,
+    planner: LLMQueryPlanner | None = None,
     top_k: int | None = None,
     category: str | None = None,
     species: str | None = None,
@@ -187,6 +216,7 @@ async def retrieve(
     query_text = (search_question or question).strip()
     active_versions, species_options = await _active_version_rows(db)
     query_ir: QueryIR | None = None
+    planner_trace: dict | None = None
     if settings.enable_query_ir:
         query_ir = build_query_ir(
             question,
@@ -194,8 +224,28 @@ async def retrieve(
             explicit_species=species,
             explicit_category=category,
         )
+        if settings.enable_llm_planner and _attempt == 0:
+            if planner is None:
+                planner_trace = {
+                    "enabled": True,
+                    "used_llm": False,
+                    "error": "planner_unavailable",
+                    "duration_ms": 0.0,
+                    "plan": None,
+                }
+            else:
+                outcome = await planner.plan(question, query_ir, species_options)
+                query_ir = outcome.ir
+                planner_trace = outcome.trace()
     adaptive_route = query_ir.strategy if query_ir else "simple"
     embedding_mismatches = await _embedding_mismatches(db, active_versions)
+    manifest = await check_manifest(
+        db,
+        collection=settings.qdrant_collection,
+        embedding_model=settings.embedding_model,
+        vector_size=settings.qdrant_vector_size,
+        chunk_config_hash=chunk_config_hash(),
+    )
     base_modules = {
         "graph": settings.enable_graph_expansion,
         "decomposition": settings.enable_query_decomposition,
@@ -207,8 +257,20 @@ async def retrieve(
         if settings.enable_adaptive_routing
         else base_modules
     )
-    if embedding_mismatches:
-        gate = Sufficiency(False, "index_embedding_mismatch", [], [], 0.0, 0.0, 0.0, None)
+    manifest_ok = manifest["present"] and manifest["ok"]
+    manifest_blocked = (manifest["present"] and not manifest["ok"]) or (
+        settings.index_manifest_required and not manifest["present"]
+    )
+    # A document version can have been indexed into more than one collection
+    # (e.g. legacy hash + new BGE). The collection manifest is authoritative for
+    # the collection currently being queried; per-version metadata is only a
+    # fallback when no manifest exists.
+    version_mismatch_blocked = bool(embedding_mismatches) and not manifest_ok
+    if version_mismatch_blocked or manifest_blocked:
+        reason = (
+            "index_embedding_mismatch" if version_mismatch_blocked else "index_manifest_mismatch"
+        )
+        gate = Sufficiency(False, reason, [], [], 0.0, 0.0, 0.0, None)
         return RetrievalResult(
             evidence=[],
             active_versions=active_versions,
@@ -226,6 +288,7 @@ async def retrieve(
                 compatibility={
                     "configured": settings.embedding_model,
                     "mismatched": embedding_mismatches,
+                    "manifest": manifest,
                 },
             ),
             sufficient=False,
@@ -299,6 +362,14 @@ async def retrieve(
         graph_ms = (time.perf_counter() - graph_started) * 1000
 
     query_variants = [query_text]
+    if query_ir is not None:
+        for variant in alias_variants(question, query_ir):
+            if variant not in query_variants:
+                query_variants.append(variant)
+        for variant in query_ir.planner_subquestions:
+            inherited = _inherit_constraints(variant, query_ir)
+            if inherited not in query_variants:
+                query_variants.append(inherited)
     if modules["decomposition"] and query_ir is not None:
         for variant in decompose_question(question, query_ir):
             if variant not in query_variants:
@@ -565,6 +636,7 @@ async def retrieve(
                 embedder,
                 bm25,
                 reranker=reranker,
+                planner=planner,
                 top_k=top_k,
                 category=category,
                 species=species,
@@ -607,6 +679,12 @@ async def retrieve(
         graph_expansion.as_dict() if graph_expansion else None,
         route=adaptive_route,
         modules=modules,
+        compatibility={
+            "configured": settings.embedding_model,
+            "mismatched": embedding_mismatches,
+            "manifest": manifest,
+        },
+        planner=planner_trace,
     )
     if requirements:
         config["evidence_requirements"] = [item.as_dict() for item in requirements]
@@ -622,6 +700,15 @@ async def retrieve(
         sufficient=gate.sufficient,
         gate=gate.as_dict(),
     )
+
+
+def _inherit_constraints(subquestion: str, ir: QueryIR) -> str:
+    """Prefix a planner sub-question with the original hard/soft facets."""
+    parts = [subquestion]
+    for value in [*ir.species[:1], *ir.growth_stage[:1]]:
+        if value and value not in subquestion:
+            parts.insert(0, value)
+    return " ".join(parts)
 
 
 def _assess_with_requirements(
@@ -711,6 +798,7 @@ def _config(
     route: str | None = None,
     modules: dict | None = None,
     compatibility: dict | None = None,
+    planner: dict | None = None,
 ) -> dict:
     return {
         "dense_top_k": settings.dense_top_k,
@@ -736,12 +824,17 @@ def _config(
         "graph_top_k": settings.graph_top_k,
         "graph_rrf_weight": settings.graph_rrf_weight,
         "query_decomposition": settings.enable_query_decomposition,
+        "contextual_retrieval": settings.enable_contextual_retrieval,
         "max_query_variants": settings.max_query_variants,
         "adaptive_route": route,
         "adaptive_routing_enabled": settings.enable_adaptive_routing,
         "adaptive_modules": modules or {},
+        "llm_planner": planner,
         "index_compatibility": compatibility
-        or {"configured": settings.embedding_model, "mismatched": []},
+        or {
+            "configured": settings.embedding_model,
+            "mismatched": [],
+        },
         "evidence_min_terms": settings.evidence_min_terms,
         "evidence_min_weight": settings.evidence_min_weight,
         "evidence_min_coverage": settings.evidence_min_coverage,

@@ -19,6 +19,15 @@ dependencies = [
     "jieba>=0.42",
 ]
 
+[project.optional-dependencies]
+bge = [
+    "flagembedding>=1.3.0,<2",
+]
+
+[tool.uv]
+# 环境完全由 uv 管理：只使用 uv 自带的 Python，不依赖 conda / 系统 Python
+python-preference = "only-managed"
+
 [dependency-groups]
 dev = [
     "pytest>=8.3",

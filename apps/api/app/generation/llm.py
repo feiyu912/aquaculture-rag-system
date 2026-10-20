@@ -19,6 +19,53 @@ class Generator(Protocol):
     name: str
     last_usage: dict
 
+    async def complete(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        max_tokens: int = 900,
+        temperature: float = 0.0,
+        response_format: dict | None = None,
+    ) -> str:
+        """Non-streaming JSON/text completion used by the query planner."""
+        payload = {
+            "model": self._model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False,
+        }
+        if response_format:
+            payload["response_format"] = response_format
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        url = self._base_url + "/chat/completions"
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                if response.status_code >= 400:
+                    body = response.text
+                    raise LLMError(f"{self.name} HTTP {response.status_code}: {body[:300]}")
+                body = response.json()
+        except httpx.HTTPError as exc:
+            raise LLMError(f"{self.name} request failed: {exc}") from exc
+        usage = body.get("usage")
+        if usage:
+            self.last_usage = {
+                "prompt_tokens": usage.get("prompt_tokens"),
+                "completion_tokens": usage.get("completion_tokens"),
+            }
+        choices = body.get("choices") or []
+        if not choices:
+            raise LLMError(f"{self.name} returned no choices")
+        message = choices[0].get("message") or {}
+        content = message.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise LLMError(f"{self.name} returned empty content")
+        return content
+
     async def stream(self, question: str, evidence: list[Evidence]) -> AsyncIterator[str]: ...
 
 
@@ -52,6 +99,53 @@ class MockGenerator:
     name = "mock"
     last_usage: dict = {}
 
+    async def complete(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        max_tokens: int = 900,
+        temperature: float = 0.0,
+        response_format: dict | None = None,
+    ) -> str:
+        """Non-streaming JSON/text completion used by the query planner."""
+        payload = {
+            "model": self._model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False,
+        }
+        if response_format:
+            payload["response_format"] = response_format
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        url = self._base_url + "/chat/completions"
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                if response.status_code >= 400:
+                    body = response.text
+                    raise LLMError(f"{self.name} HTTP {response.status_code}: {body[:300]}")
+                body = response.json()
+        except httpx.HTTPError as exc:
+            raise LLMError(f"{self.name} request failed: {exc}") from exc
+        usage = body.get("usage")
+        if usage:
+            self.last_usage = {
+                "prompt_tokens": usage.get("prompt_tokens"),
+                "completion_tokens": usage.get("completion_tokens"),
+            }
+        choices = body.get("choices") or []
+        if not choices:
+            raise LLMError(f"{self.name} returned no choices")
+        message = choices[0].get("message") or {}
+        content = message.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise LLMError(f"{self.name} returned empty content")
+        return content
+
     async def stream(self, question: str, evidence: list[Evidence]) -> AsyncIterator[str]:
         if not evidence:
             answer = "现有资料不足以回答这个问题。请先上传相关水产养殖资料，或换一种问法。"
@@ -75,14 +169,77 @@ class MockGenerator:
             await asyncio.sleep(0.008)
 
 
-class DeepSeekGenerator:
-    name = "deepseek"
+class ChatCompletionsGenerator:
+    """Shared streaming client for OpenAI-compatible chat-completions APIs."""
 
-    def __init__(self, config: Settings) -> None:
-        if not config.deepseek_api_key:
-            raise LLMError("DEEPSEEK_API_KEY is not configured")
+    name = "chat_completions"
+
+    def __init__(
+        self,
+        config: Settings,
+        *,
+        api_key: str,
+        base_url: str,
+        model: str,
+        name: str,
+    ) -> None:
+        if not api_key.strip():
+            raise LLMError(f"{name} API key is not configured")
+        if not base_url.strip() or not model.strip():
+            raise LLMError(f"{name} base_url/model is not configured")
         self.config = config
+        self.name = name
+        self._api_key = api_key.strip()
+        self._base_url = base_url.rstrip("/")
+        self._model = model
         self.last_usage: dict = {}
+
+    async def complete(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        max_tokens: int = 900,
+        temperature: float = 0.0,
+        response_format: dict | None = None,
+    ) -> str:
+        """Non-streaming JSON/text completion used by the query planner."""
+        payload = {
+            "model": self._model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False,
+        }
+        if response_format:
+            payload["response_format"] = response_format
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        url = self._base_url + "/chat/completions"
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                if response.status_code >= 400:
+                    body = response.text
+                    raise LLMError(f"{self.name} HTTP {response.status_code}: {body[:300]}")
+                body = response.json()
+        except httpx.HTTPError as exc:
+            raise LLMError(f"{self.name} request failed: {exc}") from exc
+        usage = body.get("usage")
+        if usage:
+            self.last_usage = {
+                "prompt_tokens": usage.get("prompt_tokens"),
+                "completion_tokens": usage.get("completion_tokens"),
+            }
+        choices = body.get("choices") or []
+        if not choices:
+            raise LLMError(f"{self.name} returned no choices")
+        message = choices[0].get("message") or {}
+        content = message.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise LLMError(f"{self.name} returned empty content")
+        return content
 
     async def stream(self, question: str, evidence: list[Evidence]) -> AsyncIterator[str]:
         block = build_evidence_block(evidence)
@@ -92,7 +249,7 @@ class DeepSeekGenerator:
             "请只依据上面的资料回答，并为事实性陈述标注来源编号。"
         )
         payload = {
-            "model": self.config.deepseek_model,
+            "model": self._model,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_content},
@@ -102,10 +259,10 @@ class DeepSeekGenerator:
             "stream": True,
         }
         headers = {
-            "Authorization": f"Bearer {self.config.deepseek_api_key}",
+            "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
         }
-        url = self.config.deepseek_base_url.rstrip("/") + "/chat/completions"
+        url = self._base_url + "/chat/completions"
         try:
             async with (
                 httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client,
@@ -113,7 +270,7 @@ class DeepSeekGenerator:
             ):
                 if response.status_code >= 400:
                     body = (await response.aread()).decode("utf-8", "ignore")
-                    raise LLMError(f"DeepSeek HTTP {response.status_code}: {body[:300]}")
+                    raise LLMError(f"{self.name} HTTP {response.status_code}: {body[:300]}")
                 async for line in response.aiter_lines():
                     if not line.startswith("data:"):
                         continue
@@ -138,11 +295,35 @@ class DeepSeekGenerator:
                     if content:
                         yield content
         except httpx.HTTPError as exc:
-            raise LLMError(f"DeepSeek request failed: {exc}") from exc
+            raise LLMError(f"{self.name} request failed: {exc}") from exc
+
+
+class DeepSeekGenerator(ChatCompletionsGenerator):
+    def __init__(self, config: Settings) -> None:
+        super().__init__(
+            config,
+            api_key=config.deepseek_api_key,
+            base_url=config.deepseek_base_url,
+            model=config.deepseek_model,
+            name="deepseek",
+        )
+
+
+class OpenAICompatibleGenerator(ChatCompletionsGenerator):
+    def __init__(self, config: Settings) -> None:
+        super().__init__(
+            config,
+            api_key=config.openai_api_key,
+            base_url=config.openai_base_url,
+            model=config.openai_model,
+            name="openai_compatible",
+        )
 
 
 def build_generator(config: Settings | None = None) -> Generator:
     config = config or settings
     if config.llm_provider == "deepseek":
         return DeepSeekGenerator(config)
+    if config.llm_provider in {"openai_compatible", "openai"}:
+        return OpenAICompatibleGenerator(config)
     return MockGenerator()

@@ -67,7 +67,7 @@ Query IR → species/category hard filter → Dense + BM25 → RRF
 - Contextual Retrieval：`context_text` 入库，索引开关，引用仍用原文。
 - 声明级引用检查 v0：`[S1]` 映射、状态、summary 持久化。
 - 检索 Trace：`GET /api/debug/query-logs/{request_id}`。
-- 回归：64 个单元测试、A/B/C smoke、四模式评测；图和补检默认关闭，基线指标与 Phase 1 一致。
+- 回归：77 个默认单元测试（另 2 个真实 BGE 集成测试）、A/B/C smoke、四模式评测；图和补检默认关闭。
 
 ### Phase 2b（下一步）
 
@@ -103,7 +103,7 @@ Query IR → species/category hard filter → Dense + BM25 → RRF
 - 已完成 GraphRAG / Neo4j 图数据库；
 - 已完成多跳 Agent 或 LangGraph 自适应路由；
 - 声明级支持性等于事实正确性；
-- `hybrid_rerank` 已经是 BGE 重排（当前默认 `noop`）；
+- 把 `noop` 消融结果写成 BGE 重排结果；BGE-Reranker 已接入，但收益仍需 qrels 验证；
 - 已在真实水产数据上验证图扩展/Contextual 的收益。
 
 ## 5. 数据与安全约束

@@ -5,15 +5,18 @@
 > 当前状态：**技术方案 v1.0 已定稿；可运行纵向切片 + A/B/C 验收场景的关键补强已完成。**
 > 方案基线见 [技术方案](docs/technical-plan.md)，启动方式见 [开发说明](docs/development.md)。
 >
-> **本机默认运行态（不是论文实验态）**：Dense=`HashingEmbedder`；Reranker=`noop`；
-> LLM=`mock`；Parser=`PyMuPDF`；前端=静态单页。BGE-M3、BGE-Reranker、MinerU、
-> LangGraph、PDF.js 尚未启用或尚未实现。详见 [架构审计](docs/audit-2026-10-20.md)。
+> **本机默认运行态（2026-10-20，不是论文实验态）**：Dense=`BAAI/bge-m3`（FlagEmbedding/MPS/fp16）；
+> Reranker=`BAAI/bge-reranker-v2-m3`（本地权重）；LLM=`openai-compatible-model`（OpenAI 兼容网关，真实调用）；
+> Parser=`PyMuPDF`；
+> 前端=静态单页。当前索引为独立集合 `kb_chunks_bge_m3_v1`（5 个文档、155 个向量点，含 2 份真实地方标准）。
+> MinerU、LangGraph、PDF.js 尚未启用。详见 [真实模型验证记录](docs/real-model-validation-2026-10-20.md)
+> 与 [架构审计](docs/audit-2026-10-20.md)（后者是切换 BGE 前的历史快照）。
 
 ## 项目定位
 
 面向水产养殖专业知识查询，构建一个可更新、可追溯、可评测的 RAG Web 系统：
 
-- **混合检索（目标选型）**：BGE-M3 Dense + Qdrant BM25 → RRF → BGE-Reranker-v2-m3（当前 Dense/Reranker 为开发占位）
+- **混合检索（已接入）**：BGE-M3 Dense + Qdrant BM25 → RRF → BGE-Reranker-v2-m3（`hybrid_rerank` 为真实重排；`noop` 仅作消融）
 - **知识更新**：文档与版本分离，版本化索引，激活后旧版本归档（自动清理尚未实现）
 - **可验证引用**：Source ID 映射、引用有效性校验、证据支持性评估、PDF 页码定位（bbox 高亮待接入）
 - **轻量工作流（目标）**：LangGraph 负责路由、必要重试和证据不足分支（当前为确定性路由，无 LangGraph）
@@ -48,13 +51,14 @@
 - **证据要求 + 定向补检（可开关）**：facet 缺口检查、最多一次补充检索
 - **确定性自适应路由（可开关）**：计算/现行规范缺少工具或日期元数据时安全拒答
 - **检索 Trace**：按 request_id 查看排名、证据、IR、gate 与耗时
-- 67 个单元测试 + A/B/C 端到端冒烟测试 + 批量评测 CLI
+- 89 个默认单元测试（另有 2 个 BGE 真模型集成测试，`RUN_BGE_TESTS=1` 时运行）+ A/B/C 冒烟测试 + 批量评测 CLI
 
-> ⚠️ 当前 Dense 使用 `HashingEmbedder` 开发占位，**不是 BGE-M3，不能用于论文实验**。
-> PyMuPDF 只是 MinerU 的临时降级解析器。Reranker 默认 `noop`；PDF.js 高亮、真实 DeepSeek 调用尚未验证。
-> `hybrid_rerank` 在接入 BGE-Reranker 前等价于 RRF，不能作为真实重排结果写论文。
-> 图扩展是一跳种子图的**可选**能力；多跳分解、LangGraph 路由、PDF.js 高亮尚未接入默认链路（Phase 2b/3），
-> 不要在当前论文结果中声称已完成。
+> ⚠️ BGE-M3 与 BGE-Reranker 已真实加载并在本机索引上验证；`hybrid_rerank` 现在记录
+> `reranker=BAAI/bge-reranker-v2-m3`，不再等价于 RRF。`noop` 仅保留为消融对照。
+> PyMuPDF 仍是 MinerU 的临时解析器。OpenAI 兼容网关的真实 SSE 已跑通；原生 DeepSeek endpoint
+> 未配置/未验证。Mock 仅用于离线回归，不得用于论文模型性能结论。
+> 图扩展是一跳种子图的**可选**能力；多跳分解、LangGraph 路由、PDF.js 高亮尚未接入默认链路（Phase 2b/3）。
+> 当前只有 5 个文档（2 份真实标准），不足以宣称检索效果。
 
 ## 技术栈（固定基线）
 
@@ -67,11 +71,11 @@
 | 向量库 | Qdrant |
 | 解析 | MinerU（当前 PyMuPDF 降级） |
 | 切分 | 结构感知 + Parent-Child |
-| Embedding | BGE-M3（当前 Hashing 占位） |
+| Embedding | BGE-M3（已接入；FlagEmbedding/MPS） |
 | 稀疏检索 | Qdrant BM25（应用侧权重 + IDF modifier） |
 | 融合 | RRF |
-| 重排 | BGE-Reranker-v2-m3（待接入） |
-| 生成 | DeepSeek API（默认 mock） |
+| 重排 | BGE-Reranker-v2-m3（已接入；Noop 仅消融） |
+| 生成 | OpenAI 兼容网关（`openai-compatible-model`，已验证）；原生 DeepSeek 待验证 |
 | 工作流 | LangGraph（后续） |
 | 后台任务 | ARQ + Redis |
 | 流式 | SSE |
@@ -160,4 +164,4 @@ data/             文档、解析产物、示例（不入库）
 - 当前版本没有认证，只适合本机开发。
 - 当前迁移只支持加列；改列类型/删列前引入 Alembic。
 - `eval/sample_questions.jsonl` 是合成数据，不能当作论文 Ground Truth。
-- 进入论文实验前，必须把 Hash embedder 换成 BGE-M3，并固定模型快照与参数。
+- 进入论文实验前，必须固定 BGE-M3/BGE-Reranker 模型快照、设备、fp16 与集合 manifest；当前模型已验证，但评测集仍只有 5 条合成问题。

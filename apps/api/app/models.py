@@ -80,6 +80,28 @@ class KbDocumentVersion(Base, TimestampMixin):
     )
 
 
+class IndexManifest(Base, TimestampMixin):
+    """Reproducibility record for a physical Qdrant collection.
+
+    This is deliberately separate from document versions: a collection can
+    contain multiple document versions, but it must use one embedding model,
+    vector size, and chunking configuration.
+    """
+
+    __tablename__ = "index_manifests"
+
+    collection: Mapped[str] = mapped_column(String(128), primary_key=True)
+    embedding_model: Mapped[str] = mapped_column(String(128), nullable=False)
+    vector_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunk_config_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="building")
+    document_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    point_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
 class KbChunk(Base, TimestampMixin):
     __tablename__ = "kb_chunks"
 

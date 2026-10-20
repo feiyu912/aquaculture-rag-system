@@ -6,7 +6,17 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,6 +64,11 @@ def _doc_out(doc: KbDocument, version: KbDocumentVersion | None) -> DocumentOut:
         current_version_no=version.version_no if version else None,
         page_count=version.page_count if version else None,
         created_at=doc.created_at,
+        source_org=doc.source_org,
+        source_url=doc.source_url,
+        publish_year=doc.publish_year,
+        document_status=(doc.doc_metadata or {}).get("document_status"),
+        region=(doc.doc_metadata or {}).get("region"),
     )
 
 
@@ -64,6 +79,11 @@ async def upload_document(
     title: str | None = Form(default=None),
     category: str = Form(default="未分类"),
     species: str | None = Form(default=None),
+    source_org: str | None = Form(default=None),
+    source_url: str | None = Form(default=None),
+    publish_year: int | None = Form(default=None),
+    document_status: str | None = Form(default=None),
+    region: str | None = Form(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> UploadResponse:
     filename = file.filename or "upload.pdf"
@@ -122,14 +142,24 @@ async def upload_document(
         species_list = parse_species(species)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if publish_year is not None and not 1900 <= publish_year <= 2100:
+        raise HTTPException(status_code=400, detail="publish_year 必须在 1900–2100 之间")
 
     doc = KbDocument(
         id=doc_id,
         title=safe_title,
         category=category.strip() or "未分类",
         species=species_list,
+        source_org=(source_org or "").strip() or None,
+        source_url=(source_url or "").strip() or None,
+        publish_year=publish_year,
         status="active",
-        doc_metadata={"original_filename": filename, "size_bytes": len(buffer)},
+        doc_metadata={
+            "original_filename": filename,
+            "size_bytes": len(buffer),
+            "document_status": (document_status or "").strip() or None,
+            "region": (region or "").strip() or None,
+        },
     )
     version = KbDocumentVersion(
         id=version_id,
@@ -229,9 +259,7 @@ async def add_version(
     # Serialize version-number allocation for the same document. The file has
     # already been read, so this lock is held only for the metadata transaction.
     doc = (
-        await db.execute(
-            select(KbDocument).where(KbDocument.id == document_id).with_for_update()
-        )
+        await db.execute(select(KbDocument).where(KbDocument.id == document_id).with_for_update())
     ).scalar_one_or_none()
     if doc is None or doc.status == "deleted":
         raise HTTPException(status_code=404, detail="文档不存在")
@@ -353,13 +381,22 @@ async def list_species(db: AsyncSession = Depends(get_db)) -> list[str]:
 
 
 @router.get("/documents", response_model=list[DocumentOut])
-async def list_documents(db: AsyncSession = Depends(get_db)) -> list[DocumentOut]:
+async def list_documents(
+    q: str | None = Query(default=None, max_length=200),
+    doc_status: str | None = Query(default=None, alias="status"),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+) -> list[DocumentOut]:
+    statement = select(KbDocument).where(KbDocument.status != "deleted")
+    if doc_status:
+        statement = statement.where(KbDocument.status == doc_status)
+    if q:
+        statement = statement.where(KbDocument.title.ilike(f"%{q.strip()}%"))
     docs = (
         (
             await db.execute(
-                select(KbDocument)
-                .where(KbDocument.status != "deleted")
-                .order_by(KbDocument.created_at.desc())
+                statement.order_by(KbDocument.created_at.desc()).offset(offset).limit(limit)
             )
         )
         .scalars()

@@ -22,9 +22,14 @@ class Settings(BaseSettings):
 
     qdrant_url: str = "http://127.0.0.1:6333"
     qdrant_api_key: str | None = None
-    qdrant_collection: str = "kb_chunks_dev_v1"
+    qdrant_collection: str = "kb_chunks_bge_m3_v1"
     qdrant_vector_size: int = 1024
-    embedding_model: str = "hashing-dev-1024"
+    embedding_model: str = "BAAI/bge-m3"
+    embedding_device: str = "auto"  # auto | mps | cuda | cpu
+    embedding_use_fp16: bool = False
+    embedding_batch_size: int = 8
+    embedding_max_length: int = 1024
+    index_manifest_required: bool = False
 
     redis_url: str = "redis://127.0.0.1:6379/0"
     arq_queue: str = "arq:queue"
@@ -33,11 +38,22 @@ class Settings(BaseSettings):
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-chat"
+    # Generic OpenAI-compatible endpoint (SiliconFlow, vLLM, OpenAI, etc.)
+    openai_base_url: str = ""
+    openai_api_key: str = ""
+    openai_model: str = ""
     deepseek_price_input_per_m: float = 0.0
     deepseek_price_output_per_m: float = 0.0
+    # Optional pricing for a generic OpenAI-compatible endpoint.  Leave zero
+    # when the gateway does not expose per-token prices; never invent one.
+    openai_price_input_per_m: float = 0.0
+    openai_price_output_per_m: float = 0.0
 
     default_retrieval_mode: str = "hybrid"  # dense | bm25 | hybrid | hybrid_rerank
-    reranker_model: str = "noop"  # noop | BAAI/bge-reranker-v2-m3
+    reranker_model: str = "BAAI/bge-reranker-v2-m3"  # noop | BAAI/bge-reranker-v2-m3
+    reranker_path: str = ""  # optional local model dir for offline deployment
+    reranker_device: str = "auto"
+    reranker_use_fp16: bool = False
     dense_top_k: int = 20
     bm25_top_k: int = 20
     rrf_k: int = 60
@@ -50,6 +66,9 @@ class Settings(BaseSettings):
     # Incremental enhancements. Defaults keep the baseline reproducible; turn
     # them on explicitly for ablation experiments.
     enable_query_ir: bool = True
+    enable_llm_planner: bool = False
+    planner_max_tokens: int = 2000
+    planner_temperature: float = 0.0
     enable_claim_verification: bool = True
     enable_contextual_retrieval: bool = False
     enable_evidence_requirements: bool = False

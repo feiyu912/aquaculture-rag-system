@@ -102,6 +102,13 @@ class QueryIR(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     source: Literal["rules"] = "rules"
     confidence: float = 0.5
+    # LLM-assisted planner fields.  Defaults preserve the rule-only baseline.
+    planner_source: Literal["rules", "llm"] = "rules"
+    planner_confidence: float | None = None
+    planner_assumptions: list[str] = Field(default_factory=list)
+    planner_constraints: list[dict] = Field(default_factory=list)
+    planner_subquestions: list[str] = Field(default_factory=list)
+    rewritten_query: str | None = None
 
 
 @dataclass(slots=True)
@@ -163,6 +170,15 @@ def build_query_ir(
         if alias in normalized.lower() and canonical not in parameters:
             parameters.append(canonical)
             water_alias_used = True
+    # Stable canonicalisation: ``溶氧``/``pH`` and their canonical forms must not
+    # become duplicate facets (which would also skew requirement counts).
+    canonical_parameters: list[str] = []
+    alias_map = {"溶氧": "溶解氧", "pH": "酸碱度", "do": "溶解氧", "ph": "酸碱度"}
+    for term in parameters:
+        value = alias_map.get(term, term)
+        if value not in canonical_parameters:
+            canonical_parameters.append(value)
+    parameters = canonical_parameters
     diseases = _contains_any(normalized, DISEASE_TERMS)
     regulation_hits = _contains_any(normalized, REGULATION_TERMS)
     calculation_hits = _contains_any(normalized, CALCULATION_TERMS)
@@ -170,9 +186,8 @@ def build_query_ir(
     requested_year = int(year_match.group(1)) if year_match else None
 
     facets = sum(bool(value) for value in (species, stages, parameters, diseases))
-    multi_hop = (
-        len(parameters) + len(diseases) + len(stages) >= 2
-        and any(marker in normalized for marker in MULTI_HOP_MARKERS)
+    multi_hop = len(parameters) + len(diseases) + len(stages) >= 2 and any(
+        marker in normalized for marker in MULTI_HOP_MARKERS
     )
     if regulation_hits:
         intent: Intent = "regulation"
