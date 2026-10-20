@@ -93,7 +93,7 @@ export function SessionSidebar({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+      <div className="scroll-contain min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         {isLoading ? (
           <div className="space-y-1.5 px-1">
             {Array.from({ length: 6 }).map((_, index) => (
@@ -129,7 +129,7 @@ export function SessionSidebar({
                           }
                         }}
                         className={cn(
-                          "group flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] transition-colors duration-150",
+                          "group flex cursor-pointer items-start gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors duration-150",
                           active
                             ? "bg-primary-50 font-medium text-primary-800 dark:bg-primary-500/12 dark:text-primary-300"
                             : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
@@ -141,8 +141,10 @@ export function SessionSidebar({
                             active ? "text-primary-600" : "text-subtle-foreground",
                           )}
                         />
-                        <span className="min-w-0 flex-1 truncate">
-                          {truncate(session.title, 26)}
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-2 leading-[1.45]">
+                            {session.title}
+                          </span>
                         </span>
                         <span className="sr-only">
                           {formatDateTime(session.last_message_at ?? session.created_at)}

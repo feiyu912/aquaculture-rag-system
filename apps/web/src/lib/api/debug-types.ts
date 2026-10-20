@@ -18,15 +18,30 @@ export interface DebugStats {
   cost_usd: number;
 }
 
+/**
+ * Mirrors the `llm_planner` trace in
+ * `apps/api/app/retrieval/service.py` / `apps/api/app/query/planner.py`.
+ */
 export interface PlannerTrace {
   enabled: boolean;
   used_llm?: boolean;
   error?: string | null;
+  /** Set when the planner was intentionally not called (e.g. simple rule IR). */
+  skipped?: string | null;
   duration_ms?: number;
   attempts?: number;
   plan?: Record<string, unknown> | null;
+  original_question?: string;
   hard_filter?: string | null;
   subquestions?: string[];
+  tasks?: Record<string, unknown>[];
+  constraints?: {
+    name: string;
+    value: string;
+    source: string;
+    strength: string;
+  }[];
+  assumptions?: string[];
 }
 
 export interface TraceStageState {

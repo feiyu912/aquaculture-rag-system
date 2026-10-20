@@ -29,6 +29,8 @@ import {
   STAGE_ICONS,
   type StageDefinition,
 } from "@/components/debug/pipeline-stages";
+import { PlannerCard } from "@/components/debug/planner-card";
+import { QueryIrCard } from "@/components/debug/query-ir-card";
 import { RawTrace, Section } from "@/components/debug/section";
 import { StatsStrip } from "@/components/debug/stats-strip";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +68,7 @@ export function DebugWorkspace({ initialRequestId = "" }: { initialRequestId?: s
 
   return (
     <div className="flex h-full min-h-0">
-      <div className="min-w-0 flex-1 overflow-y-auto">
+      <div className="scroll-contain min-w-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[1180px] space-y-5 px-4 py-6 sm:px-6 sm:py-8">
           <StatsStrip stats={stats} loading={statsLoading} windowHours={24} />
 
@@ -254,109 +256,12 @@ function Timing({ label, value }: { label: string; value?: number | null }) {
   );
 }
 
-function QueryIrCard({ trace }: { trace: QueryTrace }) {
-  const ir = trace.query_ir;
-  if (!ir) {
-    return (
-      <Section title="Typed Query IR" hint="规则解析">
-        <p className="text-[12.5px] text-muted-foreground">
-          本次请求没有记录 Query IR。
-        </p>
-      </Section>
-    );
-  }
-
-  return (
-    <Section title="Typed Query IR" hint="规则 v1 · 非 LLM">
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-[12.5px]">
-        <Field label="意图" value={ir.intent} />
-        <Field label="策略" value={ir.strategy} />
-        <Field label="品种" value={ir.species?.join("、") || "—"} />
-        <Field label="硬过滤" value={ir.species_filter ?? "未启用"} />
-        <Field label="养殖阶段" value={ir.stage?.join("、") || "—"} />
-        <Field label="水质指标" value={ir.water_metrics?.join("、") || "—"} />
-        <Field label="年份标记" value={ir.years?.join("、") || "—"} />
-        <Field
-          label="现行法规"
-          value={ir.requires_current_regulation ? "需要（缺元数据）" : "否"}
-        />
-      </dl>
-      {ir.unsupported_constraints?.length ? (
-        <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-warning-soft px-2.5 py-2 text-[11.5px] leading-5 text-warning">
-          <AlertTriangle className="mt-0.5 size-3 shrink-0" />
-          不支持的约束：{ir.unsupported_constraints.join("、")}（仅记录，不做硬过滤）
-        </p>
-      ) : null}
-    </Section>
-  );
-}
-
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
       <dt className="text-[11px] text-subtle-foreground">{label}</dt>
       <dd className="mt-0.5 truncate font-medium text-foreground">{value}</dd>
     </div>
-  );
-}
-
-function PlannerCard({ trace }: { trace: QueryTrace }) {
-  const planner = trace.planner;
-  const enabled = Boolean(planner?.enabled);
-
-  if (!enabled) {
-    return (
-      <Section title="LLM Planner（NL2IR）">
-        <div className="flex items-start gap-2.5 rounded-xl border border-border bg-surface-muted px-3.5 py-3">
-          <Sparkles className="mt-0.5 size-4 shrink-0 text-subtle-foreground" />
-          <div>
-            <p className="text-[13px] font-semibold text-foreground">未启用</p>
-            <p className="mt-0.5 text-[12.5px] leading-5 text-muted-foreground">
-              本次请求使用规则版 Query IR。LLM Planner 需要在服务端开启
-              <code className="mx-1 rounded bg-surface px-1 py-0.5 font-mono text-[11px]">
-                ENABLE_LLM_PLANNER
-              </code>
-              并配置可用的 LLM 网关。
-            </p>
-          </div>
-        </div>
-      </Section>
-    );
-  }
-
-  const plan = (planner?.plan ?? {}) as Record<string, unknown>;
-
-  return (
-    <Section
-      title="LLM Planner（NL2IR）"
-      hint={planner?.used_llm ? "本次由 LLM 生成" : "回退到规则 IR"}
-      action={
-        <Badge variant={planner?.used_llm ? "success" : "warning"}>
-          {planner?.used_llm ? "LLM" : "回退"}
-        </Badge>
-      }
-    >
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-[12.5px]">
-        <Field label="耗时" value={formatMs(planner?.duration_ms)} />
-        <Field label="尝试次数" value={String(planner?.attempts ?? 1)} />
-        <Field label="硬过滤" value={planner?.hard_filter ?? "无"} />
-        <Field
-          label="子问题"
-          value={planner?.subquestions?.length ? String(planner.subquestions.length) : "—"}
-        />
-      </dl>
-      {plan.rewritten_query ? (
-        <div className="mt-3 rounded-lg border border-border bg-surface-muted px-3 py-2">
-          <p className="text-[11px] text-subtle-foreground">改写后的查询</p>
-          <p className="mt-1 text-[12.5px] leading-5 text-foreground">
-            {String(plan.rewritten_query)}
-          </p>
-        </div>
-      ) : null}
-      {planner?.error ? (
-        <p className="mt-3 text-[11.5px] text-danger">planner 错误：{planner.error}</p>
-      ) : null}
-    </Section>
   );
 }
 
@@ -478,7 +383,7 @@ function buildStages(trace: QueryTrace | undefined): StageDefinition[] {
   const config = trace?.retrieval_config;
   const modules = config?.adaptive_modules ?? {};
   const mode = config?.retrieval_mode ?? "hybrid";
-  const planner = trace?.planner;
+  const planner = trace?.llm_planner;
 
   return [
     {
@@ -496,7 +401,11 @@ function buildStages(trace: QueryTrace | undefined): StageDefinition[] {
       detail: planner?.enabled
         ? planner.used_llm
           ? `${formatMs(planner.duration_ms)} · LLM`
-          : "回退规则 IR"
+          : planner.skipped
+            ? `跳过：${planner.skipped}`
+            : planner.error
+              ? `回退规则 IR（${planner.error}）`
+              : "规则 IR"
         : "未启用",
     },
     {

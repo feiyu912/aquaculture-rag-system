@@ -53,6 +53,37 @@ export function bboxToViewportRect(
   };
 }
 
+/**
+ * Keep a highlight inside the rendered page.
+ *
+ * Citation bboxes come from the parser, but a corrupted or hand-edited record
+ * can contain an inverted or absurd rectangle. Clamping keeps the overlay on
+ * the page and rejects rectangles that cannot be real.
+ */
+export function clampToPage(
+  rect: ViewportRect,
+  pageWidth: number,
+  pageHeight: number,
+): ViewportRect | null {
+  if (!Number.isFinite(rect.left) || !Number.isFinite(rect.top)) return null;
+  if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height)) return null;
+  if (rect.width <= 0 || rect.height <= 0) return null;
+
+  // A real text block never covers more than the whole page.
+  if (rect.width > pageWidth * 1.2 || rect.height > pageHeight * 1.2) return null;
+
+  const left = Math.max(0, Math.min(rect.left, pageWidth));
+  const top = Math.max(0, Math.min(rect.top, pageHeight));
+  const right = Math.max(left, Math.min(rect.left + rect.width, pageWidth));
+  const bottom = Math.max(top, Math.min(rect.top + rect.height, pageHeight));
+
+  const width = right - left;
+  const height = bottom - top;
+  if (width <= 0 || height <= 0) return null;
+
+  return { left, top, width, height };
+}
+
 /** Parse the compact `bbox=x0,y0,x1,y1` query parameter used by deep links. */
 export function parseBBoxParam(value: string | null): [number, number, number, number] | null {
   if (!value) return null;

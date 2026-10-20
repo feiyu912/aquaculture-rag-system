@@ -434,6 +434,19 @@
     scrollbar-width: none;
   }
 
+  /**
+   * Inner scroll regions must not extend the document's scrollable area.
+   *
+   * The app shell is a fixed-viewport layout: every long list lives in its
+   * own `overflow-y-auto` region. Without paint containment the overflowing
+   * content still contributes to the root's scrollable overflow, so the whole
+   * page starts scrolling underneath the shell and the user can drag the
+   * layout into empty space.
+   */
+  .scroll-contain {
+    contain: paint;
+  }
+
   /* Fades a scroll container edge to signal more content. */
   .mask-fade-r {
     mask-image: linear-gradient(to right, #000 88%, transparent 100%);

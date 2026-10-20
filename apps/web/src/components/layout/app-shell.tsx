@@ -6,6 +6,7 @@ import { IconRail } from "@/components/layout/icon-rail";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { ShellContext, type ShellContextValue } from "@/components/layout/shell-context";
 import { TopBar } from "@/components/layout/top-bar";
+import { useContextWidth, useResizeHandle } from "@/hooks/use-context-width";
 import { cn } from "@/lib/utils";
 
 export function AppShell({
@@ -22,6 +23,14 @@ export function AppShell({
   const [mobileContextOpen, setMobileContextOpen] = React.useState(false);
   const [contextCollapsed, setContextCollapsed] = React.useState(false);
   const [label, setLabel] = React.useState(contextLabel);
+
+  const { width: contextWidth, setWidth: setContextWidth, reset: resetContextWidth } =
+    useContextWidth();
+  const { dragging, panelRef, handleProps } = useResizeHandle({
+    onResize: setContextWidth,
+    onReset: resetContextWidth,
+    currentWidth: contextWidth,
+  });
 
   React.useEffect(() => {
     setLabel(contextLabel);
@@ -56,10 +65,36 @@ export function AppShell({
                 "hidden shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-200 ease-soft lg:flex",
                 contextCollapsed ? "w-0 overflow-hidden border-r-0" : "w-[var(--context-width)]",
               )}
+              style={
+                contextCollapsed ? undefined : { width: contextWidth, minWidth: contextWidth }
+              }
+              ref={panelRef as React.RefObject<HTMLElement>}
             >
               {context}
             </aside>
           ) : null}
+
+          {context && !contextCollapsed && (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="调整侧栏宽度"
+              tabIndex={0}
+              title="拖动调整宽度，双击恢复默认"
+              className={cn(
+                "group relative z-20 hidden w-1 shrink-0 cursor-col-resize bg-border transition-colors lg:block",
+                dragging ? "bg-primary-500" : "hover:bg-primary-400",
+              )}
+              {...handleProps}
+            >
+              <span
+                className={cn(
+                  "absolute left-1/2 top-1/2 h-10 w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-colors",
+                  dragging ? "bg-primary-500" : "bg-border-strong group-hover:bg-primary-400",
+                )}
+              />
+            </div>
+          )}
 
           <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden pb-14 lg:pb-0">
             {children}
@@ -85,6 +120,8 @@ export function AppShell({
               onClick={() => setMobileContextOpen(false)}
             />
             <div
+              role="dialog"
+              aria-label={label}
               className={cn(
                 "absolute inset-y-0 left-0 flex w-[min(86vw,320px)] flex-col border-r border-border bg-surface shadow-xl transition-transform duration-250 ease-soft",
                 mobileContextOpen ? "translate-x-0" : "-translate-x-full",

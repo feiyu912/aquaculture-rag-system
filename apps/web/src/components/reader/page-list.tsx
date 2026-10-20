@@ -32,7 +32,7 @@ export function PageList({
   }
 
   return (
-    <div ref={listRef} className="h-full overflow-y-auto px-2.5 py-3">
+    <div ref={listRef} className="scroll-contain h-full overflow-y-auto px-2.5 py-3">
       <p className="px-1.5 pb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-subtle-foreground">
         页面 · {numPages}
       </p>

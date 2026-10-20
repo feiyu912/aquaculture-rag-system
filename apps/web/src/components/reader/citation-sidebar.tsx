@@ -72,7 +72,7 @@ export function CitationSidebar({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+      <div className="scroll-contain min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {filtered.length === 0 ? (
           <div className="px-2 py-10 text-center">
             <FileText className="mx-auto size-5 text-subtle-foreground/60" />

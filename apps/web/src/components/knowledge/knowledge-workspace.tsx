@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { DocumentDetailDialog } from "@/components/knowledge/document-detail-dialog";
+import { NewVersionDialog } from "@/components/knowledge/new-version-dialog";
 import { DocumentTable, StatCard } from "@/components/knowledge/document-table";
 import {
   EMPTY_FILTERS,
@@ -54,7 +55,7 @@ export function KnowledgeWorkspace({
   const [title, setTitle] = React.useState("");
   const [category, setCategory] = React.useState("未分类");
   const [species, setSpecies] = React.useState("");
-  const [pendingVersionFor, setPendingVersionFor] = React.useState<DocumentOut | null>(null);
+  const [versionTarget, setVersionTarget] = React.useState<DocumentOut | null>(null);
 
   const watchRef = React.useRef(new Map<string, string>());
 
@@ -143,40 +144,7 @@ export function KnowledgeWorkspace({
       setQueue((prev) => [...prev, item]);
 
       const form = new FormData();
-      if (pendingVersionFor) {
-        form.append("file", file);
-        try {
-          const result = await addVersion.mutateAsync({
-            documentId: pendingVersionFor.id,
-            form,
-          });
-          setQueue((prev) =>
-            prev.map((entry) =>
-              entry.id === itemId
-                ? { ...entry, status: "processing", jobId: result.job_id, documentId: result.document_id }
-                : entry,
-            ),
-          );
-          toast.success("新版本已入队", { description: "解析成功后才切换生效版本" });
-        } catch (error) {
-          setQueue((prev) =>
-            prev.map((entry) =>
-              entry.id === itemId
-                ? {
-                    ...entry,
-                    status: "failed",
-                    error:
-                      error instanceof Error ? error.message : "上传失败",
-                  }
-                : entry,
-            ),
-          );
-        } finally {
-          setPendingVersionFor(null);
-        }
-        continue;
-      }
-
+      form.append("file", file);
       if (title.trim()) form.append("title", title.trim());
       if (category.trim()) form.append("category", category.trim());
       if (species.trim()) form.append("species", species.trim());
@@ -210,7 +178,7 @@ export function KnowledgeWorkspace({
   return (
     <div className="flex h-full min-h-0">
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="scroll-contain min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1180px] px-4 py-6 sm:px-6 sm:py-8">
             <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
               <StatCard
@@ -243,11 +211,6 @@ export function KnowledgeWorkspace({
             <section className="mt-6">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[14px] font-semibold text-foreground">上传资料</h2>
-                {pendingVersionFor && (
-                  <span className="rounded-full bg-warning-soft px-2.5 py-1 text-[11.5px] font-medium text-warning">
-                    正在为「{pendingVersionFor.title}」上传新版本
-                  </span>
-                )}
               </div>
 
               <UploadDropzone onFiles={handleFiles} disabled={upload.isPending} />
@@ -336,16 +299,7 @@ export function KnowledgeWorkspace({
                 loading={isLoading}
                 actions={{
                   onOpen: (item) => setDetailId(item.id),
-                  onNewVersion: (item) => {
-                    setPendingVersionFor(item);
-                    toast.info("请选择新的 PDF 文件", {
-                      description: `将作为「${item.title}」的新版本上传`,
-                    });
-                    window
-                      .document
-                      .querySelector<HTMLInputElement>("#kb-title")
-                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  },
+                  onNewVersion: (item) => setVersionTarget(item),
                   onRollback: (item) => setDetailId(item.id),
                   onDelete: (item) => setDetailId(item.id),
                   onRead: (item) =>
@@ -367,6 +321,14 @@ export function KnowledgeWorkspace({
         documentId={detailId}
         onClose={() => setDetailId(null)}
         onDeleted={() => invalidate()}
+      />
+
+      <NewVersionDialog
+        document={versionTarget}
+        onClose={() => {
+          setVersionTarget(null);
+          invalidate();
+        }}
       />
     </div>
   );

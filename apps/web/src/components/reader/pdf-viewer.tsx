@@ -4,7 +4,7 @@ import * as React from "react";
 import type { PdfDocumentProxy, PdfPageProxy, PdfViewport } from "@/lib/pdf/loader";
 import { FileWarning, Loader2 } from "lucide-react";
 
-import { bboxToViewportRect } from "@/lib/pdf/coords";
+import { bboxToViewportRect, clampToPage } from "@/lib/pdf/coords";
 import { cn } from "@/lib/utils";
 
 export interface PdfHighlight {
@@ -24,6 +24,7 @@ export function PdfViewer({
   pdf,
   scale,
   highlight,
+  targetPage,
   className,
   onVisiblePageChange,
   onPageRendered,
@@ -31,6 +32,8 @@ export function PdfViewer({
   pdf: PdfDocumentProxy;
   scale: number;
   highlight?: PdfHighlight | null;
+  /** Page the user asked for (page list, toolbar, deep link). */
+  targetPage?: number;
   className?: string;
   onVisiblePageChange?: (page: number) => void;
   onPageRendered?: (page: number, viewport: PdfViewport) => void;
@@ -41,6 +44,10 @@ export function PdfViewer({
   const renderTokenRef = React.useRef(0);
   const renderedRef = React.useRef(new Set<number>());
   const renderingRef = React.useRef(new Set<number>());
+  const visiblePageRef = React.useRef(1);
+  const lastPageJumpRef = React.useRef<number | null>(null);
+  const jumpingRef = React.useRef(false);
+  const scrolledRef = React.useRef<string | null>(null);
   const viewportRef = React.useRef(new Map<number, PdfViewport>());
   const observerRef = React.useRef<IntersectionObserver | null>(null);
 
@@ -132,6 +139,10 @@ export function PdfViewer({
     renderedRef.current.clear();
     viewportRef.current.clear();
     renderingRef.current.clear();
+    // A zoom changes the page heights, so the scroll anchors have to be
+    // recomputed for the current target page and highlight.
+    lastPageJumpRef.current = null;
+    scrolledRef.current = null;
     setRendering(new Set());
     // Rendering is kicked off by the intersection observer below.
   }, [scale]);
@@ -154,7 +165,7 @@ export function PdfViewer({
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          const pageNumber = Number((entry.target as HTMLElement).dataset.page);
+          const pageNumber = Number((entry.target as HTMLElement).dataset.pdfPage);
           if (Number.isFinite(pageNumber)) void renderPage(pageNumber);
         }
       },
@@ -193,7 +204,10 @@ export function PdfViewer({
 
       if (best !== activePage) {
         setActivePage(best);
-        onVisiblePageChange?.(best);
+        visiblePageRef.current = best;
+        // While a programmatic jump is animating, the intermediate pages must
+        // not push the target back to the caller.
+        if (!jumpingRef.current) onVisiblePageChange?.(best);
       }
     };
 
@@ -201,15 +215,41 @@ export function PdfViewer({
     return () => root.removeEventListener("scroll", onScroll);
   }, [activePage, onVisiblePageChange, pages]);
 
+  // Jump to a page the user asked for (page list, toolbar pager, deep link).
+  // Scrolling by hand updates `visiblePageRef` instead, so the two never
+  // fight each other.
+  React.useEffect(() => {
+    if (!targetPage || pages.length === 0) return;
+    if (targetPage === visiblePageRef.current) return;
+    if (lastPageJumpRef.current === targetPage) return;
+
+    const container = containerRef.current;
+    const node = pageRefs.current.get(targetPage);
+    if (!container || !node) return;
+
+    // `offsetTop` is relative to the nearest positioned ancestor, which is
+    // not the scroll container — measure the real distance instead.
+    const containerRect = container.getBoundingClientRect();
+    const nodeRect = node.getBoundingClientRect();
+    const target = nodeRect.top - containerRect.top + container.scrollTop - 16;
+
+    lastPageJumpRef.current = targetPage;
+    jumpingRef.current = true;
+    container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+    window.setTimeout(() => {
+      jumpingRef.current = false;
+    }, 700);
+  }, [targetPage, pages.length, scale]);
+
   const highlightRect = React.useMemo(() => {
     if (!highlight) return null;
     const viewport = viewportRef.current.get(highlight.page);
     if (!viewport) return null;
-    return bboxToViewportRect({ bbox: highlight.bbox }, viewport);
+    const rect = bboxToViewportRect({ bbox: highlight.bbox }, viewport);
+    return clampToPage(rect, viewport.width, viewport.height);
   }, [highlight, rendering]);
 
   // Bring the highlighted region into view once its page has been rendered.
-  const scrolledRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (!highlight || !highlightRect) return;
     const key = `${highlight.page}-${highlight.bbox.join(",")}`;
@@ -232,7 +272,7 @@ export function PdfViewer({
     <div
       ref={containerRef}
       className={cn(
-        "h-full overflow-auto bg-instrument px-4 py-6 sm:px-8",
+        "scroll-contain h-full overflow-auto bg-instrument px-4 py-6 sm:px-8",
         className,
       )}
     >
@@ -245,7 +285,7 @@ export function PdfViewer({
           return (
             <div
               key={entry.pageNumber}
-              data-page={entry.pageNumber}
+              data-pdf-page={entry.pageNumber}
               ref={(node) => {
                 if (node) pageRefs.current.set(entry.pageNumber, node);
                 else pageRefs.current.delete(entry.pageNumber);

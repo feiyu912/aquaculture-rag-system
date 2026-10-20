@@ -135,7 +135,7 @@ export function ChatWorkspace({
           onTogglePanel={togglePanel}
         />
 
-        <div ref={scrollRef} onScroll={handleScroll} className="min-h-0 flex-1 overflow-y-auto">
+        <div ref={scrollRef} onScroll={handleScroll} className="scroll-contain min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[780px] px-4 py-6 sm:px-6 sm:py-8">
             {chat.historyLoading ? (
               <div className="space-y-6">

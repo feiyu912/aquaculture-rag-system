@@ -169,7 +169,9 @@ function AssistantMessage({
             <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-subtle-foreground" />
             <span className="ml-1">正在检索并生成回答…</span>
           </div>
-        ) : null}
+        ) : (
+          <p className="text-[13px] text-subtle-foreground">（本次回答没有返回内容）</p>
+        )}
 
         {message.status === "failed" && message.error && (
           <div className="mt-2 flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger-soft px-3.5 py-3">
@@ -186,6 +188,27 @@ function AssistantMessage({
                 重试
               </Button>
             )}
+          </div>
+        )}
+
+        {message.status === "interrupted" && (
+          <div className="mt-2 flex items-start gap-2.5 rounded-xl border border-warning/25 bg-warning-soft px-3.5 py-3">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-foreground">
+                {message.error?.message?.startsWith("已停止")
+                  ? "已停止生成"
+                  : "回答未完成"}
+              </p>
+              <p className="mt-0.5 text-[12.5px] leading-5 text-muted-foreground">
+                {message.error?.message ??
+                  "生成过程中连接被中断，没有留下任何内容。"}
+              </p>
+            </div>
+            <Button variant="outline" size="xs" onClick={() => onRetry(message.id)}>
+              <RotateCcw className="size-3" />
+              重试
+            </Button>
           </div>
         )}
 

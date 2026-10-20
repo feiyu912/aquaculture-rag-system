@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, BookOpen, Loader2, Search } from "lucide-react";
 
 import { CitationSidebar, type ReaderCitation } from "@/components/reader/citation-sidebar";
+import { CitationSidebarDrawer } from "@/components/reader/citation-sidebar-drawer";
 import { PdfViewer, type PdfHighlight } from "@/components/reader/pdf-viewer";
 import { ReaderToolbar } from "@/components/reader/reader-toolbar";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,64 @@ export function ReaderWorkspace({
   const router = useRouter();
   const [pdf, setPdf] = React.useState<LoadedDocument | null>(null);
   const [loadError, setLoadError] = React.useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [isWide, setIsWide] = React.useState(true);
+
+  // Fit-to-width: on narrow viewports the page would otherwise be cut off.
+  const canvasAreaRef = React.useRef<HTMLDivElement>(null);
+  const [areaWidth, setAreaWidth] = React.useState(0);
+  const [pageWidth, setPageWidth] = React.useState(0);
+  const [autoFit, setAutoFit] = React.useState(true);
+
+  React.useEffect(() => {
+    const node = canvasAreaRef.current;
+    if (!node) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      setAreaWidth(width);
+    });
+    observer.observe(node);
+    setAreaWidth(node.getBoundingClientRect().width);
+    return () => observer.disconnect();
+  }, [pdf]);
+
+  const fittedScale = React.useMemo(() => {
+    if (!areaWidth || !pageWidth) return null;
+    return Math.min(3, Math.max(0.4, Number((areaWidth / pageWidth).toFixed(2))));
+  }, [areaWidth, pageWidth]);
+
+  // Manual zoom takes over; the fit only applies until the user zooms.
+  const handleZoomChange = React.useCallback(
+    (next: number) => {
+      setAutoFit(false);
+      onZoomChange(next);
+    },
+    [onZoomChange],
+  );
+
+  const handleFitWidth = React.useCallback(() => {
+    if (fittedScale) {
+      setAutoFit(true);
+      onZoomChange(fittedScale);
+    }
+  }, [fittedScale, onZoomChange]);
+
+  React.useEffect(() => {
+    if (!autoFit || !fittedScale) return;
+    if (Math.abs(fittedScale - zoom) > 0.01) onZoomChange(fittedScale);
+  }, [autoFit, fittedScale, zoom, onZoomChange]);
+
+  // The citation list is a docked column on wide screens and an overlay
+  // drawer on narrow ones. The drawer starts closed so it never covers the
+  // page the reader just navigated to.
+  React.useEffect(() => {
+    const media = window.matchMedia("(min-width: 1280px)");
+    const apply = () => setIsWide(media.matches);
+    apply();
+    setSidebarOpen(media.matches);
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
 
   React.useEffect(() => {
     if (!documentId) {
@@ -91,9 +149,12 @@ export function ReaderWorkspace({
         page={currentPage}
         numPages={pdf?.numPages ?? numPagesHint}
         zoom={zoom}
-        onZoomChange={onZoomChange}
+        onZoomChange={handleZoomChange}
         onPageChange={onPageChange}
-        onFitWidth={() => onZoomChange(1.15)}
+        onFitWidth={handleFitWidth}
+        onToggleCitations={() => setSidebarOpen((prev) => !prev)}
+        citationsOpen={sidebarOpen}
+        citationCount={citations.length}
         downloadUrl={`${API_BASE_URL}/api/documents/${documentId}/file${
           versionId ? `?version_id=${versionId}` : ""
         }`}
@@ -121,25 +182,42 @@ export function ReaderWorkspace({
           <Loader2 className="size-5 animate-spin text-instrument-muted" />
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1">
-          <div className="min-w-0 flex-1">
-            <PdfViewer
-              pdf={pdf.doc}
-              scale={zoom}
-              highlight={highlight}
-              onVisiblePageChange={onPageChange}
+        <>
+          <div className="flex min-h-0 flex-1">
+            <div className="min-w-0 flex-1" ref={canvasAreaRef}>
+              <PdfViewer
+                pdf={pdf.doc}
+                scale={zoom}
+                highlight={highlight}
+                targetPage={currentPage}
+                onVisiblePageChange={onPageChange}
+                onPageRendered={(page, viewport) => {
+                  if (page === 1 && viewport.width) setPageWidth(viewport.width / zoom);
+                }}
+              />
+            </div>
+            <CitationSidebar
+              className={cn("hidden w-[300px] shrink-0 xl:flex", !sidebarOpen && "xl:hidden")}
+              citations={citations}
+              activeCitationId={activeCitationId}
+              onSelect={handleSelectCitation}
+              onOpenConversation={(citation) =>
+                router.push(`/chat?session_id=${citation.session_id}`)
+              }
             />
           </div>
-          <CitationSidebar
-            className={cn("w-[300px] shrink-0", !sidebarOpen && "hidden")}
+
+          <CitationSidebarDrawer
+            open={sidebarOpen && !isWide}
             citations={citations}
             activeCitationId={activeCitationId}
             onSelect={handleSelectCitation}
             onOpenConversation={(citation) =>
               router.push(`/chat?session_id=${citation.session_id}`)
             }
+            onClose={() => setSidebarOpen(false)}
           />
-        </div>
+        </>
       )}
     </div>
   );

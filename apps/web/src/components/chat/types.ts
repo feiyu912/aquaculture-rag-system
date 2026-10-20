@@ -7,7 +7,7 @@ import type {
   Source,
 } from "@/lib/api/types";
 
-export type ChatMessageStatus = "completed" | "streaming" | "failed";
+export type ChatMessageStatus = "completed" | "streaming" | "failed" | "interrupted";
 
 export interface ChatMessage {
   /** Local id — for optimistic messages this is not the backend id. */
@@ -40,4 +40,6 @@ export interface ChatStatusState {
   retrievalMode?: RetrievalMode;
   gate?: EvidenceGate | null;
   queryIr?: QueryIR | null;
+  /** Planner trace from the `status` SSE event. */
+  llmPlanner?: import("@/lib/api/debug-types").PlannerTrace | null;
 }

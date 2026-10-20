@@ -18,3 +18,7 @@ public/pdf.min.mjs
 public/pdf.worker.min.mjs
 public/cmaps/
 public/standard_fonts/
+
+# E2E fixtures are generated binaries that must be committed for the suite
+!e2e/fixtures/*.pdf
+.next-build/

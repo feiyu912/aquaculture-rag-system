@@ -8,6 +8,7 @@ import {
   Maximize2,
   Minus,
   Plus,
+  Quote,
   Ruler,
 } from "lucide-react";
 
@@ -30,6 +31,9 @@ export function ReaderToolbar({
   onZoomChange,
   onPageChange,
   onFitWidth,
+  onToggleCitations,
+  citationsOpen,
+  citationCount,
   downloadUrl,
   highlightLabel,
 }: {
@@ -41,6 +45,9 @@ export function ReaderToolbar({
   onZoomChange: (zoom: number) => void;
   onPageChange: (page: number) => void;
   onFitWidth: () => void;
+  onToggleCitations?: () => void;
+  citationsOpen?: boolean;
+  citationCount?: number;
   downloadUrl: string;
   highlightLabel?: string | null;
 }) {
@@ -53,9 +60,11 @@ export function ReaderToolbar({
   const clamp = (value: number) => Math.min(Math.max(value, 1), Math.max(numPages, 1));
 
   return (
-    <div className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-surface px-3 sm:px-4">
-      <div className="flex min-w-0 items-center gap-2">
-        <span className="truncate text-[13px] font-semibold text-foreground">{title}</span>
+    <div className="no-scrollbar flex h-12 shrink-0 items-center gap-2 overflow-x-auto border-b border-border bg-surface px-3 sm:gap-3 sm:px-4">
+      <div className="flex min-w-0 shrink items-center gap-2">
+        <span className="max-w-[9rem] truncate text-[13px] font-semibold text-foreground sm:max-w-none">
+          {title}
+        </span>
         {versionNo ? <Badge variant="neutral">v{versionNo}</Badge> : null}
         {highlightLabel ? (
           <Badge variant="default" className="hidden gap-1 sm:inline-flex">
@@ -82,7 +91,7 @@ export function ReaderToolbar({
             <TooltipContent>缩小</TooltipContent>
           </Tooltip>
 
-          <span className="w-12 text-center text-[12px] font-medium tabular-nums text-muted-foreground">
+          <span className="hidden w-12 text-center text-[12px] font-medium tabular-nums text-muted-foreground sm:inline">
             {Math.round(zoom * 100)}%
           </span>
 
@@ -138,7 +147,7 @@ export function ReaderToolbar({
               value={draft}
               onChange={(event) => setDraft(event.target.value.replace(/\D/g, ""))}
               inputMode="numeric"
-              aria-label="页码"
+              aria-label={`第 ${page} 页，共 ${numPages} 页`}
               className="h-7 w-9 border-none bg-transparent px-1 text-center text-[12px] font-medium tabular-nums shadow-none focus-visible:ring-1"
             />
             <span className="text-[12px] tabular-nums text-subtle-foreground">
@@ -161,6 +170,23 @@ export function ReaderToolbar({
             <Download className="size-4" />
           </a>
         </Button>
+
+        {onToggleCitations && (
+          <Button
+            variant={citationsOpen ? "secondary" : "ghost"}
+            size="icon-sm"
+            onClick={onToggleCitations}
+            aria-label="引用来源面板"
+            className="relative"
+          >
+            <Quote className="size-4" />
+            {citationCount ? (
+              <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-primary-btn text-[9px] font-semibold tabular-nums text-primary-fg">
+                {citationCount}
+              </span>
+            ) : null}
+          </Button>
+        )}
       </div>
     </div>
   );

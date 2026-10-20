@@ -143,18 +143,38 @@ export interface UploadResponse {
 
 export interface QueryIR {
   original_question: string;
+  normalized_question: string;
   intent: string;
   strategy: string;
   species: string[];
   species_filter: string | null;
   category_filter: string | null;
-  stage: string[];
-  water_metrics: string[];
+  growth_stage: string[];
+  water_parameters: string[];
   diseases: string[];
-  years: number[];
+  requested_year: number | null;
   requires_current_regulation: boolean;
   unsupported_constraints: string[];
   warnings: string[];
+  source: string;
+  confidence: number;
+  /**
+   * "rules" or "llm" — whether the structure came from the rule parser or
+   * from the LLM planner. Every `planner_*` field is empty for a rule-only
+   * request.
+   */
+  planner_source: string;
+  planner_confidence: number | null;
+  planner_assumptions: string[];
+  planner_constraints: {
+    name: string;
+    value: string;
+    source: string;
+    strength: string;
+  }[];
+  planner_subquestions: string[];
+  planner_tasks: Record<string, unknown>[];
+  rewritten_query: string | null;
 }
 
 export interface EvidenceGate {
@@ -177,6 +197,8 @@ export interface ChatStatusEvent {
   retrieval_mode: RetrievalMode;
   species_filter: string | null;
   query_ir: QueryIR | null;
+  /** Planner trace; `null` when the rule-based IR was used. */
+  llm_planner?: import("./debug-types").PlannerTrace | null;
   adaptive_route: string | null;
   targeted_retrieval: unknown;
   graph_expansion: unknown;
@@ -282,7 +304,7 @@ export interface QueryTrace {
   question: string;
   retrieval_config: TraceRetrievalConfig;
   query_ir: QueryIR | null;
-  planner?: import("./debug-types").PlannerTrace | null;
+  llm_planner?: import("./debug-types").PlannerTrace | null;
   active_versions: string[];
   gate: EvidenceGate | null;
   timings: Record<string, number | null>;

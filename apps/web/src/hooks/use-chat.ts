@@ -57,20 +57,34 @@ export function useChat(options: UseChatOptions) {
     setHistoryLoading(true);
     try {
       const history = await sessionsApi.messages(targetSessionId);
-      const mapped: ChatMessage[] = history.map((message) => ({
-        id: message.id,
-        backendId: message.id,
-        role: message.role === "assistant" ? "assistant" : "user",
-        content: message.content,
-        status: message.status === "failed" ? "failed" : "completed",
-        createdAt: message.created_at,
-        sources: message.citations.map(citationToSource),
-        citationCheck: (message.meta?.citation_check as ChatMessage["citationCheck"]) ?? undefined,
-        meta: {
-          model: message.model ?? undefined,
-          timings: message.latency_ms ? { total_ms: message.latency_ms } : undefined,
-        },
-      }));
+      const mapped: ChatMessage[] = history.map((message) => {
+        // A message left in `streaming` was interrupted (the backend restarted
+        // mid-answer). Surface it as incomplete instead of an empty bubble.
+        const interrupted = message.status === "streaming";
+        const failed = message.status === "failed";
+        return {
+          id: message.id,
+          backendId: message.id,
+          role: message.role === "assistant" ? "assistant" : "user",
+          content: message.content,
+          status: interrupted ? "interrupted" : failed ? "failed" : "completed",
+          createdAt: message.created_at,
+          sources: message.citations.map(citationToSource),
+          citationCheck: (message.meta?.citation_check as ChatMessage["citationCheck"]) ?? undefined,
+          error: failed
+            ? {
+                message:
+                  (message.meta?.error as string | undefined) ??
+                  "上一次回答没有完成，请重试。",
+                retryable: true,
+              }
+            : undefined,
+          meta: {
+            model: message.model ?? undefined,
+            timings: message.latency_ms ? { total_ms: message.latency_ms } : undefined,
+          },
+        } as ChatMessage;
+      });
       setMessages(mapped);
       setSessionId(targetSessionId);
       window.localStorage.setItem(LAST_SESSION_KEY, targetSessionId);
@@ -147,6 +161,7 @@ export function useChat(options: UseChatOptions) {
                 retrievalMode: payload.retrieval_mode,
                 gate: payload.gate,
                 queryIr: payload.query_ir,
+                llmPlanner: payload.llm_planner ?? null,
               });
               patchAssistant({
                 meta: {
@@ -214,15 +229,19 @@ export function useChat(options: UseChatOptions) {
         );
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
+          // The user pressed "停止": keep whatever was generated and say so.
           setMessages((prev) =>
             prev.map((message) =>
               message.id === assistantId
                 ? {
                     ...message,
-                    status: message.content ? "completed" : "failed",
-                    error: message.content
-                      ? undefined
-                      : { message: "已停止生成。", retryable: true },
+                    status: "interrupted",
+                    error: {
+                      message: message.content
+                        ? "已停止生成，以上是已产生的部分内容。"
+                        : "已停止生成。",
+                      retryable: true,
+                    },
                   }
                 : message,
             ),

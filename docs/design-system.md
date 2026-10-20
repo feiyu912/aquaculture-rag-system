@@ -144,18 +144,39 @@
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ TopBar  h=56px  面包屑 / 模块名 · 健康状态 · 主题 · 外部链接 │
+│ TopBar  h=56px  模块名 · 健康状态 · 主题 · 外部链接        │
 ├────┬──────────────┬─────────────────────────────────────┤
 │Rail│ Context Panel │  Main                                │
-│68px│ 288px (可收起) │  max-width 由页面自行决定            │
+│68px│ 288px（可拖拽）│  max-width 由页面自行决定             │
 └────┴──────────────┴─────────────────────────────────────┘
 ```
 
 - **Icon Rail**（`lg` 以上）：全局四个模块，68px 宽，激活项为圆角方块 + 左侧 3px 指示条。
-- **Context Panel**：随页面变化（会话 / 筛选 / 缩略图 / 链路），桌面可收起，收起按钮在顶栏左侧。
+- **Context Panel**：随页面变化（会话 / 筛选 / 缩略图 / 链路）。
+  - 宽度**可拖拽**：分隔条支持指针拖拽、方向键（`←/→`，`Shift` 加速）、
+    `Home`/`End` 跳到极值、双击或 `Enter` 恢复默认。宽度写入 `localStorage`。
+  - 顶栏左侧的按钮可收起 / 展开；`< lg` 时改为左侧抽屉（`role="dialog"`）。
 - **Bottom Nav**（`< lg`）：移动端 4 个模块的底部标签栏，56px 高。
 - **Main**：内容区统一 `max-w-[780px] mx-auto`（叙事型）或满宽（工具型）。
 - 断点：`sm 640 / md 768 / lg 1024 / xl 1280 / 2xl 1536`。
+
+### 6.1 滚动模型（重要）
+
+应用是**固定视口**外壳：任何长列表都在自己的 `overflow-y-auto` 区域里滚动，
+**文档本身不滚动**。内层滚动区必须加 `scroll-contain`
+（`contain: paint`），否则溢出的内容仍会计入根元素的可滚动区域，
+整页会跟着一起滑，页面底部出现空白。
+
+```tsx
+<div className="scroll-contain min-h-0 flex-1 overflow-y-auto">…</div>
+```
+
+### 6.2 阅读器（PDF）专用规则
+
+- 画布恒为深色（`--instrument`），页面为白纸。
+- 默认**按宽度自适应**：缩放比例 = 容器宽度 / 页面宽度；用户手动缩放后即接管。
+- 缩放会改变页高，页码锚点与高亮位置必须**在缩放后重新计算**。
+- 引用面板在 `< 1280px` 变为覆盖式抽屉，不能挤压画布。
 
 ## 7. 组件清单（`src/components/ui`）
 
@@ -182,10 +203,16 @@
 | 加载中 | Skeleton（结构占位），不用整页 spinner |
 | 流式生成 | 三点脉冲 + "生成中" 标签，token 逐字追加 |
 | 证据不足 | 独立警示卡（`warning-soft`），**不**用普通回答样式 |
+| 回答被中断 | 独立警示卡「回答未完成」+「重试」，并说明是否留有部分内容 |
 | 请求失败 | 卡片内错误 + "重试"按钮，保留已生成内容 |
 | 空状态 | 图标 + 一句话说明 + 2–3 个可点击的真实示例 |
 | 后端离线 | 顶栏状态胶囊变红 + 悬浮显示组件级错误 |
 | 未启用能力 | 明确标注"未启用/未接入"，**不模拟**结果 |
+| 引用触顶 | 引用面板显示 `已用 / 上限`，并提示上限由后端 `MAX_SOURCES` 控制 |
+
+**中断语义**：后端在开始流式之前就写入 assistant 行；若此时进程重启，
+该行会永久停留在 `status="streaming"` + 空内容。前端必须把这种消息渲染为
+「回答未完成」，而不是空白气泡。
 
 ## 9. 可访问性
 
@@ -195,10 +222,9 @@
 - 引用芯片用 `<button>`，同时提供 `title` 说明。
 - 尊重 `prefers-reduced-motion`。
 
-## 10. 视觉回归检查
+## 10. 视觉回归与端到端检查
 
-`apps/web/scripts/review.mjs` 会在真实后端下渲染页面、截图，并检测
-横向溢出元素与控制台错误：
+### 视觉回归
 
 ```bash
 cd apps/web
@@ -206,4 +232,33 @@ node scripts/review.mjs "/chat" --w 1440 --h 900 --out chat-desktop
 node scripts/review.mjs "/chat" --w 390 --h 844 --out chat-mobile --dark
 ```
 
+脚本会在真实后端下渲染页面、截图，并报告横向溢出元素与控制台错误。
 改动任何页面后必须至少跑一次 1440 / 1024 / 390 三个宽度。
+
+### 端到端
+
+```bash
+cd apps/web
+npm run e2e                       # 桌面 + 移动两个 project
+npx playwright test --project=desktop-chromium e2e/reader.spec.ts
+npx playwright show-report .review/e2e-report
+```
+
+E2E 直接打真实后端：真实上传 PDF、等真实 ARQ worker 入库、真实 SSE、
+真实引用与真实 PDF 高亮。**不 mock 任何请求。**
+
+| 规格 | 覆盖内容 |
+|---|---|
+| `chat.spec.ts` | SSE 事件序列、流式渲染、引用芯片、证据不足 |
+| `knowledge.spec.ts` | 上传入库、版本历史与回滚、删除 |
+| `version-dialog.spec.ts` | 新版本弹窗（选文件 → 轮询任务 → 生效） |
+| `reader.spec.ts` | PDF 渲染、页码跳转、**高亮几何+像素双校验**、缩放同步、点击引用跳转 |
+| `debug.spec.ts` | 阶段链路、遥测统计、载入真实 Trace、无效 id 的错误态 |
+| `layout.spec.ts` | 整页不滚动、侧栏拖拽与持久化、标题完整、收起 |
+| `shell.mobile.spec.ts` | 底部标签栏、会话抽屉、问答、知识库、阅读器、整页不滚动 |
+
+`e2e/fixtures/` 下的 PDF 由 `e2e/fixtures/generate.py` 生成，
+其中 `e2e-rotated.pdf` 的第 2 页带 `/Rotate 90`，用于验证旋转页的坐标换算。
+
+> `npm run build` 与 `next dev` 使用不同的输出目录
+> （`NEXT_DIST_DIR=.next-build`），避免构建覆盖正在运行的开发服务器。
