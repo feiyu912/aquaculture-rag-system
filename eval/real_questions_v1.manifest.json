@@ -1,0 +1,10 @@
+{
+  "dataset": "real_questions_v1",
+  "version": "1.0.0",
+  "cases": 65,
+  "answerable": 62,
+  "sha256": "dd94dfd501d8a346f66cafeada94fda2c8c9721ce935b34d364bdbdb6872dc6a",
+  "seed": "eval/real_questions_v1.seed.json",
+  "annotation_status": "ai_assisted_pending_human_review",
+  "note": "gold chunk IDs resolved from the active DB version; review before publication"
+}

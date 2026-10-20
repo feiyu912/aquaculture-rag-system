@@ -51,7 +51,7 @@
 - **证据要求 + 定向补检（可开关）**：facet 缺口检查、最多一次补充检索
 - **确定性自适应路由（可开关）**：计算/现行规范缺少工具或日期元数据时安全拒答
 - **检索 Trace**：按 request_id 查看排名、证据、IR、gate 与耗时
-- 89 个默认单元测试（另有 2 个 BGE 真模型集成测试，`RUN_BGE_TESTS=1` 时运行）+ A/B/C 冒烟测试 + 批量评测 CLI
+- 93 个默认单元测试（另有 2 个 BGE 真模型集成测试，`RUN_BGE_TESTS=1` 时运行）+ A/B/C 冒烟测试 + 批量评测 CLI
 
 > ⚠️ BGE-M3 与 BGE-Reranker 已真实加载并在本机索引上验证；`hybrid_rerank` 现在记录
 > `reranker=BAAI/bge-reranker-v2-m3`，不再等价于 RRF。`noop` 仅保留为消融对照。
@@ -112,6 +112,11 @@ uv run python ../../scripts/smoke_test.py           # A/B/C，跑完清理
 uv run python ../../scripts/smoke_test.py --keep    # 保留演示文档
 uv run python ../../scripts/evaluate.py --dataset ../../eval/sample_questions.jsonl \
   --modes dense,bm25,hybrid,hybrid_rerank --out ../../eval/runs/demo
+
+# 真实两文档 65 题、chunk 级检索指标（结果见 docs/retrieval-evaluation-2026-10-20.md）
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  uv run python ../../scripts/evaluate_retrieval_metrics.py \
+  --query-ir --out ../../eval/runs/real_questions_v1_query_ir
 ```
 
 完整命令、API 示例与版本更新/回滚见 [开发说明](docs/development.md)。
@@ -125,6 +130,7 @@ uv run python ../../scripts/evaluate.py --dataset ../../eval/sample_questions.js
 | [ADR-0001 混合检索](docs/adr/0001-hybrid-retrieval.md) | 为什么是 Dense + BM25 + RRF |
 | [ADR-0002 版本化索引](docs/adr/0002-versioned-index.md) | 为什么不依赖 PostgreSQL/Qdrant 跨库事务 |
 | [ADR-0003 引用验证](docs/adr/0003-citation-validation.md) | 引用有效性、支持性、事实正确性的分层 |
+| [真实检索评测（2026-10-20）](docs/retrieval-evaluation-2026-10-20.md) | 65 题、Dense/BM25/Hybrid/Reranker 的 Recall/nDCG/MRR、失败分析与局限 |
 | [增强架构与状态](docs/architecture-enhancement.md) | 12 项增强能力的实现状态、Phase 2/3 计划、论文口径边界 |
 | [架构审计（2026-10-20）](docs/audit-2026-10-20.md) | 实际执行路径、模块完成度、差距与风险、下一阶段优先级 |
 | [待定项](docs/open-items.md) | 数据来源、硬件、模板等尚未锁死的事项 |
@@ -149,10 +155,13 @@ infra/
 scripts/
   make_sample_pdf.py   生成演示用合成 PDF
   smoke_test.py        A/B/C 端到端验收
-  evaluate.py          批量评测、导出 CSV/JSON
+  evaluate.py          旧版批量评测、导出 CSV/JSON
+  evaluate_retrieval_metrics.py  chunk 级真实检索指标
+  build_real_eval_dataset.py     从 seed 解析真实 gold chunk
   migrate_db.py        建表 + 增量迁移
 eval/
   sample_questions.jsonl  合成测试集（非论文 Ground Truth）
+  real_questions_v1.*     65 条真实文档题（AI 辅助、待人工复核）
 docs/
   adr/
 data/             文档、解析产物、示例（不入库）
@@ -164,4 +173,4 @@ data/             文档、解析产物、示例（不入库）
 - 当前版本没有认证，只适合本机开发。
 - 当前迁移只支持加列；改列类型/删列前引入 Alembic。
 - `eval/sample_questions.jsonl` 是合成数据，不能当作论文 Ground Truth。
-- 进入论文实验前，必须固定 BGE-M3/BGE-Reranker 模型快照、设备、fp16 与集合 manifest；当前模型已验证，但评测集仍只有 5 条合成问题。
+- 进入论文实验前，必须固定 BGE-M3/BGE-Reranker 模型快照、设备、fp16 与集合 manifest；当前已有 65 条真实文档题（AI 辅助、待人工复核），仍不能替代人工 qrels。

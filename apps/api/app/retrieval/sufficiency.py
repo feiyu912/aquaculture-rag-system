@@ -48,6 +48,70 @@ EXTRA_DOMAIN_TERMS = {
     "饲料",
 }
 
+# Technical nouns that jieba often splits into meaningless fragments.  They are
+# added only to the sufficiency query terms (not to the BM25 index tokenizer),
+# so this does not silently change the indexed sparse vectors.
+GATE_TERMS = {
+    "环沟",
+    "环沟塘",
+    "沟宽",
+    "沟深",
+    "防逃墙",
+    "防逃",
+    "清塘",
+    "蟹苗",
+    "大眼幼体",
+    "仔蟹",
+    "扣蟹",
+    "水花生",
+    "水草",
+    "池塘",
+    "蓄水池",
+    "过滤",
+    "增氧",
+    "排污",
+    "尾水",
+    "水源",
+    "砂滤",
+    "漂白精",
+    "高锰酸钾",
+    "聚维酮碘",
+    "配合饲料",
+    "微生态制剂",
+    "活菌",
+    "渔药",
+    "休药期",
+    "合格证",
+    "溯源",
+    "记录",
+    "保存",
+    "来源",
+    "症状",
+    "预防",
+    "黑鳃病",
+    "黑腮病",
+    "纤毛虫",
+    "肠炎",
+    "烂鳃",
+    "亲本",
+    "亲虾",
+    "无节幼体",
+    "蚤状幼体",
+    "糠虾",
+    "孵化",
+    "产卵",
+    "交配",
+    "暂养",
+    "投喂量",
+}
+
+GATE_ALIASES = {
+    "黑鳃病": ("黑腮病",),
+    "黑腮病": ("黑鳃病",),
+    "大眼幼体": ("蟹苗",),
+    "蟹苗": ("大眼幼体",),
+}
+
 
 @dataclass(frozen=True, slots=True)
 class Sufficiency:
@@ -76,7 +140,11 @@ class Sufficiency:
 
 
 def query_terms(question: str) -> list[str]:
-    return [term for term in tokenize(question) if term not in GATE_STOPWORDS]
+    terms = [term for term in tokenize(question) if term not in GATE_STOPWORDS]
+    for term in GATE_TERMS:
+        if term in question and term not in terms:
+            terms.append(term)
+    return terms
 
 
 def _weight(term: str, domain_terms: set[str]) -> float:
@@ -90,6 +158,8 @@ def _contains(term: str, text: str, text_terms: set[str]) -> bool:
     rule is limited to terms of two or more characters.
     """
     if term in text_terms:
+        return True
+    if any(alias in text for alias in GATE_ALIASES.get(term, ())):
         return True
     return len(term) >= 2 and term in text
 
@@ -113,7 +183,7 @@ def assess_evidence(
     if not terms:
         return Sufficiency(False, "no_query_terms", [], [], 0.0, 0.0, 0.0, None)
 
-    dictionary = set(CUSTOM_TERMS) | EXTRA_DOMAIN_TERMS | set(domain_terms or ())
+    dictionary = set(CUSTOM_TERMS) | EXTRA_DOMAIN_TERMS | GATE_TERMS | set(domain_terms or ())
     total_weight = sum(_weight(term, dictionary) for term in terms)
     best: Sufficiency | None = None
     candidates: list[Sufficiency] = []

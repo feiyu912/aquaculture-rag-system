@@ -302,7 +302,16 @@ async def retrieve(
             active_versions=[],
             timings={"retrieval_ms": 0},
             rankings={},
-            config=_config(mode, None, None, "none", gate, query_ir, route=adaptive_route),
+            config=_config(
+                mode,
+                None,
+                None,
+                "none",
+                gate,
+                query_ir,
+                route=adaptive_route,
+                planner=planner_trace,
+            ),
             sufficient=False,
             gate=gate.as_dict(),
         )
@@ -325,6 +334,7 @@ async def retrieve(
                     query_ir,
                     route=adaptive_route,
                     modules=modules,
+                    planner=planner_trace,
                 ),
                 sufficient=False,
                 gate=gate.as_dict(),
@@ -679,12 +689,12 @@ async def retrieve(
         graph_expansion.as_dict() if graph_expansion else None,
         route=adaptive_route,
         modules=modules,
+        planner=planner_trace,
         compatibility={
             "configured": settings.embedding_model,
             "mismatched": embedding_mismatches,
             "manifest": manifest,
         },
-        planner=planner_trace,
     )
     if requirements:
         config["evidence_requirements"] = [item.as_dict() for item in requirements]

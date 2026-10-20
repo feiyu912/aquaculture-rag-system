@@ -45,3 +45,21 @@ def test_no_evidence_fails():
     result = assess_evidence("溶解氧", [])
     assert not result.sufficient
     assert result.reason == "no_evidence"
+
+
+def test_technical_nouns_split_by_jieba_still_pass_gate():
+    result = assess_evidence(
+        "环沟塘的沟宽和沟深有什么要求？",
+        ["4.1池塘：环沟塘（回字型环沟）沟宽3m~4m，沟深60cm~80cm。"],
+    )
+    assert result.sufficient
+    assert {"环沟", "沟宽", "沟深"} <= set(result.matched_terms)
+
+
+def test_disease_spelling_alias_matches_gate():
+    result = assess_evidence(
+        "黑鳃病的症状和预防措施是什么？",
+        ["黑腮病症状：鳃呈黄色、黑色；发病后用生石灰全池泼洒。"],
+    )
+    assert result.sufficient
+    assert "黑鳃病" in result.matched_terms

@@ -706,10 +706,12 @@ GET /api/debug/query-logs/{request_id}
   "question": "…",
   "retrieval_config": {"...": "..."},
   "query_ir": {"...": "..."},
+  "llm_planner": null,
   "active_versions": ["..."],
   "gate": {"...": "..."},
   "timings": {"retrieval_ms": 3099.0, "total_ms": 10852.7},
   "rankings": {"dense": ["..."], "sparse": ["..."], "graph": []},
+  "fused": ["..."],
   "fused_count": 20,
   "evidence": [{"source_id": "S1", "...": "..."}],
   "citation_check": {"...": "..."},
@@ -794,7 +796,7 @@ GET /api/health
 | planner_source | `rules` / `llm` |
 | planner_confidence | LLM 计划置信度 |
 | planner_assumptions | 模型推断但未确认的假设 |
-| planner_constraints | 每条约束的 `source`/`strength`/`accepted_as_hard` |
+| planner_constraints | 每条约束的 `source`/`strength`/`accepted_as_hard`/`filter_applied`/`scope` |
 | planner_subquestions | 规划出的子问题 |
 | rewritten_query | 保留原意的检索改写（可为空） |
 
@@ -816,7 +818,8 @@ GET /api/health
 安全边界（前端文案必须一致）：
 
 - LLM 推断的品种/约束默认是 **soft**，不会成为未经验证的硬过滤。
-- `accepted_as_hard` 只表示通过校验；目前真正用于 Qdrant 硬过滤的只有文档级 `species_filter` 和请求显式 `category`。
+- `accepted_as_hard` 只表示通过校验；`filter_applied=true` 才表示该约束真的进入了 Qdrant 过滤。
+- `scope` 取 `document_filter` / `retrieval_requirement` / `soft_context`；目前真正用于 Qdrant 硬过滤的仍只有文档级 `species_filter` 和请求显式 `category`。
 - `planner_source=llm` 不等于“IR 一定正确”；失败会安全回退 `rules`，并在 `error` 中记录。
 - 规则 IR 与 LLM IR 的对照评测见后续 `eval/`，当前不能宣称 LLM 一定更优。
 

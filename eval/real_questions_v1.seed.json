@@ -1,0 +1,1189 @@
+{
+  "dataset": "real_questions_v1",
+  "version": "1.0.0",
+  "created_at": "2026-10-20",
+  "description": "基于两份真实水产标准的检索评测题；人工/AI辅助从原文抽取，待人工复核。",
+  "annotation_policy": "所有 gold 均来自 PDF 原文对应 chunk；不把 LLM 生成的答案当 ground truth。",
+  "cases": [
+    {
+      "id": "R001",
+      "question": "DB36/T 2225—2026 规程适用于什么养殖对象和养殖方式？",
+      "reference_answer": "适用于池塘条件下中华绒螯蟹大眼幼体直接培育成扣蟹，覆盖培育条件、蟹苗放养、生物饵料、投饲、水质、病害和日常管理。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 9,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "第1章范围：本文件适用于池塘条件下中华绒螯蟹大眼幼体直接培育成扣蟹。",
+      "split": "test"
+    },
+    {
+      "id": "R002",
+      "question": "中华绒螯蟹扣蟹培育池塘的面积和蓄水深度宜控制在多少？",
+      "reference_answer": "池塘面积以1334㎡~2668㎡为宜，水深1m~1.5m为宜。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 14,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "4.1池塘：面积1334㎡~2668㎡为宜，水深1m~1.5m之间为宜。",
+      "split": "test"
+    },
+    {
+      "id": "R003",
+      "question": "环沟塘的沟宽和沟深有什么要求？",
+      "reference_answer": "环沟塘沟宽3m~4m，沟深60cm~80cm。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 14,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "4.1池塘：环沟塘（回字型环沟）沟宽3m~4m，沟深60cm~80cm。",
+      "split": "test"
+    },
+    {
+      "id": "R004",
+      "question": "扣蟹培育池的防逃墙高度和材料有什么要求？",
+      "reference_answer": "防逃墙高30cm~50cm，可采用防老化塑料薄膜、塑料板或玻璃钢板等材料。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 17,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "4.4防逃防天敌设施：防逃墙高30cm~50cm，材料采用防老化塑料薄膜、塑料板或者玻璃钢板等。",
+      "split": "test"
+    },
+    {
+      "id": "R005",
+      "question": "蟹苗放养前清塘消毒应在什么时间进行、生石灰用量是多少？",
+      "reference_answer": "放养前20d用生石灰清塘消毒，每667㎡用量75kg~150kg。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 18,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.1清塘消毒：蟹苗放养前20d，采用生石灰进行清塘消毒，每667㎡用量为75kg~150kg。",
+      "split": "test"
+    },
+    {
+      "id": "R006",
+      "question": "DB36/T 2225—2026 对蟹苗来源有什么要求？",
+      "reference_answer": "应选择放养长江水系亲本繁育的蟹苗。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 19,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.2蟹苗来源：选择放养长江水系亲本繁育的蟹苗。",
+      "split": "test"
+    },
+    {
+      "id": "R007",
+      "question": "大眼幼体的放养时间、密度和规格是多少？",
+      "reference_answer": "5月中旬放养，密度2kg/667㎡~3.5kg/667㎡，规格15万只/kg。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 21,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.4放养方式：大眼幼体在5月中旬放养，放养密度为2kg/667㎡~3.5kg/667㎡，规格15万只/kg。",
+      "split": "test"
+    },
+    {
+      "id": "R008",
+      "question": "放苗后豆浆应在多长时间内泼洒、用量是多少？",
+      "reference_answer": "放苗后1h之内泼洒豆浆，用量2.5kg/667㎡。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 21,
+          "grade": 1
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.4放养方式：放苗后及时补充营养，1h之内泼洒豆浆，用量2.5kg/667㎡。",
+      "split": "test"
+    },
+    {
+      "id": "R009",
+      "question": "放苗前天然饵料培育应在放苗前几天进行、小球藻用量是多少？",
+      "reference_answer": "放苗前7d~10d肥水，小球藻等天然藻种按200g/667㎡~500g/667㎡全塘泼洒。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 22,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "6.1天然饵料培育：放苗前7d~10d对池塘水进行肥育，小球藻等以200g/667㎡~500g/667㎡全塘泼洒。",
+      "split": "test"
+    },
+    {
+      "id": "R010",
+      "question": "平底塘和环沟塘移栽水花生的覆盖比例分别是多少？",
+      "reference_answer": "平底塘覆盖池塘面积60%为宜，环沟塘覆盖面积90%，均需留水体环流空间。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 23,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "6.2水草种植：平底塘覆盖池塘面积达60%为宜；环沟塘覆盖面积达90%，需留有水体环流空间。",
+      "split": "test"
+    },
+    {
+      "id": "R011",
+      "question": "水花生梳理在投苗后哪些时间点进行？第三次梳理宜在什么时候？",
+      "reference_answer": "投苗45d、75d后各梳理一次，第三次宜在高温期（8月份左右）。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 24,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "6.3水草管理：分别在投苗45d、75d后进行一次水花生梳理，第三次梳理宜在高温期（8月份左右）。",
+      "split": "test"
+    },
+    {
+      "id": "R012",
+      "question": "扣蟹投喂应遵循什么原则？",
+      "reference_answer": "按照“前后精、中间青、荤素搭配、青精结合”和“定时、定点、定质、定量”的原则投喂。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 25,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.1投喂原则：按照前后精、中间青、荤素搭配、青精结合和定时、定点、定质、定量的原则进行投喂。",
+      "split": "test"
+    },
+    {
+      "id": "R013",
+      "question": "仔蟹Ⅰ期、Ⅴ期和Ⅷ期后的日投喂量分别是多少？",
+      "reference_answer": "仔蟹Ⅰ期按蟹苗总重50%；Ⅴ期前期100%、后期逐渐增至150%；Ⅷ期后5kg/667㎡~7.5kg/667㎡。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 26,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.2投喂方法：仔蟹Ⅰ期50%；仔蟹Ⅴ期前期100%、后期150%；Ⅷ期后5kg/667㎡~7.5kg/667㎡。",
+      "split": "test"
+    },
+    {
+      "id": "R014",
+      "question": "DB36/T 2225—2026 规定的扣蟹培育水质指标有哪些？",
+      "reference_answer": "溶氧量5mg/L以上，pH值7.5~8.5，透明度30cm~50cm，氨氮低于0.5mg/L，亚硝酸盐低于0.05mg/L。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 27,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.1水质指标：溶氧量5mg/L以上，pH值7.5~8.5，透明度30cm~50cm，氨氮低于0.5mg/L，亚硝酸盐低于0.05mg/L。",
+      "split": "test"
+    },
+    {
+      "id": "R015",
+      "question": "扣蟹培育水质调控的原则和换水量上限是什么？",
+      "reference_answer": "按“前期肥，中后期瘦，弱碱性”调控；换水量不宜超过1/5，前期出水口用80~100目纱布过滤。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 28,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.2水质调控：按照前期肥、中后期瘦、弱碱性的原则；换水量不宜超过1/5，前期出水口使用80~100目纱布过滤。",
+      "split": "test"
+    },
+    {
+      "id": "R016",
+      "question": "扣蟹培育尾水排放应符合哪个标准？",
+      "reference_answer": "尾水应符合DB36/ 1993的要求。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 29,
+          "grade": 1
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.3尾水排放：尾水符合DB36/ 1993要求。",
+      "split": "test"
+    },
+    {
+      "id": "R017",
+      "question": "DB36/T 2225—2026 的病害防治原则和用药依据是什么？",
+      "reference_answer": "坚持“以防为主、防治结合”，定期用生石灰、复合碘消毒；渔药使用符合NY/T 755。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 29,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "9病害防治：坚持以防为主、防治结合，定期使用生石灰、复合碘消毒剂；渔药使用符合NY/T 755。",
+      "split": "test"
+    },
+    {
+      "id": "R018",
+      "question": "扣蟹培育日常巡池每天几次、巡哪些内容？",
+      "reference_answer": "早晚各巡查1次，查看水位水质、蟹苗摄食活动、防逃装置以及病害敌害情况。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 30,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "10.1巡池检查：早晚各巡查1次，巡查内容包括水位水质、蟹苗摄食活动、防逃装置、病害敌害。",
+      "split": "test"
+    },
+    {
+      "id": "R019",
+      "question": "养殖记录应保存多长时间？",
+      "reference_answer": "相关记录应保存2年以上。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 31,
+          "grade": 1
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "10.2养殖记录要求：相关记录应保存2年以上。",
+      "split": "test"
+    },
+    {
+      "id": "R020",
+      "question": "纤毛虫病的症状和推荐预防方法是什么？",
+      "reference_answer": "病蟹鳃部、腹部及步足有纤毛虫附生，体表呈棕/黄色绒毛、行动迟缓；可加注新水、生石灰20~30g/m³全池泼洒，或用5~10g/m³高锰酸钾浸洗。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 32,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "附录A表A.1：纤毛虫病症状及预防方法（生石灰20~30g/m3，高锰酸钾5~10g/m3浸洗）。",
+      "split": "test"
+    },
+    {
+      "id": "R021",
+      "question": "黑鳃病的症状和预防措施是什么？",
+      "reference_answer": "鳃呈黄/黑色、鳃部附着藻类或原生动物、呼吸困难；应加注新水、用底质改良剂，发病后用生石灰15~20g/m³全池泼洒1~2次。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 32,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "附录A表A.1：黑腮病症状及预防方法（生石灰15~20g/m3，连用1~2次）。",
+      "split": "test"
+    },
+    {
+      "id": "R022",
+      "question": "烂鳃病应如何预防和消毒？",
+      "reference_answer": "维护水草、保持水质清新，使用溴制剂、碘制剂或季铵盐类等刺激性药物进行水体消毒。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 32,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "附录A表A.1：烂鳃病预防方法（溴制剂、碘制剂或季铵盐类水体消毒）。",
+      "split": "test"
+    },
+    {
+      "id": "R023",
+      "question": "肠炎病有哪些症状、预防方法是什么？",
+      "reference_answer": "塘口整体吃食下降、空肠、活力差、口吐黄色泡沫等；可用溴/碘制剂消毒2~3次，维生素C拌饵5~7d，喹诺酮类拌料4~5d。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 33,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "附录A表A.1：肠炎病症状及预防方法。",
+      "split": "test"
+    },
+    {
+      "id": "R024",
+      "question": "扣蟹培育池塘条件包括哪些方面？",
+      "reference_answer": "包括池塘面积1334~2668㎡、水深1~1.5m、环沟规格、防逃墙30~50cm及进排水过滤等。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 14,
+          "grade": 2
+        },
+        {
+          "doc": "crab",
+          "ordinal": 17,
+          "grade": 1
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "4.1池塘、4.4防逃防天敌设施。",
+      "split": "test"
+    },
+    {
+      "id": "R025",
+      "question": "大眼幼体放养前后早期投喂管理包括哪些关键动作？",
+      "reference_answer": "放养前调好水质保证溶氧，放苗后1h内泼洒豆浆2.5kg/667㎡；放苗前7~10d培育天然饵料。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 21,
+          "grade": 2
+        },
+        {
+          "doc": "crab",
+          "ordinal": 22,
+          "grade": 1
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.4放养方式、6.1天然饵料培育。",
+      "split": "test"
+    },
+    {
+      "id": "R026",
+      "question": "凡纳滨对虾养殖环境对盐度、pH和溶解氧的要求是什么？",
+      "reference_answer": "盐度26~35，pH值7.8~8.5，溶解氧保持5mg/L以上。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 32,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "4养殖环境：盐度26～35，pH值7.8～8.5，溶解氧含量保持5mg/L以上。",
+      "split": "test"
+    },
+    {
+      "id": "R027",
+      "question": "凡纳滨对虾亲本培育池的池深、面积和坡度要求是什么？",
+      "reference_answer": "池深90~120cm，面积30~60㎡，池底向一边或中间倾斜，坡度2~3%。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 34,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.1.1.1亲本培育池：池深90-120cm、面积30~60m2，坡度2-3%。",
+      "split": "test"
+    },
+    {
+      "id": "R028",
+      "question": "产卵孵化池的容积和池深是多少？",
+      "reference_answer": "容积10~30m³，池深130~150cm，为室内水泥池。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 35,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.1.1.2产卵孵化池：容积10-30m3，池深130-150cm。",
+      "split": "test"
+    },
+    {
+      "id": "R029",
+      "question": "育苗池的池深、容积和池底坡度是多少？",
+      "reference_answer": "池深1.2~1.5m，容积12~20m³，池底坡度2~3%。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 36,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.1.2.1育苗池：池深1.2m~1.5m、容积12~20m3，坡度2-3%。",
+      "split": "test"
+    },
+    {
+      "id": "R030",
+      "question": "凡纳滨对虾养殖供水系统通常包括哪些设备？",
+      "reference_answer": "包括抽水设备、沉淀池、过滤池、供水管道、精密过滤器、超滤设备、控制器及紫外/臭氧消毒设备等。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 38,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.2.1供水系统：抽水设备、沉淀池、过滤池、供水管道、精密过滤器、超滤设备、控制器开关及紫外杀菌器或臭氧机消毒设备等。",
+      "split": "test"
+    },
+    {
+      "id": "R031",
+      "question": "养殖供气系统的主要设备和增氧方式是什么？",
+      "reference_answer": "主要包括罗茨风机或空气压缩机、PVC管道、阀门，通过池底纳米孔增氧或曝气石增氧。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 39,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.2.2供气系统：罗茨风机或空气压缩机、PVC管道、阀门，池底纳米孔增氧或曝气石增氧。",
+      "split": "test"
+    },
+    {
+      "id": "R032",
+      "question": "凡纳滨对虾养殖尾水排放应符合哪个标准？",
+      "reference_answer": "养殖尾水经物理及生物等技术处理后排放，应符合DB46/ 475。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 41,
+          "grade": 1
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.3养殖尾水处理系统：排放的养殖尾水应符合DB46/ 475的规定。",
+      "split": "test"
+    },
+    {
+      "id": "R033",
+      "question": "养殖投入品管理的基本要求有哪些？",
+      "reference_answer": "统一购买、供应、管理和处置；从正规渠道选购合法产品并检查批号标签；不得购买使用储存禁用投入品；变质过期品隔离停用；回收废弃物并做好使用记录。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 42,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "6.1基本要求：统一购买、统一供应、统一管理、统一处置；正规渠道；禁用投入品管理；记录。",
+      "split": "test"
+    },
+    {
+      "id": "R034",
+      "question": "凡纳滨对虾饵料使用有哪些要求？",
+      "reference_answer": "鲜活/冰鲜/冷冻饵料应避免腐烂污染，检测合格并清洗消毒；生物饵料应营养强化；配合饲料符合GB/T 22919.5。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 43,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "6.2饵料：鲜活饵料、生物饵料、配合饲料的要求。",
+      "split": "test"
+    },
+    {
+      "id": "R035",
+      "question": "凡纳滨对虾渔药使用应遵循什么规定？",
+      "reference_answer": "选用绿色环保渔药，严格控制剂量、次数和安全间隔期，使用方法符合SC/T 1132；消毒剂按NY 5071使用。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 44,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "6.3渔药：使用方法应符合SC/T 1132；消毒剂按NY 5071。",
+      "split": "test"
+    },
+    {
+      "id": "R036",
+      "question": "微生态制剂作为动物保健产品时，有效活菌含量和使用前处理要求是什么？",
+      "reference_answer": "有效活菌含量不少于2×10^8 CFU/mL(g)，使用前应先活化。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 45,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "6.4动物保健产品：微生态制剂有效活菌含量不少于（2×10 8）CFU/mL(g)，使用前应先活化。",
+      "split": "test"
+    },
+    {
+      "id": "R037",
+      "question": "凡纳滨对虾亲本选择对来源、雌虾和雄虾规格有什么要求？",
+      "reference_answer": "雌雄亲本来源不同群体避免近亲；雌虾日龄≥240天、体重40g以上；雄虾日龄≥300天、体重35g以上。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 47,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.1.1亲本选择、7.1.2亲本质量：雌虾日龄≥240天、体重40g以上；雄虾日龄≥300天、体重35g以上。",
+      "split": "test"
+    },
+    {
+      "id": "R038",
+      "question": "亲本暂养的密度、水温和盐度差、光照及暂养时间是多少？",
+      "reference_answer": "密度10~15尾/㎡；水温与运输水温一致或稍高0.5℃；盐度差小于3；光照500~1000Lx；暂养约15d。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 49,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.2.1亲本暂养：密度10-15尾/m2，水温稍高0.5℃，盐度差小于3，光照500-1000Lx，暂养15d左右。",
+      "split": "test"
+    },
+    {
+      "id": "R039",
+      "question": "亲本雌雄配比是多少？",
+      "reference_answer": "雌雄亲本配比为1:1或1:1.5。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 50,
+          "grade": 1
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.2.2雌雄配比：雌雄亲本配比为1:1或1:1.5。",
+      "split": "test"
+    },
+    {
+      "id": "R040",
+      "question": "亲本培育的饵料种类和沙蚕占比要求是什么？",
+      "reference_answer": "以沙蚕、牡蛎、鱿鱼等鲜活饵料为主，沙蚕应占总量的30%以上，添加少量维生素E和C，兼投亲虾专用配合饲料。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 51,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.3.1饵料种类：沙蚕应占总量的30%以上，添加少量维生素E和维生素C。",
+      "split": "test"
+    },
+    {
+      "id": "R041",
+      "question": "亲虾每天投喂量、投喂次数和时间如何安排？",
+      "reference_answer": "日投喂量为亲虾总体重的10~15%（湿重），每天8时、16时、23时各一次；上午和下午投喂量占总量4/5。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 52,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.3.2投喂方法：每天投喂量为亲虾总体重的10-15%，8时、16时、23时各一次，上午和下午占4/5。",
+      "split": "test"
+    },
+    {
+      "id": "R042",
+      "question": "亲虾培育的水质控制指标是什么？",
+      "reference_answer": "海水盐度28~35且稳定，水温28~29℃，pH 7.8~8.3，溶解氧5mg/L以上。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 53,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.4水质控制：盐度28～35，水温28℃～29℃，pH 7.8～8.3，溶解氧5mg/L以上。",
+      "split": "test"
+    },
+    {
+      "id": "R043",
+      "question": "亲虾交配在催熟培育后几天开始、每天什么时间挑选雌虾？",
+      "reference_answer": "催熟培育4~7天后每天检查性腺，每天8:00-9:00挑选性腺成熟的雌虾移入雄虾池交配。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 55,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.6.1亲虾交配：催熟培育4-7天后，每天8：00-9：00挑选性腺成熟雌虾移入雄虾培育池。",
+      "split": "test"
+    },
+    {
+      "id": "R044",
+      "question": "亲虾产卵时如何检查交配情况、已交配雌虾的产卵密度是多少？",
+      "reference_answer": "每天20:00和23:00左右分两次检查，已交配雌虾移入产卵池，密度1~6尾/㎡。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 56,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.6.2产卵：每天20：00和23：00左右检查交配，已交配雌虾移入产卵池，密度1-6尾/m2。",
+      "split": "test"
+    },
+    {
+      "id": "R045",
+      "question": "受精卵孵化密度、水温和孵化时间是多少？",
+      "reference_answer": "孵化密度100×10^4~150×10^4粒/m³，水温28~30℃，孵化时间一般12~13h。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 57,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.6.3孵化：孵化密度100×10^4~150×10^4粒/m3，水温28-30℃，孵化时间12-13h。",
+      "split": "test"
+    },
+    {
+      "id": "R046",
+      "question": "无节幼体包装运输的装袋量、水温和运输时间要求是什么？",
+      "reference_answer": "10L聚乙烯袋装海水3~4L、充氧5~6L、无节幼体50万~100万粒，运输水温28~30℃，时间4~6h。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 60,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "7.7.3无节幼体包装运输：10L袋，海水3L～4L、充氧5L～6L、50万～100万粒，水温28～30℃，4h～6h。",
+      "split": "test"
+    },
+    {
+      "id": "R047",
+      "question": "育苗池消毒使用漂白精的浓度和晾置时间是多少？",
+      "reference_answer": "池底池壁用7000mg/kg漂白精溶解后喷洒消毒，关闭门窗晾置24h。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 61,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.1培育前准备：池底、池壁可用7000mg/kg漂白精喷洒消毒，关闭门窗晾置24h。",
+      "split": "test"
+    },
+    {
+      "id": "R048",
+      "question": "无节幼体的放养密度一般是多少？",
+      "reference_answer": "一般20~30万尾/m³，应根据育苗池条件确定。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 61,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.2幼体放养密度：一般为20～30万尾/m3。",
+      "split": "test"
+    },
+    {
+      "id": "R049",
+      "question": "无节幼体入池前如何消毒、育苗池水温控制在多少？",
+      "reference_answer": "用200mL/L聚维酮碘浸泡30~60s，取出用干净海水冲洗后入池；育苗池水温28~32℃。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 62,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.3幼体入池：水温28℃～32℃；200ml/L聚维酮碘浸泡30～60s。",
+      "split": "test"
+    },
+    {
+      "id": "R050",
+      "question": "蚤状幼体和糠虾幼体阶段单胞藻、人工配合饵料的投喂次数是多少？",
+      "reference_answer": "蚤状幼体：单胞藻3~5次/天、人工配合饵料4~6次/天；糠虾幼体同样为3~5次/天和4~6次/天。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 63,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.4饵料投喂：蚤状幼体单胞藻3～5次/天、配合饵料4～6次/天；糠虾幼体相同。",
+      "split": "test"
+    },
+    {
+      "id": "R051",
+      "question": "育苗期间水温、pH、盐度、氨氮、亚硝酸盐和溶解氧的控制范围是多少？",
+      "reference_answer": "水温28~32℃，pH 7.8~8.2，盐度26~35，氨氮0.5mg/L以下，亚硝酸盐氮低于0.1mg/L，溶解氧大于5mg/L。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 65,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.5.1育苗水质调控：水温28～32，pH 7.8～8.2；盐度26～35；氨氮0.5mg/L以下；亚硝酸盐氮低于0.1mg/l；溶解氧大于5mg/l。",
+      "split": "test"
+    },
+    {
+      "id": "R052",
+      "question": "育苗各阶段充气量如何变化？",
+      "reference_answer": "无节幼体水面微沸状，蚤状幼体弱沸腾状，糠虾幼体沸腾状，仔虾阶段强沸腾状。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 65,
+          "grade": 1
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.5.2充气量：无节幼体微沸状、蚤状弱沸腾、糠虾沸腾、仔虾强沸腾。",
+      "split": "test"
+    },
+    {
+      "id": "R053",
+      "question": "虾苗出池的体长和健康要求是什么？",
+      "reference_answer": "体长0.5~1.0cm，活力好、逆水游泳能力强、规格整齐、体色正常、体表干净、肠胃饱满，并经病害检验。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 66,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "8.6出苗：体长0.5-1.0cm，活力好、规格整齐、体表干净、肠胃饱满，出池前经病害检验。",
+      "split": "test"
+    },
+    {
+      "id": "R054",
+      "question": "中间培育池的面积、池深和配套设施要求是什么？",
+      "reference_answer": "面积10~20㎡，池深1.0~1.5m，设进排水口、挡虾网、中央排污，并配备通风、控光、控温设施。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 69,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "9.2.1培育池：面积10m2～20m2，池深1.0m～1.5m，设进排水口、挡虾网、中央排污及通风控光控温设施。",
+      "split": "test"
+    },
+    {
+      "id": "R055",
+      "question": "中间培育设施消毒使用高锰酸钾或次氯酸的浓度是多少？",
+      "reference_answer": "高锰酸钾200~250g/m³，或次氯酸150~200g/m³，全池泼洒消毒后清洗晾干。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 70,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "9.2.2培养设施消毒：高锰酸钾200g/m3～250g/m3，或次氯酸150g/m3～200g/m3。",
+      "split": "test"
+    },
+    {
+      "id": "R056",
+      "question": "中间培育池的水深、水温、盐度和pH要求是什么？",
+      "reference_answer": "水深60~80cm，水温20~33℃，盐度20~33，pH值7.8~8.5。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 71,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "9.3水环境要求：水深60cm～80cm、水温20℃～33℃、盐度20～33、pH值7.8～8.5。",
+      "split": "test"
+    },
+    {
+      "id": "R057",
+      "question": "中间培育的饵料种类和日投喂比例是多少？",
+      "reference_answer": "以虾片、卤虫等为主；虾片约为仔虾体重的2%，轮虫卤虫约为100%，并混合乳酸菌、酵母菌等益生菌。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 73,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "9.4.2饵料投喂：虾片日投喂量约为仔虾体重的2%，轮虫卤虫约为100%，每日混合益生菌。",
+      "split": "test"
+    },
+    {
+      "id": "R058",
+      "question": "普通池塘养殖的面积、池深、水深和增氧机配置是多少？",
+      "reference_answer": "面积1334~6670㎡，池深2.0~2.5m，水深1.2~2.0m，可配置0.3~0.5kW/亩增氧机。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 75,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "10.1.1普通池塘养殖：面积1334m2～6670m2，池深2.0m～2.5m，水深1.2m～2.0m，增氧机0.3kW/亩～0.5kW/亩。",
+      "split": "test"
+    },
+    {
+      "id": "R059",
+      "question": "高位池养殖的面积、池深、水深和增氧配置是什么？",
+      "reference_answer": "面积667~3335㎡，池深2.0~2.5m，水深1.5~2.0m，配置0.75~1.00kW/667㎡增氧机，并配鼓风机底部增氧。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 76,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "10.1.2高位池养殖：面积667m2～3335m2，池深2.0m～2.5m，水深1.5m～2.0m，0.75kW/667m2～1.00kW/667m2。",
+      "split": "test"
+    },
+    {
+      "id": "R060",
+      "question": "工厂化养殖的养殖池面积、池深和蓄水池要求是什么？",
+      "reference_answer": "养殖池面积30~100㎡，池深1.5m；蓄水池2个以上交替使用，总蓄水量达到日高峰换水量2倍以上。",
+      "gold": [
+        {
+          "doc": "shrimp",
+          "ordinal": 78,
+          "grade": 2
+        }
+      ],
+      "species": "凡纳滨对虾",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "10.1.3工厂化养殖：面积30m2～100m2，池深1.5m，蓄水池2个以上，总蓄水量为日高峰换水量2倍以上。",
+      "split": "test"
+    },
+    {
+      "id": "R061",
+      "question": "DB36 和 DB46 两个标准对养殖水体溶解氧的最低要求是否一致？",
+      "reference_answer": "两个标准都要求溶解氧保持在5mg/L以上；DB36 针对中华绒螯蟹扣蟹培育，DB46 针对凡纳滨对虾养殖环境。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 27,
+          "grade": 2
+        },
+        {
+          "doc": "shrimp",
+          "ordinal": 32,
+          "grade": 2
+        }
+      ],
+      "species": null,
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "DB36 8.1：溶氧量5mg/L以上；DB46 4养殖环境：溶解氧含量保持5mg/L以上。",
+      "split": "test"
+    },
+    {
+      "id": "R062",
+      "question": "中华绒螯蟹和凡纳滨对虾对pH的适宜范围有什么差异？",
+      "reference_answer": "DB36 扣蟹培育pH 7.5~8.5；DB46 养殖环境pH 7.8~8.5，亲虾培育pH 7.8~8.3。",
+      "gold": [
+        {
+          "doc": "crab",
+          "ordinal": 27,
+          "grade": 2
+        },
+        {
+          "doc": "shrimp",
+          "ordinal": 32,
+          "grade": 2
+        },
+        {
+          "doc": "shrimp",
+          "ordinal": 53,
+          "grade": 1
+        }
+      ],
+      "species": null,
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "DB36 8.1 pH 7.5~8.5；DB46 4养殖环境 pH 7.8~8.5、7.4亲虾 pH 7.8~8.3。",
+      "split": "test"
+    },
+    {
+      "id": "R063",
+      "question": "今天上海天气怎么样？",
+      "reference_answer": "现有水产养殖资料不足以回答天气问题。",
+      "gold": [],
+      "species": null,
+      "category": null,
+      "expect_insufficient": true,
+      "insufficient_reason": "域外问题",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "没有任何天气资料",
+      "split": "test"
+    },
+    {
+      "id": "R064",
+      "question": "2026年最新禁用渔药名单里具体有哪些品种？",
+      "reference_answer": "现有资料只引用渔药使用规范，未给出完整禁用名单，不能据此列出。",
+      "gold": [],
+      "species": null,
+      "category": null,
+      "expect_insufficient": true,
+      "insufficient_reason": "资料未包含完整禁用名单",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "DB36/DB46 只引用 NY/T 755、SC/T 1132，未列名单",
+      "split": "test"
+    },
+    {
+      "id": "R065",
+      "question": "中华绒螯蟹养殖在2027年每亩能拿到多少补贴？",
+      "reference_answer": "现有资料未包含补贴政策与金额。",
+      "gold": [],
+      "species": "中华绒螯蟹",
+      "category": null,
+      "expect_insufficient": true,
+      "insufficient_reason": "资料未包含补贴政策",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "DB36 规程未涉及补贴",
+      "split": "test"
+    }
+  ]
+}

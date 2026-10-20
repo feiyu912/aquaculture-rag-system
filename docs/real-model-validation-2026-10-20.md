@@ -195,7 +195,7 @@ uv run python ../../scripts/check_llm.py --generate
 ```bash
 cd apps/api
 uv run pytest -q
-# 89 passed, 2 skipped（BGE 集成测试默认跳过）
+# 93 passed, 2 skipped（BGE 集成测试默认跳过）
 uv run ruff check app tests ../../scripts
 ```
 
@@ -216,12 +216,12 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - 独立 collection 重建、manifest、查询期守卫、点数对账。
 - BM25 分词/权重与 Qdrant IDF 配置。
 - 两份真实地方标准的上传、解析、版本、页码引用、Qdrant 检索。
-- 89 个默认测试通过；2 个真实 BGE 集成测试通过。
+- 93 个默认测试通过；2 个真实 BGE 集成测试通过。
 
 **未验证 / 不足**
 
 - DeepSeek 原生 endpoint（未配置其 key）；已验证的是用户提供的 OpenAI 兼容网关。
-- 50+ 人工 qrels；当前只有 5 条合成评测问题。
+- 人工 qrels；当前 65 条真实题仍为 AI 辅助标注、待人工复核。
 - BGE-Reranker 收益是否稳定超过 RRF；当前只有单机延迟和少量样例。
 - PDF.js bbox 高亮；当前只有页码跳转和 bbox 数据。
 - MinerU 对扫描件/表格/双栏的收益。
@@ -272,6 +272,24 @@ cd apps/api
 - **这是 ceiling effect**：样例都是规则已能处理的简单/中等问题；不能据此宣称 LLM 规划更优，也不能外推到 50+ 题或复杂多跳。
 - LLM 单题规划约 20–40 s（reasoning token 占预算），明显慢于规则 IR；默认关闭是刻意的。
 - 详细逐题结果：[query-planner-comparison.json](../apps/api/reports/query-planner-comparison.json)。
+
+## 真实检索评测（65 题）
+
+数据集、指标定义、失败分析和复现命令见 [retrieval-evaluation-2026-10-20.md](retrieval-evaluation-2026-10-20.md)。
+
+系统默认（Query IR 开）的主结果：
+
+| mode | Recall@10 | nDCG@10 | MRR@10 | 平均耗时 ms |
+|---|---:|---:|---:|---:|
+| Dense | 0.9140 | 0.9108 | 0.7957 | 62.2 |
+| BM25 | 0.9355 | **0.9452** | 0.8610 | 18.5 |
+| Hybrid | 0.9220 | 0.9252 | **0.8620** | 55.2 |
+| Hybrid + Reranker | **0.9355** | 0.9347 | 0.8393 | 1036.3 |
+
+- 62 道可回答题的整体指标；3 道资料不足题单独统计，2/3 被正确拒答。
+- **BM25 在这批语料上 nDCG@10 最高**；reranker 的 parent 指标未超过 BM25，延迟约为其 56 倍；没有一种模式全面胜出。
+- 所有 51 个 gold child chunk 均存在于 Qdrant；gold parent chunk 按设计不是独立 point，主指标按返回的 parent 上下文计，另报 child 精确指标。
+- 局限：只有 2 份真实标准、155 个 child points，标注为 AI 辅助待人工复核，无置信区间；不能据此宣称通用优越性。
 
 ### 尚未解决
 
