@@ -146,6 +146,20 @@ def summarize(details: list[dict]) -> list[dict]:
     return rows
 
 
+def git_dirty() -> bool:
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return bool(result.stdout.strip())
+    except Exception:
+        return True
+
+
 def git_commit() -> str:
     try:
         return subprocess.run(
@@ -297,6 +311,7 @@ async def run(
     manifest = {
         "generated_at": datetime.now(UTC).isoformat(),
         "git_commit": git_commit(),
+        "git_dirty": git_dirty(),
         "dataset": str(dataset),
         "dataset_sha256": hashlib.sha256(dataset.read_bytes()).hexdigest(),
         "cases": len(cases),

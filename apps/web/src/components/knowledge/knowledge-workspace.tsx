@@ -207,16 +207,12 @@ export function KnowledgeWorkspace({
     setTitle("");
   };
 
-  const handleRollbackFromMenu = (document: DocumentOut) => {
-    setDetailId(document.id);
-  };
-
   return (
     <div className="flex h-full min-h-0">
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1180px] px-4 py-6 sm:px-6 sm:py-8">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
               <StatCard
                 label="文档总数"
                 value={stats.total}
@@ -338,27 +334,29 @@ export function KnowledgeWorkspace({
               <DocumentTable
                 documents={filtered}
                 loading={isLoading}
-                onOpen={(document) => setDetailId(document.id)}
-                onNewVersion={(item) => {
-                  setPendingVersionFor(item);
-                  toast.info("请选择新的 PDF 文件", {
-                    description: `将作为「${item.title}」的新版本上传`,
-                  });
-                  window
-                    .document
-                    .querySelector<HTMLInputElement>("#kb-title")
-                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                }}                onRollback={handleRollbackFromMenu}
-                onDelete={(document) => setDetailId(document.id)}
-                onRead={(document) =>
-                  router.push(
-                    `/reader?document_id=${document.id}${
-                      document.current_version_id
-                        ? `&version_id=${document.current_version_id}`
-                        : ""
-                    }`,
-                  )
-                }
+                actions={{
+                  onOpen: (item) => setDetailId(item.id),
+                  onNewVersion: (item) => {
+                    setPendingVersionFor(item);
+                    toast.info("请选择新的 PDF 文件", {
+                      description: `将作为「${item.title}」的新版本上传`,
+                    });
+                    window
+                      .document
+                      .querySelector<HTMLInputElement>("#kb-title")
+                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  },
+                  onRollback: (item) => setDetailId(item.id),
+                  onDelete: (item) => setDetailId(item.id),
+                  onRead: (item) =>
+                    router.push(
+                      `/reader?document_id=${item.id}${
+                        item.current_version_id
+                          ? `&version_id=${item.current_version_id}`
+                          : ""
+                      }`,
+                    ),
+                }}
               />
             </section>
           </div>

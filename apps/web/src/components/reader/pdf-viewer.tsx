@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { PDFDocumentProxy, PDFPageProxy, PageViewport } from "pdfjs-dist";
+import type { PdfDocumentProxy, PdfPageProxy, PdfViewport } from "@/lib/pdf/loader";
 import { FileWarning, Loader2 } from "lucide-react";
 
 import { bboxToViewportRect } from "@/lib/pdf/coords";
@@ -28,19 +28,20 @@ export function PdfViewer({
   onVisiblePageChange,
   onPageRendered,
 }: {
-  pdf: PDFDocumentProxy;
+  pdf: PdfDocumentProxy;
   scale: number;
   highlight?: PdfHighlight | null;
   className?: string;
   onVisiblePageChange?: (page: number) => void;
-  onPageRendered?: (page: number, viewport: PageViewport) => void;
+  onPageRendered?: (page: number, viewport: PdfViewport) => void;
 }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const canvasRefs = React.useRef(new Map<number, HTMLCanvasElement>());
   const pageRefs = React.useRef(new Map<number, HTMLDivElement>());
   const renderTokenRef = React.useRef(0);
   const renderedRef = React.useRef(new Set<number>());
-  const viewportRef = React.useRef(new Map<number, PageViewport>());
+  const renderingRef = React.useRef(new Set<number>());
+  const viewportRef = React.useRef(new Map<number, PdfViewport>());
   const observerRef = React.useRef<IntersectionObserver | null>(null);
 
   const [pages, setPages] = React.useState<PageEntry[]>([]);
@@ -73,15 +74,16 @@ export function PdfViewer({
 
   const renderPage = React.useCallback(
     async (pageNumber: number) => {
-      if (renderedRef.current.has(pageNumber) || rendering.has(pageNumber)) return;
+      if (renderedRef.current.has(pageNumber) || renderingRef.current.has(pageNumber)) return;
       const canvas = canvasRefs.current.get(pageNumber);
       if (!canvas) return;
 
       const token = renderTokenRef.current;
+      renderingRef.current.add(pageNumber);
       setRendering((prev) => new Set(prev).add(pageNumber));
 
       try {
-        const page: PDFPageProxy = await pdf.getPage(pageNumber);
+        const page: PdfPageProxy = await pdf.getPage(pageNumber);
         const viewport = page.getViewport({ scale });
         const context = canvas.getContext("2d");
         if (!context) return;
@@ -93,6 +95,7 @@ export function PdfViewer({
         canvas.style.height = `${viewport.height}px`;
 
         await page.render({
+          canvas,
           canvasContext: context,
           viewport,
           transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0],
@@ -112,6 +115,7 @@ export function PdfViewer({
         if ((error as Error)?.name === "RenderingCancelledException") return;
         setFailed((prev) => new Set(prev).add(pageNumber));
       } finally {
+        renderingRef.current.delete(pageNumber);
         setRendering((prev) => {
           const next = new Set(prev);
           next.delete(pageNumber);
@@ -119,7 +123,7 @@ export function PdfViewer({
         });
       }
     },
-    [pdf, scale, rendering, onPageRendered],
+    [pdf, scale, onPageRendered],
   );
 
   // Re-render every page when the zoom level changes.
@@ -127,9 +131,17 @@ export function PdfViewer({
     renderTokenRef.current += 1;
     renderedRef.current.clear();
     viewportRef.current.clear();
+    renderingRef.current.clear();
     setRendering(new Set());
     // Rendering is kicked off by the intersection observer below.
   }, [scale]);
+
+  // Always render the highlighted page, even when it is far outside the
+  // viewport, so the highlight can be positioned and scrolled to.
+  React.useEffect(() => {
+    if (!highlight || pages.length === 0) return;
+    void renderPage(highlight.page);
+  }, [highlight, renderPage, pages.length]);
 
   // Lazily render pages as they scroll into view.
   React.useEffect(() => {
@@ -196,6 +208,26 @@ export function PdfViewer({
     return bboxToViewportRect({ bbox: highlight.bbox }, viewport);
   }, [highlight, rendering]);
 
+  // Bring the highlighted region into view once its page has been rendered.
+  const scrolledRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!highlight || !highlightRect) return;
+    const key = `${highlight.page}-${highlight.bbox.join(",")}`;
+    if (scrolledRef.current === key) return;
+
+    const container = containerRef.current;
+    const pageNode = pageRefs.current.get(highlight.page);
+    if (!container || !pageNode) return;
+
+    scrolledRef.current = key;
+    const pageRect = pageNode.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const offsetInPage = pageRect.top - containerRect.top + container.scrollTop;
+    const target = offsetInPage + highlightRect.top - container.clientHeight * 0.35;
+
+    container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+  }, [highlight, highlightRect, rendering, pages.length]);
+
   return (
     <div
       ref={containerRef}
@@ -208,7 +240,7 @@ export function PdfViewer({
         {pages.map((entry) => {
           const width = Math.round(entry.width * scale);
           const height = Math.round(entry.height * scale);
-          const isHighlighted = highlight?.page === entry.page;
+          const isHighlighted = highlight?.page === entry.pageNumber;
 
           return (
             <div

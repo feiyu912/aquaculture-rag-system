@@ -106,6 +106,11 @@ export function ChatWorkspace({
       version_id: source.version_id,
     });
     if (source.page) params.set("page", String(source.page));
+    // Carry the canonical bbox so the reader can highlight the exact region
+    // that was quoted, not just the page.
+    if (source.location?.bbox) {
+      params.set("bbox", source.location.bbox.map((value) => value.toFixed(2)).join(","));
+    }
     router.push(`/reader?${params.toString()}`);
   };
 

@@ -32,6 +32,7 @@ const name = String(arg("out", "shot"));
 const dark = Boolean(arg("dark", false));
 const full = Boolean(arg("full", false));
 const audit = Boolean(arg("audit", true));
+const scrollTo = Number(arg("scroll", 0));
 
 mkdirSync(OUT_DIR, { recursive: true });
 
@@ -62,6 +63,18 @@ try {
     await page.reload({ waitUntil: "networkidle2", timeout: 45_000 });
   }
   await new Promise((resolve) => setTimeout(resolve, 1200));
+
+  if (scrollTo) {
+    await page.evaluate((y) => {
+      const scroller =
+        document.querySelector("main .overflow-y-auto") ??
+        document.querySelector("main") ??
+        document.scrollingElement;
+      if (scroller) scroller.scrollTop = y;
+      window.scrollTo(0, y);
+    }, scrollTo);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+  }
 
   const metrics = await page.evaluate(() => {
     const doc = document.documentElement;

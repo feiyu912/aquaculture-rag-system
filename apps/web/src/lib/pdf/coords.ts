@@ -7,8 +7,9 @@ import type { BBoxLocation } from "@/lib/api/types";
  * Backend contract (`apps/api/app/ingestion/parser.py`):
  *   - `bbox` is `[x0, y0, x1, y1]` in PDF **points**
  *   - `x` is measured from the **left** of the CropBox
- *   - `y` is measured from the **top** of the CropBox (the origin is flipped
- *     to bottom-left and then normalised against `crop.y1`)
+ *   - `y` is measured from the **bottom** of the CropBox — the origin is
+ *     bottom-left, exactly like PDF user space (the parser flips PyMuPDF's
+ *     top-down rects once, when it writes the record)
  *   - coordinates are CropBox-relative and unrotated
  *
  * PDF.js `PageViewport` maps PDF user space (origin bottom-left, absolute)
@@ -31,14 +32,15 @@ export function bboxToViewportRect(
   location: Pick<BBoxLocation, "bbox">,
   viewport: ViewportLike,
 ): ViewportRect {
-  const [viewX0, , viewX1, viewY1] = viewport.viewBox;
+  const [viewX0, viewY0] = viewport.viewBox;
   const [x0, y0, x1, y1] = location.bbox;
 
-  // Crop-relative -> absolute PDF user space.
+  // Crop-relative -> absolute PDF user space. The stored y is already
+  // bottom-up, so it is *not* flipped again here.
   const absLeft = viewX0 + x0;
   const absRight = viewX0 + x1;
-  const absTop = viewY1 - y0;
-  const absBottom = viewY1 - y1;
+  const absBottom = viewY0 + y0;
+  const absTop = viewY0 + y1;
 
   const [px0, py0] = viewport.convertToViewportPoint(absLeft, absTop);
   const [px1, py1] = viewport.convertToViewportPoint(absRight, absBottom);

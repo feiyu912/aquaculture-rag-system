@@ -1,21 +1,17 @@
-"use client";
+import { Suspense } from "react";
 
-import { Construction } from "lucide-react";
-
-import { AppShell } from "@/components/layout/app-shell";
+import { ReaderClient } from "@/components/reader/reader-client";
 
 export default function ReaderPage() {
   return (
-    <AppShell contextLabel="页面">
-      <div className="flex h-full items-center justify-center p-8">
-        <div className="max-w-sm text-center">
-          <Construction className="mx-auto size-6 text-subtle-foreground" />
-          <h2 className="mt-3 text-[15px] font-semibold text-foreground">文献阅读器正在接入</h2>
-          <p className="mt-1.5 text-[13px] leading-6 text-muted-foreground">
-            该模块将在下一阶段接入 PDF.js 渲染与引用 bbox 高亮定位。
-          </p>
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center bg-background">
+          <span className="text-[13px] text-muted-foreground">正在加载阅读器…</span>
         </div>
-      </div>
-    </AppShell>
+      }
+    >
+      <ReaderClient />
+    </Suspense>
   );
 }

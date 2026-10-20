@@ -43,6 +43,10 @@ export interface Source {
   quote: string;
   heading_path: string[];
   location: BBoxLocation | null;
+  /** Parent chunk id — links a source back to the retrieval candidate lists. */
+  chunk_id?: string;
+  /** Child chunk id — this is the id that appears in the RRF candidate list. */
+  child_chunk_id?: string;
 }
 
 export interface CitationOut {
@@ -269,6 +273,7 @@ export interface QueryTrace {
   question: string;
   retrieval_config: TraceRetrievalConfig;
   query_ir: QueryIR | null;
+  planner?: import("./debug-types").PlannerTrace | null;
   active_versions: string[];
   gate: EvidenceGate | null;
   timings: Record<string, number | null>;
@@ -279,6 +284,7 @@ export interface QueryTrace {
     queries?: TraceQueryVariant[];
     [key: string]: unknown;
   };
+  fused?: string[];
   fused_count: number;
   evidence: Source[];
   citation_check: CitationReport | null;
