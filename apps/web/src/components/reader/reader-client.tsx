@@ -69,12 +69,22 @@ export function ReaderClient() {
     <AppShell
       contextLabel="页面"
       context={
-        <PageList
-          numPages={document?.page_count ?? 0}
-          currentPage={currentPage}
-          citedPages={citedPages}
-          onSelect={handlePageChange}
-        />
+        documentId ? (
+          <PageList
+            numPages={document?.page_count ?? 0}
+            currentPage={currentPage}
+            citedPages={citedPages}
+            onSelect={handlePageChange}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center p-6 text-center">
+            <p className="text-[12.5px] leading-5 text-subtle-foreground">
+              选择一份文档后
+              <br />
+              这里会显示页码范围
+            </p>
+          </div>
+        )
       }
     >
       <ReaderWorkspace

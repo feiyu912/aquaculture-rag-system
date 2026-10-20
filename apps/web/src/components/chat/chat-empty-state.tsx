@@ -1,10 +1,49 @@
 "use client";
 
 import * as React from "react";
-import { BookOpenText, Droplets, PanelRightOpen, Sparkles, Waves } from "lucide-react";
+import {
+  BookOpenText,
+  Check,
+  ChevronDown,
+  Droplets,
+  PanelRightOpen,
+  Sparkles,
+  Waves,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+
+const RETRIEVAL_MODES = [
+  {
+    value: "hybrid",
+    label: "混合",
+    hint: "Dense + BM25，RRF 融合（默认）",
+  },
+  {
+    value: "hybrid_rerank",
+    label: "重排",
+    hint: "混合后再精排，引用更准但更慢",
+  },
+  {
+    value: "dense",
+    label: "Dense",
+    hint: "仅向量召回",
+  },
+  {
+    value: "bm25",
+    label: "BM25",
+    hint: "仅关键词召回",
+  },
+] as const;
 
 const EXAMPLES = [
   {
@@ -120,30 +159,46 @@ export function ChatToolbar({
       </span>
 
       <div className="ml-auto flex items-center gap-2">
-        <div className="flex items-center rounded-lg border border-border bg-surface p-0.5">
-          {(
-            [
-              { value: "hybrid", label: "混合" },
-              { value: "hybrid_rerank", label: "重排" },
-              { value: "dense", label: "Dense" },
-              { value: "bm25", label: "BM25" },
-            ] as const
-          ).map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => onRetrievalModeChange(option.value)}
-              className={cn(
-                "rounded-md px-2 py-1 text-[11.5px] font-medium transition-colors duration-150",
-                retrievalMode === option.value
-                  ? "bg-primary-btn text-primary-fg shadow-xs"
-                  : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
-              )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 px-2.5 text-[11.5px] font-medium"
+              aria-label="检索模式"
             >
-              {option.label}
-            </button>
-          ))}
-        </div>
+              检索：{RETRIEVAL_MODES.find((item) => item.value === retrievalMode)?.label ?? "混合"}
+              <ChevronDown className="size-3 text-subtle-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuLabel>检索模式</DropdownMenuLabel>
+            {RETRIEVAL_MODES.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onSelect={() => onRetrievalModeChange(option.value)}
+                className="items-start gap-2 py-1.5"
+              >
+                <Check
+                  className={cn(
+                    "mt-0.5 size-3.5 shrink-0",
+                    retrievalMode === option.value ? "text-primary-600" : "opacity-0",
+                  )}
+                />
+                <span className="min-w-0">
+                  <span className="block text-[12.5px] font-medium">{option.label}</span>
+                  <span className="mt-0.5 block text-[11px] leading-4 text-subtle-foreground">
+                    {option.hint}
+                  </span>
+                </span>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <p className="px-2 py-1.5 text-[10.5px] leading-4 text-subtle-foreground">
+              重排会更准，但每次问答约多 8 秒。
+            </p>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Button
           variant={panelOpen ? "secondary" : "ghost"}

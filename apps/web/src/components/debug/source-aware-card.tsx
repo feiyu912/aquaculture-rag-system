@@ -31,6 +31,10 @@ export function SourceAwareCard({ trace }: { trace: QueryTrace }) {
 
   // The backend may report only `{"enabled": true}` when the anchor stage
   // produced no detailed trace; never invent the missing values.
+  const REASON_LABELS: Record<string, string> = {
+    no_cited_source: "问题没有显式引用标准代号",
+    fewer_than_two_resolved_sources: "解析到的在用标准少于两个",
+  };
   const cited = Array.isArray(aware.cited) ? aware.cited : [];
   const detailed = cited.length > 0;
   const anchors = Array.isArray(aware.anchors) ? aware.anchors : cited;
@@ -47,7 +51,11 @@ export function SourceAwareCard({ trace }: { trace: QueryTrace }) {
       action={
         <Badge variant={aware.active ? "success" : "neutral"} className="gap-1">
           <Anchor className="size-3" />
-          {aware.active ? "已生效" : detailed ? "未生效" : "已启用"}
+          {aware.active
+            ? "已生效"
+            : aware.reason || detailed
+              ? "未生效"
+              : "已启用"}
         </Badge>
       }
     >
@@ -97,6 +105,14 @@ export function SourceAwareCard({ trace }: { trace: QueryTrace }) {
       ) : (
         <p className="text-[12.5px] text-muted-foreground">
           服务端本次只报告了锚定功能已开启，没有记录被引用的标准明细。
+        </p>
+      )}
+
+      {!detailed && aware.reason && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-surface-muted px-2.5 py-2 text-[11.5px] leading-5 text-muted-foreground">
+          <Info className="mt-0.5 size-3 shrink-0" />
+          {REASON_LABELS[aware.reason] ?? "未生效"}：
+          <code className="font-mono">{aware.reason}</code>
         </p>
       )}
     </Section>
