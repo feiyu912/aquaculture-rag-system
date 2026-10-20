@@ -387,6 +387,12 @@ function buildStages(trace: QueryTrace | undefined): StageDefinition[] {
   const modules = config?.adaptive_modules ?? {};
   const mode = config?.retrieval_mode ?? "hybrid";
   const planner = trace?.llm_planner;
+  const aware =
+    trace?.source_aware_retrieval ??
+    (trace?.retrieval_config?.source_aware_retrieval as
+      | import("@/lib/api/debug-types").SourceAwareTrace
+      | null
+      | undefined);
 
   return [
     {
@@ -415,16 +421,14 @@ function buildStages(trace: QueryTrace | undefined): StageDefinition[] {
       key: "source-aware",
       label: "按来源锚定",
       icon: STAGE_ICONS.anchor,
-      state: trace?.source_aware_retrieval?.active
-        ? "on"
-        : trace?.source_aware_retrieval
-          ? "skipped"
-          : "off",
-      detail: trace?.source_aware_retrieval?.active
-        ? (trace.source_aware_retrieval.cited ?? []).map((a) => a.code).join("、")
-        : trace?.source_aware_retrieval?.reason
-          ? `未生效：${trace.source_aware_retrieval.reason}`
-          : "未触发",
+      state: aware?.active ? "on" : aware ? "skipped" : "off",
+      detail: aware?.active
+        ? (aware.cited ?? []).map((a) => a.code).join("、")
+        : aware?.reason
+          ? `未生效：${aware.reason}`
+          : aware
+            ? "未触发（问题未同时引用两个标准）"
+            : "未启用",
     },
     {
       key: "decompose",

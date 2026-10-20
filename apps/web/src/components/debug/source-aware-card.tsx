@@ -31,9 +31,14 @@ export function SourceAwareCard({ trace }: { trace: QueryTrace }) {
 
   // The backend may report only `{"enabled": true}` when the anchor stage
   // produced no detailed trace; never invent the missing values.
-  const detailed = Array.isArray(aware.cited);
-  const citedCodes = detailed ? aware.cited.map((anchor) => anchor.code) : [];
-  const resolvedCodes = detailed ? Object.keys(aware.resolved ?? {}) : [];
+  const cited = Array.isArray(aware.cited) ? aware.cited : [];
+  const detailed = cited.length > 0;
+  const anchors = Array.isArray(aware.anchors) ? aware.anchors : cited;
+  const resolvedCodes = new Set(
+    Object.keys(aware.resolved ?? {}).concat(
+      anchors.filter((anchor) => anchor.resolved).map((anchor) => anchor.code),
+    ),
+  );
 
   return (
     <Section
@@ -48,20 +53,33 @@ export function SourceAwareCard({ trace }: { trace: QueryTrace }) {
     >
       {detailed ? (
         <>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-[12.5px]">
-            <div className="min-w-0">
-              <dt className="text-[11px] text-subtle-foreground">问题中引用的标准</dt>
-              <dd className="mt-0.5 truncate font-medium text-foreground">
-                {citedCodes.length ? citedCodes.join("、") : "—"}
-              </dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-[11px] text-subtle-foreground">已解析到文档</dt>
-              <dd className="mt-0.5 truncate font-medium text-foreground">
-                {resolvedCodes.length ? resolvedCodes.join("、") : "—"}
-              </dd>
-            </div>
-          </dl>
+          <div className="flex flex-wrap gap-1.5">
+            {cited.map((anchor) => {
+              const ok = resolvedCodes.has(anchor.code);
+              return (
+                <span
+                  key={`${anchor.code}-${anchor.position ?? 0}`}
+                  className={
+                    "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[11.5px] " +
+                    (ok
+                      ? "border-success/30 bg-success-soft text-success"
+                      : "border-border bg-surface-muted text-muted-foreground")
+                  }
+                  title={ok ? "已解析到在用版本文档" : "未解析到在用版本文档"}
+                >
+                  {anchor.code}
+                  <span className="font-sans text-[10.5px] opacity-80">
+                    {ok ? "已解析" : "未解析"}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+          {typeof aware.slots === "number" && (
+            <p className="mt-2 text-[11.5px] text-subtle-foreground">
+              每个来源预留 {aware.slots} 个证据位
+            </p>
+          )}
 
           {aware.reason && (
             <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-surface-muted px-2.5 py-2 text-[11.5px] leading-5 text-muted-foreground">

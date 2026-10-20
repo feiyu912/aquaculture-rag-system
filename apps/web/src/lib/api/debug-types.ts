@@ -23,9 +23,23 @@ export interface DebugStats {
  * `apps/api/app/retrieval/service.py` — per-source evidence reservation for
  * questions that explicitly cite two or more standards.
  */
+export interface SourceAnchorTrace {
+  raw: string;
+  code: string;
+  queries?: string[];
+  position?: number;
+  resolved?: boolean;
+  selected?: string[];
+}
+
 export interface SourceAwareTrace {
-  cited: { code: string; [key: string]: unknown }[];
-  resolved: Record<string, string[]>;
+  enabled?: boolean;
+  cited: SourceAnchorTrace[];
+  /** Older backend shape: code -> version ids. */
+  resolved?: Record<string, string[]>;
+  /** Newer backend shape: one entry per cited standard. */
+  anchors?: SourceAnchorTrace[];
+  slots?: number;
   active: boolean;
   reason: string | null;
 }
