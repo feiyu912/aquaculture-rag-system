@@ -196,7 +196,7 @@ uv run python ../../scripts/check_llm.py --generate
 ```bash
 cd apps/api
 uv run pytest -q
-# 114 passed, 2 skipped（BGE 集成测试默认跳过）
+# 115 passed, 2 skipped（BGE 集成测试默认跳过）
 uv run ruff check app tests ../../scripts
 ```
 
@@ -220,7 +220,7 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - 软删除后的异步向量清理：真实上传 1 页测试文档（1 个 point），`DELETE` 返回 204，worker 将其 points 从 1 清到 0，manifest 保持 6 文档/190 points。
 - 同机 MPS 文件锁：BGE-M3 在锁内完成真实 1024 维推理；锁路径 `/tmp/aquaculture_rag_mps.lock`。
 - 可选 `ENABLE_SEMANTIC_CLAIMS=true` 的 BGE-M3 余弦 claim 筛选：真实 SSE 下 `claim_summary.support_rate=0.8`，一条词面 unverified 的说明句被余弦升级；但这只是相似度，不是 NLI。
-- 114 个默认测试通过；2 个真实 BGE 集成测试通过。
+- 115 个默认测试通过；2 个真实 BGE 集成测试通过。
 
 **未验证 / 不足**
 
