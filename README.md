@@ -103,6 +103,10 @@ uv run uvicorn app.main:app --reload --port 8000
 cd apps/api && uv run arq app.worker.WorkerSettings
 ```
 
+> MPS 上必须保持单推理进程：ARQ worker 在 `embedding_device`/`reranker_device`
+> 解析为 `mps` 时强制 `max_jobs=1`；uvicorn 也请只开 1 个 worker 进程。多个进程
+> 各持一份模型会争抢同一块 Metal 设备。`WORKER_MAX_JOBS` 仅对 CPU/CUDA 生效。
+
 打开 <http://127.0.0.1:8000>。上传资料 → 提问 → 点击 `[S1]` 跳到 PDF 页码；列表中可“更新版本”。
 
 再开一个终端启动 Web 前端：

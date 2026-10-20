@@ -43,6 +43,7 @@ class KbDocument(Base, TimestampMixin):
     publish_year: Mapped[int | None] = mapped_column(Integer)
     current_version_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     doc_metadata: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
@@ -94,6 +95,10 @@ class IndexManifest(Base, TimestampMixin):
     embedding_model: Mapped[str] = mapped_column(String(128), nullable=False)
     vector_size: Mapped[int] = mapped_column(Integer, nullable=False)
     chunk_config_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    # Hash of the BM25 tokenizer config (jieba version + custom terms +
+    # stopwords + index hashing).  Dense-only manifests predate it, so the
+    # column defaults to '' instead of NULL.
+    bm25_config_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="building")
     document_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     point_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

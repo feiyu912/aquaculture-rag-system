@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import zlib
 
@@ -95,6 +97,31 @@ STOPWORDS = {
 
 for _term in CUSTOM_TERMS:
     jieba.add_word(_term, freq=10000)
+
+
+def tokenizer_config() -> dict:
+    """Everything that changes the *indexed* token sequence.
+
+    BM25 weights alone (k1/b/avg_len) affect ranking, not the sparse vector
+    support.  A mismatch here means two collections encode the same text into
+    different indices, so the manifest must treat it as a hard incompatibility.
+    """
+    return {
+        "implementation": "jieba+custom_terms",
+        "jieba_version": getattr(jieba, "__version__", "unknown"),
+        "custom_terms": sorted(CUSTOM_TERMS),
+        "stopwords": sorted(STOPWORDS),
+        "cjk_pattern": CJK_RE.pattern,
+        "alnum_pattern": ALNUM_RE.pattern,
+        "index_fn": "crc32&0x7fffffff",
+    }
+
+
+def bm25_config_hash() -> str:
+    payload = json.dumps(
+        tokenizer_config(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def tokenize(text: str) -> list[str]:

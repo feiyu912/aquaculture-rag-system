@@ -100,6 +100,15 @@ MIGRATIONS: list[tuple[str, str]] = [
             PRIMARY KEY (chunk_id, entity_id)
         )""",
     ),
+    (
+        "0014_manifest_bm25_config_hash",
+        """ALTER TABLE index_manifests ADD COLUMN IF NOT EXISTS
+        bm25_config_hash varchar(64) NOT NULL DEFAULT ''""",
+    ),
+    (
+        "0015_document_deleted_at",
+        "ALTER TABLE kb_documents ADD COLUMN IF NOT EXISTS deleted_at timestamptz",
+    ),
 ]
 
 

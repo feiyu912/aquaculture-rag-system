@@ -28,7 +28,7 @@ from app.query.sources import (
     matches_title,
     order_round_robin,
 )
-from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, tokenize
+from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, bm25_config_hash, tokenize
 from app.retrieval.index_manifest import check_manifest
 from app.retrieval.requirements import (
     Requirement,
@@ -292,6 +292,7 @@ async def retrieve(
         embedding_model=settings.embedding_model,
         vector_size=settings.qdrant_vector_size,
         chunk_config_hash=chunk_config_hash(),
+        bm25_config_hash=bm25_config_hash(),
     )
     base_modules = {
         "graph": settings.enable_graph_expansion,

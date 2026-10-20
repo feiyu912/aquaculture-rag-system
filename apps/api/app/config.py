@@ -88,6 +88,12 @@ class Settings(BaseSettings):
     max_query_variants: int = 6
     enable_adaptive_routing: bool = False
     max_targeted_retrieval: int = 1
+    # Soft-deleted documents keep their DB rows, PDFs and vectors for this many
+    # days so a mistaken delete can be undone without re-ingesting.
+    soft_delete_retention_days: int = 7
+    # ARQ worker concurrency.  Forced to 1 when MPS is the active device: two
+    # jobs in one worker would each own a model copy on the same Metal device.
+    worker_max_jobs: int = 4
     # Per-source evidence reservation for questions that explicitly cite two or
     # more standards (e.g. "DB36 和 DB46 ...").  Deterministic, no gold lookup.
     enable_source_aware_retrieval: bool = True

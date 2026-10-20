@@ -23,6 +23,7 @@ async def check_manifest(
     embedding_model: str,
     vector_size: int,
     chunk_config_hash: str | None = None,
+    bm25_config_hash: str | None = None,
 ) -> dict:
     manifest = await get_manifest(db, collection)
     if manifest is None:
@@ -39,6 +40,8 @@ async def check_manifest(
         warnings.append("manifest_vector_size_mismatch")
     if chunk_config_hash and manifest.chunk_config_hash != chunk_config_hash:
         warnings.append("manifest_chunk_config_mismatch")
+    if bm25_config_hash and manifest.bm25_config_hash != bm25_config_hash:
+        warnings.append("manifest_bm25_config_mismatch")
     return {
         "collection": collection,
         "present": True,
@@ -47,6 +50,7 @@ async def check_manifest(
         "embedding_model": manifest.embedding_model,
         "vector_size": manifest.vector_size,
         "chunk_config_hash": manifest.chunk_config_hash,
+        "bm25_config_hash": manifest.bm25_config_hash,
         "document_count": manifest.document_count,
         "point_count": manifest.point_count,
         "warnings": warnings,
@@ -60,6 +64,7 @@ async def upsert_manifest(
     embedding_model: str,
     vector_size: int,
     chunk_config_hash: str,
+    bm25_config_hash: str = "",
     status: str,
     document_count: int,
     point_count: int,
@@ -71,11 +76,14 @@ async def upsert_manifest(
             embedding_model=embedding_model,
             vector_size=vector_size,
             chunk_config_hash=chunk_config_hash,
+            bm25_config_hash=bm25_config_hash,
         )
         db.add(manifest)
     manifest.embedding_model = embedding_model
     manifest.vector_size = vector_size
     manifest.chunk_config_hash = chunk_config_hash
+    if bm25_config_hash:
+        manifest.bm25_config_hash = bm25_config_hash
     manifest.status = status
     manifest.document_count = document_count
     manifest.point_count = point_count

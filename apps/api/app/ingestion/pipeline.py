@@ -17,7 +17,7 @@ from app.ingestion.context import build_context_text
 from app.ingestion.embedder import get_embedder
 from app.ingestion.parser import ParsedDocument, PyMuPDFParser
 from app.models import KbChunk, KbDocument, KbDocumentVersion, KbIngestJob
-from app.retrieval.bm25 import BM25SparseEncoder
+from app.retrieval.bm25 import BM25SparseEncoder, bm25_config_hash
 from app.retrieval.index_manifest import upsert_manifest
 from app.retrieval.vector_store import (
     count_version_points,
@@ -263,6 +263,7 @@ async def _refresh_manifest(db: AsyncSession) -> None:
         embedding_model=settings.embedding_model,
         vector_size=settings.qdrant_vector_size,
         chunk_config_hash=chunk_config_hash(),
+        bm25_config_hash=bm25_config_hash(),
         status="active",
         document_count=document_count,
         point_count=point_count,

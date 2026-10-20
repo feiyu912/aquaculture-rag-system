@@ -525,6 +525,7 @@ async def delete_document(
     if doc is None:
         raise HTTPException(status_code=404, detail="文档不存在")
     doc.status = "deleted"
+    doc.deleted_at = datetime.now(UTC)
     doc.current_version_id = None
     versions = (
         (

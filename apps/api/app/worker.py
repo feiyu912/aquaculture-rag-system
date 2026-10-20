@@ -8,6 +8,7 @@ from sqlalchemy import and_, or_, select
 
 from app.config import settings
 from app.db import SessionLocal
+from app.ingestion.embedder import resolve_device
 from app.ingestion.pipeline import ingest_version
 from app.maintenance.cleanup import purge_deleted_vectors
 from app.models import KbDocumentVersion, KbIngestJob
@@ -93,6 +94,25 @@ async def shutdown(ctx: dict) -> None:
     logger.info("ARQ worker stopped")
 
 
+def serial_inference_required() -> bool:
+    """Two concurrent jobs on one Metal device exhaust memory and can crash.
+
+    The embedder/reranker already serialize *within* a process via a file lock,
+    but that only makes concurrent jobs slow, not safe: each job still loads a
+    second model copy.  Running one job at a time is the supported MPS policy.
+    """
+    return "mps" in {
+        resolve_device(settings.embedding_device),
+        resolve_device(settings.reranker_device),
+    }
+
+
+def effective_max_jobs() -> int:
+    if serial_inference_required():
+        return 1
+    return max(1, settings.worker_max_jobs)
+
+
 class WorkerSettings:
     functions = [ingest_version, cleanup_deleted_vectors]
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
@@ -100,6 +120,7 @@ class WorkerSettings:
     on_startup = startup
     on_shutdown = shutdown
     max_tries = 3
+    max_jobs = effective_max_jobs()
     job_timeout = 900
     keep_result = 3600
     log_results = True

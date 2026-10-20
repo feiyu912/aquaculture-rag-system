@@ -37,6 +37,7 @@ from app.ingestion.embedder import get_embedder
 from app.ingestion.pipeline import chunk_config_hash
 from app.models import KbChunk, KbDocument, KbDocumentVersion
 from app.retrieval.bm25 import BM25SparseEncoder
+from app.retrieval.bm25 import bm25_config_hash
 from app.retrieval.index_manifest import upsert_manifest
 from app.retrieval.vector_store import (
     count_version_points,
@@ -175,6 +176,7 @@ async def main() -> int:
                 embedding_model=args.embedding_model,
                 vector_size=settings.qdrant_vector_size,
                 chunk_config_hash=chunk_config_hash(),
+                bm25_config_hash=bm25_config_hash(),
                 status="active",
                 document_count=len(document_ids),
                 point_count=points,

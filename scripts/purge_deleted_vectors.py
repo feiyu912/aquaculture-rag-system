@@ -23,8 +23,16 @@ from app.maintenance.cleanup import purge_deleted_vectors
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true", help="actually delete orphan points")
+    parser.add_argument(
+        "--retention-days",
+        type=int,
+        default=None,
+        help="override SOFT_DELETE_RETENTION_DAYS; 0 purges immediately",
+    )
     args = parser.parse_args()
-    result = asyncio.run(purge_deleted_vectors(apply=args.apply))
+    result = asyncio.run(
+        purge_deleted_vectors(apply=args.apply, retention_days=args.retention_days)
+    )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 
