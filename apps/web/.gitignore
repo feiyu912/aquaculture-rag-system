@@ -12,5 +12,9 @@ tsconfig.tsbuildinfo
 # Visual review artefacts
 .review/
 
-# pdf.js worker is copied from node_modules by scripts/copy-pdf-worker.mjs
+# pdf.js runtime, worker, cmaps and standard fonts are copied from
+# node_modules by scripts/copy-pdf-worker.mjs
+public/pdf.min.mjs
 public/pdf.worker.min.mjs
+public/cmaps/
+public/standard_fonts/
