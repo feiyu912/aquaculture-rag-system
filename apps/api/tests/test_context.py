@@ -32,3 +32,59 @@ def test_contextual_index_hash_is_separate_from_raw_index(monkeypatch):
     monkeypatch.setattr(settings, "enable_contextual_retrieval", True)
     context_hash = chunk_config_hash()
     assert raw_hash != context_hash
+
+
+def test_heading_path_drops_body_like_segments():
+    from app.ingestion.context import sanitize_heading_path
+
+    cleaned = sanitize_heading_path(
+        [
+            "中华绒螯蟹生态育苗技术规范",
+            "100 mg/L 的漂白粉处理池水。挂笼前，抱卵蟹用8.0 mg/L 苯扎溴铵溶液药浴2 h。",
+            "6.4水质控制",
+        ]
+    )
+    assert cleaned == ["中华绒螯蟹生态育苗技术规范", "6.4水质控制"]
+
+
+def test_context_does_not_embed_body_like_heading_noise():
+    text = build_context_text(
+        title="DB32/T 5292—2025",
+        heading_path=["中华绒螯蟹生态育苗技术规范", "100 mg/L 的漂白粉处理池水。", "6.4水质控制"],
+        species=["中华绒螯蟹"],
+        content="适宜水温为18 ℃~21 ℃。",
+    )
+    assert "100 mg/L" not in text
+    assert "章节：中华绒螯蟹生态育苗技术规范 / 6.4水质控制" in text
+
+
+def test_chunker_sanitizes_heading_path_for_new_chunks():
+    import uuid
+
+    from app.ingestion.chunker import build_chunks
+    from app.ingestion.parser import ParsedBlock, ParsedDocument
+
+    def block(text: str, level: int = 0) -> ParsedBlock:
+        return ParsedBlock(
+            page=1,
+            bbox=[10, 700, 500, 720],
+            text=text,
+            page_width=595,
+            page_height=842,
+            heading_level=level,
+        )
+
+    parsed = ParsedDocument(
+        page_count=1,
+        blocks=[
+            block("中华绒螯蟹生态育苗技术规范", level=1),
+            block("100 mg/L 的漂白粉处理池水。", level=2),
+            block("6.4水质控制", level=3),
+            block("适宜水温为18 ℃~21 ℃。"),
+        ],
+    )
+    chunks = build_chunks(parsed, uuid.uuid4(), parent_target=200, child_target=80, overlap=10)
+    assert chunks
+    for chunk in chunks:
+        assert "100 mg/L" not in " / ".join(chunk.heading_path)
+        assert "6.4水质控制" in chunk.heading_path

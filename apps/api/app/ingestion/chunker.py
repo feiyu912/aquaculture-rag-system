@@ -5,6 +5,7 @@ import re
 import uuid
 from dataclasses import dataclass
 
+from app.ingestion.context import sanitize_heading_path
 from app.ingestion.parser import CJK_RE, ParsedBlock, ParsedDocument
 
 CHUNK_NAMESPACE = uuid.UUID("6f1f5d8e-3f6a-4c2b-9d7e-2a1b3c4d5e6f")
@@ -214,6 +215,7 @@ def build_chunks(
     parent_ordinal = 0
     child_ordinal = 0
     for blocks, heading_path in groups:
+        heading_path = sanitize_heading_path(heading_path)
         content = _join_blocks(blocks).strip()
         if not content:
             continue

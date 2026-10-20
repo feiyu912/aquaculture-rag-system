@@ -52,7 +52,7 @@
 - **证据要求 + 定向补检（可开关）**：facet 缺口检查、最多一次补充检索
 - **确定性自适应路由（可开关）**：计算/现行规范缺少工具或日期元数据时安全拒答
 - **检索 Trace**：按 request_id 查看排名、证据、IR、gate 与耗时
-- 108 个默认单元测试（另有 2 个 BGE 真模型集成测试，`RUN_BGE_TESTS=1` 时运行）+ A/B/C 冒烟测试 + 批量评测 CLI
+- 113 个默认单元测试（另有 2 个 BGE 真模型集成测试，`RUN_BGE_TESTS=1` 时运行）+ A/B/C 冒烟测试 + 批量评测 CLI
 
 > ⚠️ BGE-M3 与 BGE-Reranker 已真实加载并在本机索引上验证；`hybrid_rerank` 现在记录
 > `reranker=BAAI/bge-reranker-v2-m3`，不再等价于 RRF。`noop` 仅保留为消融对照。

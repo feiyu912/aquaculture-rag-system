@@ -9,7 +9,9 @@ from typing import Protocol
 import pymupdf
 
 HEADING_RE = re.compile(
-    r"^(第[一二三四五六七八九十百]+[章节篇]|[一二三四五六七八九十]+、|\d+(?:\.\d+){0,3}[、.\s])"
+    r"^(第[一二三四五六七八九十百]+[章节篇]|[一二三四五六七八九十]+、|"
+    r"\d{1,2}(?:\.\d{1,2}){1,3}\s*[\u4e00-\u9fff]|"
+    r"\d{1,2}\s*[\u4e00-\u9fff])"
 )
 CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 

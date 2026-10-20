@@ -196,7 +196,7 @@ uv run python ../../scripts/check_llm.py --generate
 ```bash
 cd apps/api
 uv run pytest -q
-# 108 passed, 2 skipped（BGE 集成测试默认跳过）
+# 113 passed, 2 skipped（BGE 集成测试默认跳过）
 uv run ruff check app tests ../../scripts
 ```
 
@@ -220,7 +220,7 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - 软删除后的异步向量清理：真实上传 1 页测试文档（1 个 point），`DELETE` 返回 204，worker 将其 points 从 1 清到 0，manifest 保持 6 文档/190 points。
 - 同机 MPS 文件锁：BGE-M3 在锁内完成真实 1024 维推理；锁路径 `/tmp/aquaculture_rag_mps.lock`。
 - 可选 `ENABLE_SEMANTIC_CLAIMS=true` 的 BGE-M3 余弦 claim 筛选：真实 SSE 下 `claim_summary.support_rate=0.8`，一条词面 unverified 的说明句被余弦升级；但这只是相似度，不是 NLI。
-- 108 个默认测试通过；2 个真实 BGE 集成测试通过。
+- 113 个默认测试通过；2 个真实 BGE 集成测试通过。
 
 **未验证 / 不足**
 
@@ -320,9 +320,10 @@ cd apps/api
 `kb_chunks_bge_m3_ctx_v1` 已按同一批 6 个 active 文档重建（190 points，`contextual=true`），但只做了两条查询的 smoke，不是同 qrels 消融：
 
 - “扣蟹培育的水质指标有哪些？”：四模式都能把 DB36 第 7 页“8.1 水质指标”排进结果，gate 判充分。
-- “DB32/T 5292—2025 生态育苗的水温和pH适宜范围是多少？”：Dense 的 top1 是第 5 页“4.3 水质要求（盐度）”，BM25 的 top1/top2 是封面和目次，Hybrid/Reranker 的 top1 是第 4 页术语；真正的第 6 页“6.4 水质控制（水温 18~21 ℃、pH 6.5~8.5）”没有排到第 1。gate 仍判充分，说明**检索到相关词不等于检索到答案证据**。
-- 该 chunk 的 `context_text` heading 被解析成上一段的长句，是上下文噪声的一个直接来源；不能通过放宽 gate 掩盖。
-- 结论：Contextual Retrieval 继续默认关闭；在修正 heading/表格结构并做 70 题同 qrels 消融前，不声称收益。
+- “DB32/T 5292—2025 生态育苗的水温和pH适宜范围是多少？”（修复前）：Dense 的 top1 是第 5 页“4.3 水质要求（盐度）”，BM25 的 top1/top2 是封面和目次，Hybrid/Reranker 的 top1 是第 4 页术语；真正的第 6 页“6.4 水质控制（水温 18~21 ℃、pH 6.5~8.5）”没有排到第 1。gate 仍判充分，说明**检索到相关词不等于检索到答案证据**。
+- 已定位并修复一个直接噪声源：`100 mg/L 的漂白粉...` 这类 55 字符句子被 `HEADING_RE` 当成章节标题，进入 `context_text`。修复包括 parser 数字标题规则、`sanitize_heading_path`、以及 [repair_context.py](scripts/repair_context.py) 对现有 123 个 chunk 的 metadata 修复（不改 chunk ID/content/ordinal）。
+- 修复后重建 ctx collection 再测：Dense 的 top1 仍是第 5 页“4.3 水质要求”，但第 6 页“6.4 水质控制”升到**第 2**；Hybrid/Reranker 的 top1 是第 4 页术语，第 6 页也在第 2；BM25 仍是封面/目次。没有变成 top1，不能声称 contextual 收益。
+- 结论：Contextual Retrieval 继续默认关闭；heading 噪声已降低，但“盐度 4.3”与“水温/pH 6.4”的同章节语义竞争仍在。下一步需做 70 题同 qrels 消融，而不是只修一个 heading。
 
 ### 图谱多跳 smoke
 

@@ -233,7 +233,7 @@ uv run pytest -q
 uv run ruff check app tests ../../scripts
 ```
 
-当前默认 **108 个单元测试**（另有 2 个真实 BGE 集成测试默认跳过）覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词/权重、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/多跳扩展、证据要求/定向补检、自适应路由守卫、消融指标与模块选择、别名扩展、LLM Planner 校验/回退、表格 claim、语义 claim、软删除清理、MPS 文件锁。
+当前默认 **113 个单元测试**（另有 2 个真实 BGE 集成测试默认跳过）覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词/权重、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/多跳扩展、证据要求/定向补检、自适应路由守卫、消融指标与模块选择、别名扩展、LLM Planner 校验/回退、表格 claim、语义 claim、软删除清理、MPS 文件锁。
 
 真实模型集成测试：
 
@@ -362,6 +362,13 @@ RERANKER_MODEL=BAAI/bge-reranker-v2-m3
 RERANKER_PATH=../../models/bge-reranker-v2-m3   # 可选；离线部署时使用
 RERANKER_DEVICE=mps
 RERANKER_USE_FP16=true
+```
+
+修复历史 chunk 的脏 heading/context 元数据（默认 dry-run；不改 chunk ID/content/ordinal）：
+
+```bash
+uv run python ../../scripts/repair_context.py
+uv run python ../../scripts/repair_context.py --apply
 ```
 
 从 PostgreSQL 的 active 文档重建一个**独立** collection：
