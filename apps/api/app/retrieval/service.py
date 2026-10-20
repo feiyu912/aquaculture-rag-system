@@ -19,6 +19,15 @@ from app.query.expand import alias_variants
 from app.query.ir import QueryIR, build_query_ir
 from app.query.planner import LLMQueryPlanner, should_use_llm_planner
 from app.query.router import select_modules
+from app.query.sources import (
+    SourceAnchor,
+    extract_source_anchors,
+    facet_covered,
+    facet_terms,
+    has_threshold_cue,
+    matches_title,
+    order_round_robin,
+)
 from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, tokenize
 from app.retrieval.index_manifest import check_manifest
 from app.retrieval.requirements import (
@@ -197,6 +206,35 @@ async def _active_version_rows(
     return versions, sorted(options)
 
 
+async def _resolve_source_versions(
+    db: AsyncSession, anchors: list[SourceAnchor], active_versions: list[uuid.UUID]
+) -> dict[str, list[uuid.UUID]]:
+    """Map a cited standard code to active versions whose *title* carries it.
+
+    Resolution uses document titles only.  It never consults the evaluation gold
+    set, so a wrong code simply resolves to nothing and is reported as such.
+    """
+    if not anchors:
+        return {}
+    rows = (
+        await db.execute(
+            select(KbDocument.title, KbDocument.current_version_id).where(
+                KbDocument.status == "active",
+                KbDocument.current_version_id.is_not(None),
+            )
+        )
+    ).all()
+    active = set(active_versions)
+    resolved: dict[str, list[uuid.UUID]] = {}
+    for anchor in anchors:
+        resolved[anchor.code] = [
+            version_id
+            for title, version_id in rows
+            if version_id in active and matches_title(title, anchor)
+        ]
+    return resolved
+
+
 async def retrieve(
     db: AsyncSession,
     question: str,
@@ -358,6 +396,29 @@ async def retrieve(
             species_filter = detect_species(question, species_options)
         category_filter = category
 
+    # Source anchors: only when the user explicitly cites at least two standards
+    # does per-source evidence reservation make sense.  A single citation keeps
+    # the ordinary global ranking (and its trace records why it was skipped).
+    source_anchors: list[SourceAnchor] = []
+    source_versions: dict[str, list[uuid.UUID]] = {}
+    source_trace: dict | None = None
+    if settings.enable_source_aware_retrieval:
+        cited = extract_source_anchors(question, limit=settings.source_anchor_max)
+        resolved = await _resolve_source_versions(db, cited, active_versions) if cited else {}
+        usable = [anchor for anchor in cited if resolved.get(anchor.code)]
+        if len(usable) >= 2:
+            source_anchors = usable
+            source_versions = {anchor.code: resolved[anchor.code] for anchor in usable}
+        source_trace = {
+            "enabled": True,
+            "cited": [anchor.as_dict() for anchor in cited],
+            "resolved": {code: [str(v) for v in versions] for code, versions in resolved.items()},
+            "active": len(usable) >= 2,
+            "reason": None if len(usable) >= 2 else (
+                "fewer_than_two_resolved_sources" if cited else "no_cited_source"
+            ),
+        }
+
     graph_expansion = None
     graph_ids: list[str] = []
     graph_ms = 0.0
@@ -421,29 +482,37 @@ async def retrieve(
     dense_ms = 0.0
     sparse_ms = 0.0
 
-    async def _dense_search(text: str) -> tuple[list[SearchHit], float]:
+    async def _dense_search(
+        text: str,
+        versions: list[uuid.UUID] | None = None,
+        limit: int | None = None,
+    ) -> tuple[list[SearchHit], float]:
         started_at = time.perf_counter()
         vector = await asyncio.to_thread(embedder.embed_query, text)
         hits = await asyncio.to_thread(
             search_dense,
             client,
             vector,
-            active_versions,
-            settings.dense_top_k,
+            versions or active_versions,
+            limit or settings.dense_top_k,
             category_filter,
             species_filter,
         )
         return hits, (time.perf_counter() - started_at) * 1000
 
-    async def _sparse_search(text: str) -> tuple[list[SearchHit], float]:
+    async def _sparse_search(
+        text: str,
+        versions: list[uuid.UUID] | None = None,
+        limit: int | None = None,
+    ) -> tuple[list[SearchHit], float]:
         started_at = time.perf_counter()
         vector = bm25.query_vector(text)
         hits = await asyncio.to_thread(
             search_sparse,
             client,
             vector,
-            active_versions,
-            settings.bm25_top_k,
+            versions or active_versions,
+            limit or settings.bm25_top_k,
             category_filter,
             species_filter,
         )
@@ -475,10 +544,46 @@ async def retrieve(
         trace["sparse"] = len(sparse_hits)
         return trace, dense_hits, sparse_hits, dense_elapsed, sparse_elapsed
 
+    async def _run_anchor_search(anchor: SourceAnchor) -> dict:
+        """Facet queries restricted to the versions of one cited standard."""
+        versions = source_versions[anchor.code]
+        texts = [question]
+        facet_query = " ".join(facet_terms(query_ir))
+        if facet_query and facet_query not in question:
+            texts.append(facet_query)
+        need_dense = mode in {"dense", "hybrid", "hybrid_rerank"}
+        need_sparse = mode in {"bm25", "hybrid", "hybrid_rerank"}
+        lists: list[list[str]] = []
+        weights: list[float] = []
+        for index, text in enumerate(texts[:2]):
+            tasks = []
+            if need_dense:
+                tasks.append(_dense_search(text, versions, settings.source_anchor_top_k))
+            if need_sparse:
+                tasks.append(_sparse_search(text, versions, settings.source_anchor_top_k))
+            results = await asyncio.gather(*tasks) if tasks else []
+            for hits, _elapsed in results:
+                if hits:
+                    lists.append([hit.chunk_id for hit in hits])
+                    weights.append(1.0 if index == 0 else 0.8)
+        fused_anchor = (
+            rrf_fuse(lists, k=settings.rrf_k, weights=weights, limit=settings.source_anchor_top_k)
+            if lists
+            else []
+        )
+        return {
+            "anchor": anchor,
+            "queries": texts[:2],
+            "fused": fused_anchor,
+            "candidates": len(fused_anchor),
+        }
+
     try:
-        variant_results = await asyncio.gather(
+        variant_task = asyncio.gather(
             *(_run_variant(index, variant) for index, variant in enumerate(query_variants))
         )
+        anchor_task = asyncio.gather(*(_run_anchor_search(anchor) for anchor in source_anchors))
+        variant_results, anchor_results = await asyncio.gather(variant_task, anchor_task)
         for trace, dense_hits, sparse_hits, dense_elapsed, sparse_elapsed in variant_results:
             dense_ms += dense_elapsed
             sparse_ms += sparse_elapsed
@@ -525,7 +630,10 @@ async def retrieve(
         "graph_ms": round(graph_ms, 1),
         "retrieval_ms": round((time.perf_counter() - started) * 1000, 1),
     }
-    if not fused:
+    anchor_child_ids = [
+        uuid.UUID(chunk_id) for result in anchor_results for chunk_id, _score in result["fused"]
+    ]
+    if not fused and not anchor_child_ids:
         gate = Sufficiency(False, "no_hits", [], [], 0.0, 0.0, 0.0, None)
         return RetrievalResult(
             evidence=[],
@@ -542,13 +650,16 @@ async def retrieve(
                 graph_expansion.as_dict() if graph_expansion else None,
                 route=adaptive_route,
                 modules=modules,
+                source_aware=source_trace,
             ),
             sufficient=False,
             gate=gate.as_dict(),
         )
 
-    fused_ids = [uuid.UUID(chunk_id) for chunk_id, _ in fused]
-    rows = (await db.execute(select(KbChunk).where(KbChunk.id.in_(fused_ids)))).scalars().all()
+    all_child_ids = list(
+        dict.fromkeys([*(uuid.UUID(chunk_id) for chunk_id, _score in fused), *anchor_child_ids])
+    )
+    rows = (await db.execute(select(KbChunk).where(KbChunk.id.in_(all_child_ids)))).scalars().all()
     child_by_id = {row.id: row for row in rows}
 
     parent_ids = {row.parent_id for row in rows if row.parent_id}
@@ -593,29 +704,128 @@ async def retrieve(
     if top_k:
         candidates = candidates[: max(top_k * 2, top_k)]
 
+    # Per-task rerank: a planner task is a focused sub-question.  Scoring each
+    # parent with ``max(question, task)`` keeps a task-specific passage from
+    # being buried by the comparison framing of the original question.
+    rerank_queries = [question]
+    if query_ir is not None:
+        for task in query_ir.planner_tasks[:3]:
+            value = str(task.get("effective_query") or "").strip()
+            if value and value not in rerank_queries:
+                rerank_queries.append(value)
+    rerank_queries = rerank_queries[:4]
+
+    active_reranker: Reranker | None = None
     reranker_name = "none"
     if mode == "hybrid_rerank":
-        active_reranker: Reranker = reranker or NoopReranker()
+        active_reranker = reranker or NoopReranker()
         reranker_name = active_reranker.name
+
+    by_parent_id: dict[uuid.UUID, float] = {}
+    ordered_parent_ids: list[uuid.UUID] = []
+    if active_reranker is not None:
         candidates_for_rerank = [
             (str(item["parent"].id), item["parent"].content) for item in candidates
         ]
-        reranked = active_reranker.rerank(
-            question, candidates_for_rerank, top_k or settings.rerank_top_k
-        )
-        by_parent_id = {uuid.UUID(chunk_id): score for chunk_id, score in reranked}
-        ordered_ids = [uuid.UUID(chunk_id) for chunk_id, _ in reranked]
-        candidate_by_id = {item["parent"].id: item for item in candidates}
-        candidate_iter = [
-            candidate_by_id[parent_id] for parent_id in ordered_ids if parent_id in candidate_by_id
+        scores: dict[str, float] = {}
+        for text in rerank_queries:
+            for chunk_id, score in active_reranker.rerank(
+                text, candidates_for_rerank, len(candidates_for_rerank)
+            ):
+                if chunk_id not in scores or score > scores[chunk_id]:
+                    scores[chunk_id] = score
+        by_parent_id = {uuid.UUID(chunk_id): score for chunk_id, score in scores.items()}
+        ordered_parent_ids = [
+            uuid.UUID(chunk_id) for chunk_id, _score in sorted(scores.items(), key=lambda kv: -kv[1])
         ]
     else:
         by_parent_id = {item["parent"].id: item["score"] for item in candidates}
-        candidate_iter = candidates
+        ordered_parent_ids = [item["parent"].id for item in candidates]
+
+    item_by_parent: dict[uuid.UUID, dict] = {item["parent"].id: item for item in candidates}
+    facets = facet_terms(query_ir)
+    anchor_groups: list[list[uuid.UUID]] = []
+    anchor_trace: list[dict] = []
+    for result in anchor_results:
+        per_parent: dict[uuid.UUID, dict] = {}
+        for chunk_id, score in result["fused"]:
+            child = child_by_id.get(uuid.UUID(chunk_id))
+            if child is None:
+                continue
+            parent = parent_by_id.get(child.parent_id) if child.parent_id else None
+            parent = parent or child
+            current = per_parent.get(parent.id)
+            if current is None or score > current["score"]:
+                per_parent[parent.id] = {"parent": parent, "child": child, "score": score}
+        pool = sorted(per_parent.values(), key=lambda item: -item["score"])
+        # Facet coverage is an evidence requirement: a DB46 chunk about 尾水
+        # treatment is not evidence for a 溶解氧 question even if it is in the
+        # same standard.  If no candidate mentions the facet we fall back to the
+        # full pool and record it, instead of fabricating coverage.
+        covered = [item for item in pool if facet_covered(item["parent"].content, facets)]
+        facet_filter = "applied" if covered else "fallback_no_facet_match"
+        pool = (covered or pool)[: settings.source_anchor_rerank_limit]
+        anchor_scores: dict[uuid.UUID, float] = {}
+        ordered_anchor: list[uuid.UUID] = []
+        if active_reranker is not None and pool:
+            # Rerank the evidence window (the sentence that answers the
+            # question), not the full parent: parent chunks can contain
+            # unrelated glossary text that dominates/masks the answer.
+            window_texts = [
+                (str(item["parent"].id), best_sentence(item["parent"].content, question, 300))
+                for item in pool
+            ]
+            ranked = active_reranker.rerank(question, window_texts, len(window_texts))
+            anchor_scores = {uuid.UUID(chunk_id): score for chunk_id, score in ranked}
+            window_by_parent = {uuid.UUID(chunk_id): text for chunk_id, text in window_texts}
+            # Within one source, a passage that states the numeric limit is
+            # better evidence for a "最低要求" question than one that merely
+            # mentions the facet.  Rerank order breaks ties.
+            rerank_rank = {
+                uuid.UUID(chunk_id): index for index, (chunk_id, _score) in enumerate(ranked)
+            }
+            ordered_anchor = sorted(
+                rerank_rank,
+                key=lambda parent_id: (
+                    not has_threshold_cue(window_by_parent.get(parent_id, "")),
+                    rerank_rank[parent_id],
+                ),
+            )
+        else:
+            ordered_anchor = [item["parent"].id for item in pool]
+            anchor_scores = {item["parent"].id: item["score"] for item in pool}
+        for parent_id in ordered_anchor:
+            item_by_parent.setdefault(parent_id, per_parent[parent_id])
+            by_parent_id.setdefault(parent_id, anchor_scores.get(parent_id, 0.0))
+        anchor_groups.append(ordered_anchor[: settings.source_anchor_slots])
+        anchor_trace.append(
+            {
+                **result["anchor"].as_dict(),
+                "versions": [str(v) for v in source_versions[result["anchor"].code]],
+                "queries": result["queries"],
+                "candidates": result["candidates"],
+                "facet_filter": facet_filter,
+                "selected": [str(parent_id) for parent_id in anchor_groups[-1]],
+                "resolved": bool(anchor_groups[-1]),
+            }
+        )
+
+    ordered_ids: list[uuid.UUID] = []
+    if anchor_groups:
+        ordered_ids.extend(
+            uuid.UUID(chunk_id)
+            for chunk_id in order_round_robin(
+                [[str(parent_id) for parent_id in group] for group in anchor_groups],
+                settings.source_anchor_slots,
+            )
+        )
+    ordered_ids.extend(ordered_parent_ids)
+    ordered_ids = list(dict.fromkeys(ordered_ids))
 
     evidence: list[Evidence] = []
-    for item in candidate_iter:
-        if item["parent"].id not in by_parent_id:
+    for parent_id in ordered_ids:
+        item = item_by_parent.get(parent_id)
+        if item is None:
             continue
         parent: KbChunk = item["parent"]
         child: KbChunk = item["child"]
@@ -639,7 +849,7 @@ async def retrieve(
                 quote=best_sentence(parent.content, question, 260),
                 content=_excerpt(parent.content, 1800),
                 location=location,
-                score=by_parent_id[parent.id],
+                score=by_parent_id.get(parent.id, 0.0),
                 species=normalize_species_list(doc.species),
                 heading_path=list(parent.heading_path or []),
             )
@@ -709,6 +919,12 @@ async def retrieve(
     if not gate.sufficient:
         evidence = []
 
+    if source_trace is not None:
+        source_trace["anchors"] = anchor_trace
+        source_trace["slots"] = settings.source_anchor_slots
+        rankings["source_anchor"] = {
+            entry["code"]: entry["selected"] for entry in anchor_trace
+        }
     config = _config(
         mode,
         species_filter,
@@ -720,6 +936,7 @@ async def retrieve(
         route=adaptive_route,
         modules=modules,
         planner=planner_trace,
+        source_aware=source_trace,
         compatibility={
             "configured": settings.embedding_model,
             "mismatched": embedding_mismatches,
@@ -883,6 +1100,7 @@ def _config(
     modules: dict | None = None,
     compatibility: dict | None = None,
     planner: dict | None = None,
+    source_aware: dict | None = None,
 ) -> dict:
     return {
         "dense_top_k": settings.dense_top_k,
@@ -917,6 +1135,8 @@ def _config(
         "adaptive_routing_enabled": settings.enable_adaptive_routing,
         "adaptive_modules": modules or {},
         "llm_planner": planner,
+        "source_aware_retrieval": source_aware
+        or {"enabled": settings.enable_source_aware_retrieval},
         "index_compatibility": compatibility
         or {
             "configured": settings.embedding_model,

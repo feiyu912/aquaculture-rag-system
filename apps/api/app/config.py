@@ -88,6 +88,13 @@ class Settings(BaseSettings):
     max_query_variants: int = 6
     enable_adaptive_routing: bool = False
     max_targeted_retrieval: int = 1
+    # Per-source evidence reservation for questions that explicitly cite two or
+    # more standards (e.g. "DB36 和 DB46 ...").  Deterministic, no gold lookup.
+    enable_source_aware_retrieval: bool = True
+    source_anchor_max: int = 3
+    source_anchor_slots: int = 2
+    source_anchor_top_k: int = 40
+    source_anchor_rerank_limit: int = 8
 
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
