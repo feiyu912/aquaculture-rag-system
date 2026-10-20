@@ -1,8 +1,8 @@
 {
   "dataset": "real_questions_v1",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "created_at": "2026-10-20",
-  "description": "基于两份真实水产标准的检索评测题；人工/AI辅助从原文抽取，待人工复核。",
+  "description": "基于三份真实水产标准的检索评测题；人工/AI辅助从原文抽取，待人工复核。",
   "annotation_policy": "所有 gold 均来自 PDF 原文对应 chunk；不把 LLM 生成的答案当 ground truth。",
   "cases": [
     {
@@ -1183,6 +1183,96 @@
       "insufficient_reason": "资料未包含补贴政策",
       "annotation_status": "ai_assisted_pending_human_review",
       "annotation_basis": "DB36 规程未涉及补贴",
+      "split": "test"
+    },
+    {
+      "id": "R066",
+      "question": "DB32/T 5292—2025 生态育苗的水温和pH适宜范围是多少？",
+      "reference_answer": "适宜水温18 ℃~21 ℃，适宜pH 6.5~8.5；pH持续升高时可用乳酸菌等生物制剂调节。",
+      "gold": [
+        {
+          "doc": "db32",
+          "ordinal": 30,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "6.4水质控制：适宜水温为18 ℃~21 ℃。适宜pH为6.5~8.5。",
+      "split": "test"
+    },
+    {
+      "id": "R067",
+      "question": "DB32/T 5292—2025 对育苗池水盐度有什么要求？",
+      "reference_answer": "育苗池水盐度以16‰~23‰为宜。",
+      "gold": [
+        {
+          "doc": "db32",
+          "ordinal": 14,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "4.3水质要求：育苗池水盐度以16‰~23‰为宜。",
+      "split": "test"
+    },
+    {
+      "id": "R068",
+      "question": "DB32/T 5292—2025 对亲蟹雌雄体重和肥满度有什么要求？",
+      "reference_answer": "雌蟹体重不低于150 g，雄蟹体重不低于200 g；雌蟹肥满度达到0.57 g/cm³以上，雄蟹达到0.66 g/cm³以上。",
+      "gold": [
+        {
+          "doc": "db32",
+          "ordinal": 18,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.1亲蟹选择：雌蟹体重不低于150 g，雄蟹体重不低于200 g，雌蟹肥满度达到0.57 g/cm³以上，雄蟹达到0.66 g/cm³以上。",
+      "split": "test"
+    },
+    {
+      "id": "R069",
+      "question": "DB32/T 5292—2025 亲蟹交配的适宜盐度、水温和水深是多少？",
+      "reference_answer": "交配适宜盐度18‰~25‰，适宜水温10 ℃~12 ℃，适宜水深0.8 m~1.0 m。",
+      "gold": [
+        {
+          "doc": "db32",
+          "ordinal": 24,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.3交配：交配的适宜盐度18‰~25‰，适宜水温10 ℃~12 ℃，适宜水深0.8 m~1.0 m。",
+      "split": "test"
+    },
+    {
+      "id": "R070",
+      "question": "DB32/T 5292—2025 抱卵蟹越冬期间对溶氧和氨氮如何管理？",
+      "reference_answer": "每天监测溶氧，若溶氧低于4 mg/L应增氧；每3 d测定一次氨氮，氨氮高于0.15 mg/L应换水。",
+      "gold": [
+        {
+          "doc": "db32",
+          "ordinal": 25,
+          "grade": 2
+        }
+      ],
+      "species": "中华绒螯蟹",
+      "category": "养殖技术",
+      "expect_insufficient": false,
+      "annotation_status": "ai_assisted_pending_human_review",
+      "annotation_basis": "5.4抱卵蟹越冬养殖管理：每天监测溶氧，每3 d测定一次氨氮……若溶氧低于4 mg/L，应增氧。氨氮高于0.15 mg/L应换水。",
       "split": "test"
     }
   ]

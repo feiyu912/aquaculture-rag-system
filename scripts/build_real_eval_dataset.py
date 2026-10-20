@@ -26,6 +26,7 @@ from app.models import KbChunk, KbDocument, KbDocumentVersion
 DOC_ALIASES = {
     "crab": "DB36_T 2225",
     "shrimp": "DB46 农产品全产业链",
+    "db32": "DB32_T 5292",
 }
 
 

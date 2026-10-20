@@ -54,7 +54,7 @@ uv run python ../../scripts/reindex_collection.py \
 |---|---|
 | 文档数（active） | 5 |
 | 版本数（含 archived） | 6 |
-| Qdrant points | 155 |
+| Qdrant points | 190 |
 | manifest collection | `kb_chunks_bge_m3_v1` |
 | manifest embedding | `BAAI/bge-m3` |
 | manifest vector size | 1024 |
@@ -109,10 +109,10 @@ API 真实 `hybrid_rerank` trace：
 retrieval_mode = hybrid_rerank
 reranker       = BAAI/bge-reranker-v2-m3
 embedding      = BAAI/bge-m3
-manifest point_count = 155
+manifest point_count = 190
 ```
 
-实测延迟（同一台机器，155 points）：
+实测延迟（同一台机器，190 points）：
 
 | 场景 | retrieval_ms | 说明 |
 |---|---:|---|
@@ -132,20 +132,21 @@ manifest point_count = 155
 
 ## 4. 真实 PDF 数据
 
-已下载并入库两份公开地方标准（文件在 gitignored 的 `data/real/`）：
+已下载并入库三份公开地方标准（文件在 gitignored 的 `data/real/`）：
 
 | 文档 | 来源 | 页数 | child chunks | 入库结果 |
 |---|---|---:|---:|---|
 | DB36/T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程 | [江西省地方标准公开下载](https://dbba.sacinfo.org.cn/portal/download/19dca81b5f6a3527edbeeb8751ef481761179f54b87450a826f58e9482824cbb) | 9 | 34 | succeeded |
 | DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾） | [海南省地方标准公开征求意见稿](https://amr.hainan.gov.cn/hd/zjdc/202512/P020251215594992940559.pdf) | 18 | 109 | succeeded |
+| DB32/T 5292—2025 中华绒螯蟹生态育苗技术规范 | [江苏省地方标准公开下载](https://dbba.sacinfo.org.cn/portal/download/e8bf2eb07f3029819fc92b236df076cfd189630884e207fe2c62668353227eb5) | 7 | 35 | succeeded |
 
-两份文件于 2026-10-20 下载；DB46 标注为“征求意见稿”，论文引用时需注明版本状态，不能当作正式发布标准。
+三份文件于 2026-10-20 下载；DB46 标注为“征求意见稿”，论文引用时需注明版本状态，不能当作正式发布标准；DB32 为 2025-12-30 发布、2026-01-30 实施的正式地方标准。
 
 查询验证：
 
 - “中华绒螯蟹扣蟹池塘培育对溶解氧有什么要求？”返回 DB36 标准第 5、7 页和示例资料；DB36 第 7 页直接含“溶氧量 5 mg/L 以上”。
 - “凡纳滨对虾养殖水质的酸碱度要求是什么？”返回 DB46 标准第 5、6、16 页与示例资料；引用页码与版本映射可用。
-- 这两份文档是真实公开标准，但不是人工标注 qrels；当前 5 个文档仍不足以报告检索效果。
+- 这三份文档是真实公开标准，但不是人工标注 qrels；当前 6 个 active 文档（另含 1 份示例/合成资料）仍不足以报告检索效果。
 
 ## 5. 生成服务
 
@@ -215,13 +216,13 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - BGE-Reranker 真实加载、相关性排序、API `hybrid_rerank` trace。
 - 独立 collection 重建、manifest、查询期守卫、点数对账。
 - BM25 分词/权重与 Qdrant IDF 配置。
-- 两份真实地方标准的上传、解析、版本、页码引用、Qdrant 检索。
+- 三份真实地方标准的上传、解析、版本、页码引用、Qdrant 检索。
 - 96 个默认测试通过；2 个真实 BGE 集成测试通过。
 
 **未验证 / 不足**
 
 - DeepSeek 原生 endpoint（未配置其 key）；已验证的是用户提供的 OpenAI 兼容网关。
-- 人工 qrels；当前 65 条真实题仍为 AI 辅助标注、待人工复核。
+- 人工 qrels；当前 70 条真实题仍为 AI 辅助标注、待人工复核。
 - BGE-Reranker 收益是否稳定超过 RRF；当前只有单机延迟和少量样例。
 - PDF.js bbox 高亮；当前只有页码跳转和 bbox 数据。
 - MinerU 对扫描件/表格/双栏的收益。
@@ -273,23 +274,26 @@ cd apps/api
 - LLM 单题规划约 20–40 s（reasoning token 占预算），明显慢于规则 IR；默认关闭是刻意的。
 - 详细逐题结果：[query-planner-comparison.json](../apps/api/reports/query-planner-comparison.json)。
 
-## 真实检索评测（65 题）
+## 真实检索评测（70 题）
 
 数据集、指标定义、失败分析和复现命令见 [retrieval-evaluation-2026-10-20.md](retrieval-evaluation-2026-10-20.md)。
+
+语料已扩充到 3 份真实标准（DB36、DB46、DB32），`kb_chunks_bge_m3_v1` 现为 **6 个 active 文档 / 190 个 child points**；题集 70 题（67 可回答 + 3 资料不足），标注仍为 AI 辅助待人工复核。
 
 系统默认（Query IR 开）的主结果：
 
 | mode | Recall@10 | nDCG@10 | MRR@10 | 平均耗时 ms |
 |---|---:|---:|---:|---:|
-| Dense | 0.9140 | 0.9108 | 0.7957 | 62.2 |
-| BM25 | 0.9355 | **0.9452** | 0.8610 | 18.5 |
-| Hybrid | 0.9220 | 0.9252 | **0.8620** | 55.2 |
-| Hybrid + Reranker | **0.9355** | 0.9347 | 0.8393 | 1036.3 |
+| Dense | 0.8781 | 0.8863 | 0.7736 | 69.5 |
+| BM25 | 0.9279 | 0.9328 | 0.8113 | 18.1 |
+| Hybrid | 0.8831 | 0.8881 | 0.8226 | 55.0 |
+| Hybrid + Reranker | **0.9353** | **0.9354** | **0.8488** | 1043.8 |
 
-- 62 道可回答题的整体指标；3 道资料不足题单独统计，2/3 被正确拒答。
-- **BM25 在这批语料上 nDCG@10 最高**；reranker 的 parent 指标未超过 BM25，延迟约为其 56 倍；没有一种模式全面胜出。
-- 所有 51 个 gold child chunk 均存在于 Qdrant；gold parent chunk 按设计不是独立 point，主指标按返回的 parent 上下文计，另报 child 精确指标。
-- 局限：只有 2 份真实标准、155 个 child points，标注为 AI 辅助待人工复核，无置信区间；不能据此宣称通用优越性。
+- 67 道可回答题的整体指标；3 道资料不足题单独统计，2/3 被正确拒答。
+- 本版 reranker 的 parent/child 指标均最高，但 BM25 的 nDCG@10 仅低 0.0026，且耗时约为 reranker 的 1/58；不能据此宣称 reranker 在任意语料上更优。
+- 上一版两文档语料中 BM25 的 nDCG@10 最高，加入 DB32 干扰项后排序变化，说明结果对语料/候选池敏感。
+- 所有 56 个唯一 gold child chunk 均存在于 Qdrant；gold parent chunk 按设计不是独立 point，主指标按返回的 parent 上下文计，另报 child 精确指标。
+- 局限：3 份真实标准、190 个 child points，AI 辅助待人工复核，无置信区间；不能据此宣称通用优越性。
 
 ### 尚未解决
 
