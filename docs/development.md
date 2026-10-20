@@ -79,8 +79,8 @@ node scripts/review.mjs "/chat" --w 390 --h 844 --out chat-mobile --dark
 | 声明级引用检查 | ✅（v0） | 回答拆句、映射 `[S1]`、词面支持性；明确不是 NLI |
 | 索引 manifest | ✅ | `index_manifests` 记录 collection/embedding/dim/chunk hash/点数；查询期拒绝混检 |
 | 检索 Trace | ✅（本地调试） | `GET /api/debug/query-logs/{request_id}` |
-| 轻量领域图 / 证据补检 | ✅（默认关闭） | 种子图、实体 mention、一跳 Graph-to-Chunk、facet 补检 |
-| 多跳 / LangGraph 路由 | ⏳ Phase 2b/3 | 已有规则问题分解 + 一跳图 + 确定性 route；真正多跳证据合并、LangGraph 未实现 |
+| 轻量领域图 / 证据补检 | ✅（默认关闭） | 种子图、实体 mention、有界多跳 Graph-to-Chunk、facet 补检 |
+| 多跳 / LangGraph 路由 | 🟡 部分 | 图已有有界多跳 + path trace；跨文档证据级多跳合并、LangGraph 仍未实现 |
 | 文档版本更新 | ✅ | 新版本入库成功后才激活，旧版本归档 |
 | 版本回滚 | ✅ | 校验 Qdrant 中该版本仍有向量 |
 | 后台任务恢复 | ✅ | ARQ 重试 + 失败重试接口 + worker 启动回收超时任务 |
@@ -303,7 +303,7 @@ apps/api/app/
     pipeline.py           解析→切分→向量化→写入→校验→激活
   graph/
     seed.py               人工审核的种子实体、别名、关系
-    service.py            图加载、实体链接、一跳扩展、Graph-to-Chunk
+    service.py            图加载、实体链接、有界多跳扩展、Graph-to-Chunk
   query/
     ir.py                 Typed Query IR、硬约束编译、确定性路由
   retrieval/
@@ -486,7 +486,7 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 13. **Query IR 是规则 v1**，不处理复杂否定、指代和隐含条件；LLM IR 尚未接入。
 14. **声明级检查是词面 v0**，会把“同词不同义”判成支持，也会漏掉改写；需要 NLI/人工标注验证。
 15. **Contextual Retrieval 默认关闭**；开启后必须重建索引，且收益需要在真实数据上验证。
-16. **图扩展是人工审核种子图的一跳召回**，不是从论文数据自动抽取的完整领域图；多跳分解、LangGraph 路由尚未实现，论文中不能扩大表述。
+16. **图扩展是人工审核种子图的有界多跳召回**（默认 2 跳、可反向），不是从论文数据自动抽取的完整领域图；跨文档证据级多跳合并、LangGraph 路由尚未实现，论文中不能扩大表述。
 
 ## 11. 下一阶段建议
 
@@ -498,7 +498,7 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 4. 完成 PDF.js 查看器：页码跳转 + bbox 高亮 + 多 location 切换。
 5. 增加 `reindex` 与旧版本清理任务、Qdrant/PostgreSQL 对账。
 6. 建立 200 条人工评测集（含 gold chunk / 证据句），跑检索消融 E1；把支持性验证从词面 v0 升级到 NLI 或人工标注。
-7. **Phase 2b**：规则问题分解与多查询已实现；下一步做真正的多跳证据合并（第二跳基于第一跳证据），图已有一跳/mention/Graph-to-Chunk 基础，但关系和数据仍需扩充与审核。
+7. **Phase 2b**：规则问题分解与多查询已实现；图已有有界多跳/path trace/mention/Graph-to-Chunk，但关系与真实语料覆盖仍需扩充；下一步做跨文档证据级多跳合并。
 8. **Phase 3**：用 LangGraph 编排 `SIMPLE / SEMANTIC_EXPANSION / MULTI_HOP / REGULATION / CALCULATION`，加 PDF.js bbox 高亮与 Next.js 前端。
 9. 与陶江老师确认品种清单和数据来源后，再扩充品种；当前不预收集几十个品种。
 

@@ -10,7 +10,7 @@
 | 1 | 领域实体识别与归一化 | ✅ 基础 | `species.py`、`query/ir.py`、`graph/service.py` | 品种 + 11 个种子实体/别名；通用实体仍靠人工审核 |
 | 2 | Typed Query IR / NL2IR | ✅ 规则 v1 | `query/ir.py` | 意图、品种、阶段、水质指标、年份、规范标记；不调用 LLM |
 | 3 | 硬约束过滤 | ✅ 部分 | IR → Qdrant filter | 唯一品种、显式分类可硬过滤；年份/规范状态**不**偷懒编译 |
-| 4 | 领域图扩展 | ✅ Phase 2a | `ENABLE_GRAPH_EXPANSION=false` | PostgreSQL 实体/别名/关系/mention；已验证关系的一跳扩展 + Graph-to-Chunk；默认关闭 |
+| 4 | 领域图扩展 | ✅ Phase 2a | `ENABLE_GRAPH_EXPANSION=false` | PostgreSQL 实体/别名/关系/mention；已验证关系的有界多跳扩展（默认 2 跳、可反向）+ Graph-to-Chunk；默认关闭 |
 | 5 | 多查询 / 问题分解 | ✅ 规则 v1 | `ENABLE_QUERY_DECOMPOSITION=false` | 按 facet/连接词拆子查询并参与 RRF；子查询继承品种/分类过滤；多跳证据合并仍待做 |
 | 6 | Contextual Retrieval | ✅ 可开关 | `ENABLE_CONTEXTUAL_RETRIEVAL`、`ingestion/context.py` | `context_text` 与原文分离；默认关闭 |
 | 7 | Parent-Child / Neighbor | ✅ 基础 | `ingestion/chunker.py`、`retrieval/service.py` | 已有父块扩展；邻居扩展未单独实现 |
