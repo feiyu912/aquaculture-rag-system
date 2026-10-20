@@ -68,4 +68,5 @@ def test_summary_counts_statuses():
     summary = summarize_claims(claims)
     assert summary["total"] == 3
     assert summary["supported"] == 1
+    assert summary["unverified"] == 0
     assert summary["support_rate"] == 0.333

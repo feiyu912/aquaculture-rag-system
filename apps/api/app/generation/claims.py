@@ -149,10 +149,12 @@ def summarize_claims(claims: list[dict]) -> dict:
     supported = sum(1 for claim in claims if claim.get("status") == "supported")
     weak = sum(1 for claim in claims if claim.get("status") == "weak")
     uncited = sum(1 for claim in claims if claim.get("status") == "uncited")
+    unverified = sum(1 for claim in claims if claim.get("status") == "unverified")
     return {
         "total": total,
         "supported": supported,
         "weak": weak,
+        "unverified": unverified,
         "uncited": uncited,
         "support_rate": round(supported / total, 3) if total else 0.0,
         "method": "lexical_overlap_v0",
