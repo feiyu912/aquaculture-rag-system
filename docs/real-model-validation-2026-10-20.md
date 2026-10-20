@@ -235,3 +235,46 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 3. 测量 reranker 候选数（8/16/20）与 P50/P95、nDCG，决定默认候选数。
 4. 建 `kb_chunks_bge_m3_ctx_v1`，对 Contextual Retrieval 做同 qrels 消融。
 5. 接 PDF.js bbox 高亮；再评估 MinerU。
+
+## LLM-Assisted NL2IR / Query Planner（真实模型）
+
+实现位置：`apps/api/app/query/planner.py`；开关 `ENABLE_LLM_PLANNER=true`，默认关闭。  
+模型：已验证的 OpenAI 兼容网关 `openai-compatible-model`，非 Mock。  
+调用方式：非流式 `POST /chat/completions`，`response_format={"type":"json_object"}`；返回内容再做 Pydantic 严格校验。
+
+### 已验证的安全边界
+
+- LLM 只输出 `PlannerIR`（intent / species / growth_stage / water_parameters / diseases / constraints / assumptions / rewritten_query / subquestions / confidence / warnings）。
+- `source=inferred` 的物种不会进入 Qdrant 硬过滤；只有用户问题中明确出现、且唯一匹配已知品种的 species 才能成为 `species_filter`。
+- 规则 IR 已产生的硬过滤优先于 LLM；LLM 不能放宽已有的 `species_filter`/`category_filter`。
+- planner 对不存在的品种、非领域 facet、未在问题中出现的 water/stage/disease 做丢弃并记录 warning。
+- planner JSON 解析/校验失败时**安全回退规则 IR**；网络错误不重试，解析失败最多重试 1 次（token 预算增加）。
+- `trace.llm_planner` 只记录结构化计划、耗时、attempts、错误，不记录密钥或完整原始响应。
+
+### 5 题规则 vs LLM 规划对照
+
+人工确认的规划标签（品种硬过滤、水质指标、阶段、intent）；不是检索相关性标签。
+
+```text
+cd apps/api
+.venv/bin/python ../../scripts/compare_query_planners.py --mode both \
+  --out reports/query-planner-comparison.json
+```
+
+结果（2026-10-20）：
+
+| planner | species_ok | water_recall | water_precision | stage_recall | intent_ok |
+|---|---:|---:|---:|---:|---:|
+| rule IR | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| LLM planner | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+
+- 5 题全部一致（disagreements=0，llm_errors=0）。
+- **这是 ceiling effect**：样例都是规则已能处理的简单/中等问题；不能据此宣称 LLM 规划更优，也不能外推到 50+ 题或复杂多跳。
+- LLM 单题规划约 20–40 s（reasoning token 占预算），明显慢于规则 IR；默认关闭是刻意的。
+- 详细逐题结果：[query-planner-comparison.json](../apps/api/reports/query-planner-comparison.json)。
+
+### 尚未解决
+
+- planner 尚未与首轮 dense/BM25 检索并行执行；开启后总延迟会增加一次规划耗时。
+- 硬约束 trace 已区分 `document_filter` / `retrieval_requirement` / `soft_context`，但真正作用于 Qdrant 的仍只有文档 species/category。
+- 复杂多跳、法规年份、否定/排除条件仍可能被 planner 误判；当前只做保守降级，不做自动事实确认。

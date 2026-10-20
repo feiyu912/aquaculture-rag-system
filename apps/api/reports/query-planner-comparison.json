@@ -1,0 +1,657 @@
+{
+  "summary": {
+    "mode": "both",
+    "provider": "openai_compatible",
+    "cases": 5,
+    "metrics": {
+      "rule": {
+        "species_ok": 1.0,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": 1.0
+      },
+      "llm": {
+        "species_ok": 1.0,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": 1.0
+      }
+    },
+    "disagreements": 0,
+    "llm_errors": 0
+  },
+  "results": [
+    {
+      "id": "Q001",
+      "question": "中华绒螯蟹蜕壳期对溶解氧有什么要求？",
+      "review_status": "human_confirmed",
+      "expected": {
+        "species_filter": "中华绒螯蟹",
+        "water": [
+          "溶解氧"
+        ],
+        "stage": [
+          "蜕壳期"
+        ],
+        "intent": "complex"
+      },
+      "rule": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": "中华绒螯蟹",
+        "water_parameters": [
+          "溶解氧"
+        ],
+        "growth_stage": [
+          "蜕壳期"
+        ],
+        "intent": "complex",
+        "subquestions": []
+      },
+      "llm": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": "中华绒螯蟹",
+        "water_parameters": [
+          "溶解氧"
+        ],
+        "growth_stage": [
+          "蜕壳期"
+        ],
+        "intent": "complex",
+        "subquestions": [
+          "中华绒螯蟹蜕壳期溶解氧的适宜范围是多少？",
+          "中华绒螯蟹蜕壳期溶解氧过低会有什么影响？",
+          "中华绒螯蟹蜕壳期如何管理溶解氧？"
+        ]
+      },
+      "trace": {
+        "enabled": true,
+        "used_llm": true,
+        "error": null,
+        "duration_ms": 19751.8,
+        "attempts": 1,
+        "plan": {
+          "intent": "complex",
+          "species": [
+            "中华绒螯蟹"
+          ],
+          "growth_stage": [
+            "蜕壳期"
+          ],
+          "water_parameters": [
+            "溶解氧"
+          ],
+          "diseases": [],
+          "constraints": [
+            {
+              "name": "species",
+              "value": "中华绒螯蟹",
+              "source": "explicit",
+              "strength": "hard"
+            },
+            {
+              "name": "growth_stage",
+              "value": "蜕壳期",
+              "source": "explicit",
+              "strength": "hard"
+            },
+            {
+              "name": "water_parameter",
+              "value": "溶解氧",
+              "source": "explicit",
+              "strength": "hard"
+            }
+          ],
+          "assumptions": [
+            "问题关注蜕壳期溶解氧的适宜范围、低氧影响及管理要求，而非其他水质指标。",
+            "未指定养殖模式、水温、蟹规格等背景条件。"
+          ],
+          "rewritten_query": "中华绒螯蟹蜕壳期溶解氧要求",
+          "subquestions": [
+            {
+              "question": "中华绒螯蟹蜕壳期溶解氧的适宜范围是多少？",
+              "facet": "水质阈值",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            },
+            {
+              "question": "中华绒螯蟹蜕壳期溶解氧过低会有什么影响？",
+              "facet": "风险与影响",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            },
+            {
+              "question": "中华绒螯蟹蜕壳期如何管理溶解氧？",
+              "facet": "管理措施",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            }
+          ],
+          "confidence": 0.85,
+          "warnings": [
+            "未提供具体养殖模式、水温、蟹规格等条件，检索结果可能需要结合上下文筛选。"
+          ]
+        },
+        "hard_filter": "中华绒螯蟹",
+        "subquestions": [
+          "中华绒螯蟹蜕壳期溶解氧的适宜范围是多少？",
+          "中华绒螯蟹蜕壳期溶解氧过低会有什么影响？",
+          "中华绒螯蟹蜕壳期如何管理溶解氧？"
+        ]
+      }
+    },
+    {
+      "id": "Q002",
+      "question": "凡纳滨对虾养殖前期氨氮和亚硝酸盐如何控制？",
+      "review_status": "human_confirmed",
+      "expected": {
+        "species_filter": "凡纳滨对虾",
+        "water": [
+          "亚硝酸盐",
+          "氨氮"
+        ],
+        "stage": [
+          "养殖前期"
+        ],
+        "intent": "complex"
+      },
+      "rule": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": "凡纳滨对虾",
+        "water_parameters": [
+          "亚硝酸盐",
+          "氨氮"
+        ],
+        "growth_stage": [
+          "养殖前期"
+        ],
+        "intent": "complex",
+        "subquestions": []
+      },
+      "llm": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": "凡纳滨对虾",
+        "water_parameters": [
+          "亚硝酸盐",
+          "氨氮"
+        ],
+        "growth_stage": [
+          "养殖前期"
+        ],
+        "intent": "complex",
+        "subquestions": [
+          "凡纳滨对虾养殖前期如何控制氨氮？",
+          "凡纳滨对虾养殖前期如何控制亚硝酸盐？",
+          "凡纳滨对虾养殖前期氨氮和亚硝酸盐的共同水质管理措施有哪些？"
+        ]
+      },
+      "trace": {
+        "enabled": true,
+        "used_llm": true,
+        "error": null,
+        "duration_ms": 22597.8,
+        "attempts": 1,
+        "plan": {
+          "intent": "complex",
+          "species": [
+            "凡纳滨对虾"
+          ],
+          "growth_stage": [
+            "养殖前期"
+          ],
+          "water_parameters": [
+            "氨氮",
+            "亚硝酸盐"
+          ],
+          "diseases": [],
+          "constraints": [
+            {
+              "name": "species",
+              "value": "凡纳滨对虾",
+              "source": "explicit",
+              "strength": "hard"
+            },
+            {
+              "name": "growth_stage",
+              "value": "养殖前期",
+              "source": "explicit",
+              "strength": "hard"
+            },
+            {
+              "name": "water_parameters",
+              "value": "氨氮、亚硝酸盐",
+              "source": "explicit",
+              "strength": "hard"
+            }
+          ],
+          "assumptions": [
+            "“养殖前期”的具体天数未明确，按放苗后早期养殖阶段理解"
+          ],
+          "rewritten_query": "凡纳滨对虾养殖前期氨氮和亚硝酸盐的控制方法",
+          "subquestions": [
+            {
+              "question": "凡纳滨对虾养殖前期如何控制氨氮？",
+              "facet": "氨氮控制",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            },
+            {
+              "question": "凡纳滨对虾养殖前期如何控制亚硝酸盐？",
+              "facet": "亚硝酸盐控制",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            },
+            {
+              "question": "凡纳滨对虾养殖前期氨氮和亚硝酸盐的共同水质管理措施有哪些？",
+              "facet": "综合水质管理",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            }
+          ],
+          "confidence": 0.9,
+          "warnings": [
+            "未提供养殖模式、盐度、放养密度、水源及当前水质数值，具体控制方案需结合现场检测",
+            "不提供疾病诊断或用药剂量"
+          ]
+        },
+        "hard_filter": "凡纳滨对虾",
+        "subquestions": [
+          "凡纳滨对虾养殖前期如何控制氨氮？",
+          "凡纳滨对虾养殖前期如何控制亚硝酸盐？",
+          "凡纳滨对虾养殖前期氨氮和亚硝酸盐的共同水质管理措施有哪些？"
+        ]
+      }
+    },
+    {
+      "id": "Q003",
+      "question": "高温期pH偏高对中华绒螯蟹有什么影响？",
+      "review_status": "human_confirmed",
+      "expected": {
+        "species_filter": "中华绒螯蟹",
+        "water": [
+          "酸碱度"
+        ],
+        "stage": [
+          "高温期"
+        ],
+        "intent": "complex"
+      },
+      "rule": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": "中华绒螯蟹",
+        "water_parameters": [
+          "酸碱度"
+        ],
+        "growth_stage": [
+          "高温期"
+        ],
+        "intent": "complex",
+        "subquestions": []
+      },
+      "llm": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": "中华绒螯蟹",
+        "water_parameters": [
+          "酸碱度"
+        ],
+        "growth_stage": [
+          "高温期"
+        ],
+        "intent": "complex",
+        "subquestions": [
+          "高温期pH偏高对中华绒螯蟹的生理状态和应激有何影响？",
+          "高温期pH偏高对中华绒螯蟹的摄食和生长有何影响？",
+          "高温期pH偏高会增加中华绒螯蟹哪些疾病或健康风险？"
+        ]
+      },
+      "trace": {
+        "enabled": true,
+        "used_llm": true,
+        "error": null,
+        "duration_ms": 23965.6,
+        "attempts": 1,
+        "plan": {
+          "intent": "complex",
+          "species": [
+            "中华绒螯蟹"
+          ],
+          "growth_stage": [
+            "高温期"
+          ],
+          "water_parameters": [
+            "pH"
+          ],
+          "diseases": [],
+          "constraints": [
+            {
+              "name": "species",
+              "value": "中华绒螯蟹",
+              "source": "explicit",
+              "strength": "hard"
+            },
+            {
+              "name": "season",
+              "value": "高温期",
+              "source": "explicit",
+              "strength": "hard"
+            },
+            {
+              "name": "water_parameter_condition",
+              "value": "pH偏高",
+              "source": "explicit",
+              "strength": "hard"
+            }
+          ],
+          "assumptions": [
+            "pH偏高未给出具体数值范围或阈值",
+            "高温期未给出具体水温范围",
+            "未指定中华绒螯蟹的养殖阶段、规格或养殖模式"
+          ],
+          "rewritten_query": "高温期养殖水体pH偏高对中华绒螯蟹的影响",
+          "subquestions": [
+            {
+              "question": "高温期pH偏高对中华绒螯蟹的生理状态和应激有何影响？",
+              "facet": "生理影响",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            },
+            {
+              "question": "高温期pH偏高对中华绒螯蟹的摄食和生长有何影响？",
+              "facet": "摄食生长",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            },
+            {
+              "question": "高温期pH偏高会增加中华绒螯蟹哪些疾病或健康风险？",
+              "facet": "疾病风险",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            }
+          ],
+          "confidence": 0.86,
+          "warnings": [
+            "pH偏高无具体阈值，检索结果可能需按不同pH范围区分",
+            "高温期不是严格生长阶段，需结合具体水温判断",
+            "未指定养殖模式、规格和密度，影响程度可能不同"
+          ]
+        },
+        "hard_filter": "中华绒螯蟹",
+        "subquestions": [
+          "高温期pH偏高对中华绒螯蟹的生理状态和应激有何影响？",
+          "高温期pH偏高对中华绒螯蟹的摄食和生长有何影响？",
+          "高温期pH偏高会增加中华绒螯蟹哪些疾病或健康风险？"
+        ]
+      }
+    },
+    {
+      "id": "Q004",
+      "question": "DB36 标准对中华绒螯蟹扣蟹培育的溶氧要求是什么？",
+      "review_status": "human_confirmed",
+      "expected": {
+        "species_filter": "中华绒螯蟹",
+        "water": [
+          "溶解氧"
+        ],
+        "stage": [],
+        "intent": "regulation"
+      },
+      "rule": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": "中华绒螯蟹",
+        "water_parameters": [
+          "溶解氧"
+        ],
+        "growth_stage": [],
+        "intent": "regulation",
+        "subquestions": []
+      },
+      "llm": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": "中华绒螯蟹",
+        "water_parameters": [
+          "溶解氧"
+        ],
+        "growth_stage": [],
+        "intent": "regulation",
+        "subquestions": [
+          "DB36 标准中涉及中华绒螯蟹扣蟹培育的溶解氧要求条款有哪些？",
+          "DB36 标准对中华绒螯蟹扣蟹培育的溶解氧限值或范围是多少？",
+          "DB36 标准的适用范围是否涵盖中华绒螯蟹扣蟹培育？"
+        ]
+      },
+      "trace": {
+        "enabled": true,
+        "used_llm": true,
+        "error": null,
+        "duration_ms": 38699.2,
+        "attempts": 1,
+        "plan": {
+          "intent": "regulation",
+          "species": [
+            "中华绒螯蟹"
+          ],
+          "growth_stage": [
+            "扣蟹"
+          ],
+          "water_parameters": [
+            "溶解氧"
+          ],
+          "diseases": [],
+          "constraints": [
+            {
+              "name": "standard",
+              "value": "DB36",
+              "source": "explicit",
+              "strength": "hard"
+            },
+            {
+              "name": "species",
+              "value": "中华绒螯蟹",
+              "source": "explicit",
+              "strength": "hard"
+            },
+            {
+              "name": "growth_stage",
+              "value": "扣蟹",
+              "source": "explicit",
+              "strength": "hard"
+            },
+            {
+              "name": "water_parameter",
+              "value": "溶解氧",
+              "source": "explicit",
+              "strength": "hard"
+            }
+          ],
+          "assumptions": [
+            "DB36 标准的具体标准编号、版本和适用范围未在问题中给出，检索时以标准代号 DB36 匹配中华绒螯蟹扣蟹培育和溶解氧要求。",
+            "未确认 DB36 标准是否专门规定扣蟹培育的溶解氧限值或具体条款。"
+          ],
+          "rewritten_query": "DB36 标准 中华绒螯蟹 扣蟹培育 溶解氧 要求",
+          "subquestions": [
+            {
+              "question": "DB36 标准中涉及中华绒螯蟹扣蟹培育的溶解氧要求条款有哪些？",
+              "facet": "溶氧要求条款",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            },
+            {
+              "question": "DB36 标准对中华绒螯蟹扣蟹培育的溶解氧限值或范围是多少？",
+              "facet": "溶解氧限值",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            },
+            {
+              "question": "DB36 标准的适用范围是否涵盖中华绒螯蟹扣蟹培育？",
+              "facet": "标准适用范围",
+              "inherits": [
+                "species",
+                "growth_stage"
+              ]
+            }
+          ],
+          "confidence": 0.88,
+          "warnings": [
+            "DB36 为地方标准代号，具体标准号和版本未提供，可能匹配多个标准。",
+            "标准生效日期与现行状态未提供，不能据此判断法规时效。",
+            "未提供具体条款或数值，需检索标准原文确认。"
+          ]
+        },
+        "hard_filter": "中华绒螯蟹",
+        "subquestions": [
+          "DB36 标准中涉及中华绒螯蟹扣蟹培育的溶解氧要求条款有哪些？",
+          "DB36 标准对中华绒螯蟹扣蟹培育的溶解氧限值或范围是多少？",
+          "DB36 标准的适用范围是否涵盖中华绒螯蟹扣蟹培育？"
+        ]
+      }
+    },
+    {
+      "id": "Q005",
+      "question": "氨氮过高怎么处理？",
+      "review_status": "human_confirmed",
+      "expected": {
+        "species_filter": null,
+        "water": [
+          "氨氮"
+        ],
+        "stage": [],
+        "intent": "fact"
+      },
+      "rule": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": null,
+        "water_parameters": [
+          "氨氮"
+        ],
+        "growth_stage": [],
+        "intent": "fact",
+        "subquestions": []
+      },
+      "llm": {
+        "species_ok": true,
+        "water_recall": 1.0,
+        "water_precision": 1.0,
+        "stage_recall": 1.0,
+        "intent_ok": true,
+        "species_filter": null,
+        "water_parameters": [
+          "氨氮"
+        ],
+        "growth_stage": [],
+        "intent": "fact",
+        "subquestions": [
+          "氨氮过高有哪些常用处理措施？",
+          "处理氨氮过高时需要注意哪些监测和风险控制事项？"
+        ]
+      },
+      "trace": {
+        "enabled": true,
+        "used_llm": true,
+        "error": null,
+        "duration_ms": 33421.0,
+        "attempts": 1,
+        "plan": {
+          "intent": "fact",
+          "species": [],
+          "growth_stage": [],
+          "water_parameters": [
+            "氨氮"
+          ],
+          "diseases": [],
+          "constraints": [],
+          "assumptions": [
+            "问题未明确养殖品种；输入中给出的中华绒螯蟹、凡纳滨对虾仅是已知品种，不能直接视为本问题的确定对象。",
+            "问题未明确养殖阶段、养殖模式和水体类型。"
+          ],
+          "rewritten_query": "氨氮过高的处理方法",
+          "subquestions": [
+            {
+              "question": "氨氮过高有哪些常用处理措施？",
+              "facet": "处理措施",
+              "inherits": []
+            },
+            {
+              "question": "处理氨氮过高时需要注意哪些监测和风险控制事项？",
+              "facet": "注意事项",
+              "inherits": []
+            }
+          ],
+          "confidence": 0.62,
+          "warnings": [
+            "未指定品种和生长阶段，处理建议可能因品种或养殖模式不同而异。",
+            "未确认氨氮具体数值、检测条件和当前水质背景。"
+          ]
+        },
+        "hard_filter": null,
+        "subquestions": [
+          "氨氮过高有哪些常用处理措施？",
+          "处理氨氮过高时需要注意哪些监测和风险控制事项？"
+        ]
+      }
+    }
+  ],
+  "notes": [
+    "5 个手写样例均为简单/中等规划，规则与 LLM 全部一致，属于 ceiling effect；不能据此宣称 LLM 更优。",
+    "LLM 规划耗时约 20–40 秒/题，且可能重试；默认关闭。",
+    "标签为人工确认的规划标签，不等同于检索相关性或答案事实正确性。"
+  ]
+}
