@@ -30,4 +30,10 @@ SEED_RELATIONS: list[tuple[str, str, str]] = [
     ("盐度", "水质", "INDICATOR_OF"),
     ("增氧", "溶解氧", "MANAGEMENT_FOR"),
     ("浮头", "溶解氧", "ASSOCIATED_WITH"),
+    # Species-to-habitat edges make the verified graph useful for questions
+    # phrased at the species level ("中华绒螯蟹水质指标"), where the query does
+    # not itself mention a specific water parameter.  The water-parameter edges
+    # above provide the second hop.
+    ("中华绒螯蟹", "水质", "SPECIES_HABITAT"),
+    ("凡纳滨对虾", "水质", "SPECIES_HABITAT"),
 ]

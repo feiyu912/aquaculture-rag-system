@@ -6,6 +6,7 @@
 
 - 在这批 67 道可回答题上，**Hybrid + BGE-Reranker 的 Recall/nDCG/MRR 最高**；但 BM25 的 nDCG@10 只低 0.0026，且耗时约为 reranker 的 1/58。结果对语料/干扰项敏感：上一版两文档数据中 reranker 并未超过 BM25。
 - Query IR（别名扩展/规格归一化）对 Dense 与 Hybrid 有小幅提升，对 BM25 和已开启 reranker 的 Hybrid 没有可见提升。
+- Contextual Retrieval 的 70 题同 qrels 消融中，Dense/Hybrid 的 top-10 排序明显提升（Hybrid Recall@5 +0.0721），但 BGE reranker 的 Recall@5 小幅回退 0.0050、nDCG@10 提升 0.0195；因此**默认仍关闭**，不能宣称全面胜出。
 - 3 道“资料不足”题中 2 道被正确拒答；R064（禁用渔药清单）被误答，说明词面 gate 不是语义蕴含判断。
 - 所有 56 个唯一 gold child chunk 都能在 Qdrant 中找到；54 个 gold parent chunk 按设计不是独立 point，评测按“返回给 LLM 的 parent 上下文”计主指标，并另报 child 精确指标。
 
@@ -18,6 +19,7 @@
 | 标注状态 | `ai_assisted_pending_human_review`，**不是人工确认的 ground truth** |
 | 文档 | DB36/T 2225—2026 中华绒螯蟹（9 页，34 child chunks）；DB46 南美白对虾征求意见稿（18 页，109 child chunks）；DB32/T 5292—2025 中华绒螯蟹生态育苗（7 页，35 child chunks） |
 | 索引 | `kb_chunks_bge_m3_v1`，6 个 active 文档、190 个 child points |
+| Contextual 索引 | `kb_chunks_bge_m3_ctx_v1`，同一批 190 points；dense 用 `context_text`，BM25 仍用 raw content |
 | Dense | BGE-M3，1024 维，Cosine |
 | Sparse | 应用侧 jieba + 自定义词，Qdrant `bm25` sparse，`modifier=IDF` |
 | Hybrid | RRF，`rrf_k=60`，dense/BM25 各取 20 |
@@ -67,6 +69,45 @@
 
 Query IR 使 Dense 的 Recall@10 从 0.8483 升到 0.8781，Hybrid 从 0.8731 升到 0.8831；BM25 不变（其查询词未被别名扩展改变），reranker 的 parent 指标也不变。该提升幅度只对应这批题和这套规则，不能外推。
 
+
+### 5.1 Contextual Retrieval 同题消融
+
+同一 70 题、同一 gold、同一 BGE-M3/BGE-Reranker，只把 dense 输入从原始 chunk 换成 `context_text`（`kb_chunks_bge_m3_ctx_v1`，190 points）；BM25 仍对原始 content 建稀疏向量。这是当前唯一一次 70 题同 qrels 的 Contextual 消融，不是小样本 smoke。
+
+**Query IR 开启：**
+
+| mode | Recall@5 | Recall@10 | nDCG@5 | nDCG@10 | MRR@10 | 平均耗时 ms |
+|---|---:|---:|---:|---:|---:|---:|
+| Dense | 0.9005 | 0.9279 | 0.9080 | 0.9308 | 0.8230 | 55.1 |
+| BM25 | 0.8657 | 0.9279 | 0.8657 | 0.9328 | 0.8120 | 15.5 |
+| Hybrid | 0.9303 | 0.9353 | 0.9379 | 0.9431 | 0.8383 | 55.1 |
+| Hybrid + Reranker | 0.8930 | 0.9502 | 0.8957 | 0.9549 | 0.8566 | 1055.0 |
+
+**Query IR 关闭：**
+
+| mode | Recall@5 | Recall@10 | nDCG@5 | nDCG@10 | MRR@10 | 平均耗时 ms |
+|---|---:|---:|---:|---:|---:|---:|
+| Dense | 0.9005 | 0.9353 | 0.9080 | 0.9399 | 0.8227 | 47.6 |
+| BM25 | 0.8657 | 0.9279 | 0.8657 | 0.9328 | 0.8192 | 15.8 |
+| Hybrid | 0.9303 | 0.9353 | 0.9434 | 0.9452 | 0.8264 | 46.7 |
+| Hybrid + Reranker | 0.8930 | 0.9502 | 0.8957 | 0.9549 | 0.8488 | 1055.5 |
+
+与第 4、5 节的同题 raw 结果相比：
+
+- Dense Recall@5：QIR 0.8632 → 0.9005（+0.0373），no-QIR 0.8333 → 0.9005（+0.0672）；QIR 下 Dense 的 1 次错误拒答（R061）也消失。
+- Hybrid Recall@5：QIR 0.8582 → 0.9303（+0.0721），no-QIR 0.8582 → 0.9303（+0.0721）；nDCG@10 分别 +0.0550 / +0.0672。
+- Reranker：Recall@5 从 0.8980 降到 0.8930（-0.0050），但 Recall@10 +0.0149、nDCG@10 +0.0195；说明 contextual 让候选更靠前，却让 reranker 在少数题上把另一个相关段排到 top5 外。不能只说“reranker 更强”。
+- BM25 的 sparse 向量仍来自 raw content，理论上应与 raw collection 完全一致；观测到 0.8507 → 0.8657 的小差异，可能来自重建时的候选点/版本组成或运行状态，**不能归因于 contextual**。R064 的清单完整性失败在两种 collection 都存在，3 题不足题仍只正确拒答 2 题。
+- 这不是“Contextual 全面胜出”：reranker Recall@5 有小幅回退，且 gold 仍是 AI 辅助、待人工复核。因此默认仍关闭 `ENABLE_CONTEXTUAL_RETRIEVAL`；本消融只证明 **dense/hybrid 的 top-10 排序有明显提升，reranker 需单独决策**。
+
+复现：
+
+```bash
+QDRANT_COLLECTION=kb_chunks_bge_m3_ctx_v1 \
+  .venv/bin/python ../../scripts/evaluate_retrieval_metrics.py \
+  --contextual --query-ir --out ../../eval/runs/real_questions_v1_1_ctx_query_ir
+```
+
 ## 6. 拒答与失败分析
 
 ### 6.1 资料不足题
@@ -111,6 +152,8 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_HUB_DISABLE_XET=1 \
 
 - `eval/runs/real_questions_v1_1_query_ir/{details.jsonl,summary.csv,manifest.json}`
 - `eval/runs/real_questions_v1_1_no_query_ir/{details.jsonl,summary.csv,manifest.json}`
+- `eval/runs/real_questions_v1_1_ctx_query_ir/{details.jsonl,summary.csv,manifest.json}`
+- `eval/runs/real_questions_v1_1_ctx_no_query_ir/{details.jsonl,summary.csv,manifest.json}`
 
 `manifest.json` 记录数据 hash、模型、collection、`query_ir` 开关和 git commit；`details.jsonl` 保留逐题排名、gold 排名和拒答原因。
 

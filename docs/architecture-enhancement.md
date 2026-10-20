@@ -12,7 +12,7 @@
 | 3 | 硬约束过滤 | ✅ 部分 | IR → Qdrant filter | 唯一品种、显式分类可硬过滤；年份/规范状态**不**偷懒编译 |
 | 4 | 领域图扩展 | ✅ Phase 2a | `ENABLE_GRAPH_EXPANSION=false` | PostgreSQL 实体/别名/关系/mention；已验证关系的有界多跳扩展（默认 2 跳、可反向）+ Graph-to-Chunk；默认关闭 |
 | 5 | 多查询 / 问题分解 | ✅ 规则 v1 | `ENABLE_QUERY_DECOMPOSITION=false` | 按 facet/连接词拆子查询并参与 RRF；子查询继承品种/分类过滤；多跳证据合并仍待做 |
-| 6 | Contextual Retrieval | ✅ 可开关 | `ENABLE_CONTEXTUAL_RETRIEVAL`、`ingestion/context.py` | `context_text` 与原文分离；已有 DB32 负向 smoke，heading 噪声已修但未做同 qrels 消融；默认关闭 |
+| 6 | Contextual Retrieval | ✅ 可开关 | `ENABLE_CONTEXTUAL_RETRIEVAL`、`ingestion/context.py` | `context_text` 与原文分离；70 题同 qrels 下 Dense/Hybrid 提升、reranker Recall@5 小回退；默认关闭，待人工 qrels |
 | 7 | Parent-Child / Neighbor | ✅ 基础 | `ingestion/chunker.py`、`retrieval/service.py` | 已有父块扩展；邻居扩展未单独实现 |
 | 8 | 表格感知 | ✅ 基础 | 表格独立父块、表头/单位保留 | 复杂跨页表格仍需 MinerU/人工校验 |
 | 9 | 自适应检索路由 | ✅ 确定性 v0 | `ENABLE_ADAPTIVE_ROUTING=false`、`retrieval/service.py` | `calculation`/现行规范在缺工具/日期元数据时安全拒答；LangGraph 未接入 |
@@ -59,7 +59,7 @@ Query IR → species/category hard filter → Dense + BM25 → RRF
 - 入库时用最长别名匹配建立 chunk→entity mention；`scripts/seed_graph.py` 可回填旧文档。
 - 查询时：实体链接 → 有界多跳关系扩展（默认 `GRAPH_MAX_HOPS=2`，可双向）→ Graph-to-Chunk（按 mention 取 active version 的 child chunk）→ 以 `GRAPH_RRF_WEIGHT` 参与 RRF；trace 记录每跳 `path`/`direction`。
 - 没有 `RELATED_TO` 万能关系；没有 Neo4j；没有跨文档推断。
-- 当前图来源于人工审核的 11 个种子实体/8 条关系，不是从论文数据自动抽取的完整领域图。
+- 当前图来源于人工审核的 11 个种子实体/10 条关系（含 species->水质），不是从论文数据自动抽取的完整领域图。
 - 规则问题分解：多指标问题拆成 facet 子查询，子查询保留品种/阶段前缀并继承原问题硬过滤；原问题始终参与召回。图谱多跳扩展已实现路径 trace；跨文档**证据级**多跳推理仍未实现。
 
 ### Phase 1（已完成）
@@ -69,7 +69,7 @@ Query IR → species/category hard filter → Dense + BM25 → RRF
 - Contextual Retrieval：`context_text` 入库，索引开关，引用仍用原文。
 - 声明级引用检查 v0：`[S1]` 映射、状态、summary 持久化。
 - 检索 Trace：`GET /api/debug/query-logs/{request_id}`。
-- 回归：113 个默认单元测试（另 2 个真实 BGE 集成测试）、A/B/C smoke、四模式评测；图和补检默认关闭。
+- 回归：114 个默认单元测试（另 2 个真实 BGE 集成测试）、A/B/C smoke、四模式评测；图和补检默认关闭。
 
 ### Phase 2b（下一步）
 

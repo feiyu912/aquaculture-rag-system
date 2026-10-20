@@ -71,9 +71,7 @@ def dedupe(values: list[str]) -> list[str]:
 
 
 def _dcg(grades: list[int], k: int) -> float:
-    return sum(
-        (2**grade - 1) / math.log2(index + 2) for index, grade in enumerate(grades[:k])
-    )
+    return sum((2**grade - 1) / math.log2(index + 2) for index, grade in enumerate(grades[:k]))
 
 
 def score_ranking(
@@ -81,11 +79,7 @@ def score_ranking(
 ) -> dict[str, Any]:
     relevant = set(gold)
     first = next(
-        (
-            index
-            for index, chunk_id in enumerate(ranked, start=1)
-            if chunk_id in relevant
-        ),
+        (index for index, chunk_id in enumerate(ranked, start=1) if chunk_id in relevant),
         None,
     )
     result: dict[str, Any] = {
@@ -126,9 +120,7 @@ def summarize(details: list[dict]) -> list[dict]:
             "refused": sum(item["refused"] for item in answerable),
             "insufficient_expected": len(insufficient),
             "insufficient_pass": sum(item["refused"] for item in insufficient),
-            "avg_sources": round(
-                statistics.mean(item["sources"] for item in answerable), 3
-            ),
+            "avg_sources": round(statistics.mean(item["sources"] for item in answerable), 3),
             "avg_retrieval_ms": round(
                 statistics.mean(item["retrieval_ms"] for item in answerable), 1
             ),
@@ -180,6 +172,7 @@ async def run(
     top_k: int,
     limit: int = 0,
     query_ir: bool = False,
+    contextual: bool = False,
 ) -> None:
     cases = read_cases(dataset)
     if limit:
@@ -191,7 +184,7 @@ async def run(
     }
     settings.enable_query_ir = query_ir
     settings.enable_llm_planner = False
-    settings.enable_contextual_retrieval = False
+    settings.enable_contextual_retrieval = contextual
     embedder = get_embedder(
         settings.embedding_model,
         settings.qdrant_vector_size,
@@ -200,9 +193,7 @@ async def run(
         settings.embedding_batch_size,
         settings.embedding_max_length,
     )
-    bm25 = BM25SparseEncoder(
-        k1=settings.bm25_k1, b=settings.bm25_b, avg_len=settings.bm25_avg_len
-    )
+    bm25 = BM25SparseEncoder(k1=settings.bm25_k1, b=settings.bm25_b, avg_len=settings.bm25_avg_len)
     reranker = (
         build_reranker(
             settings.reranker_model,
@@ -244,9 +235,7 @@ async def run(
                             "id": case["id"],
                             "question": case["question"],
                             "mode": mode,
-                            "expect_insufficient": bool(
-                                case.get("expect_insufficient")
-                            ),
+                            "expect_insufficient": bool(case.get("expect_insufficient")),
                             "refused": not result.sufficient,
                             "reason": result.gate.get("reason"),
                             "sources": len(result.evidence),
@@ -266,9 +255,7 @@ async def run(
                             "id": case["id"],
                             "question": case["question"],
                             "mode": mode,
-                            "expect_insufficient": bool(
-                                case.get("expect_insufficient")
-                            ),
+                            "expect_insufficient": bool(case.get("expect_insufficient")),
                             "refused": False,
                             "reason": "error",
                             "sources": 0,
@@ -319,39 +306,46 @@ async def run(
         "top_k": top_k,
         "query_ir": query_ir,
         "query_planner": False,
-        "contextual_retrieval": False,
+        "contextual_retrieval": contextual,
         "collection": settings.qdrant_collection,
         "embedding_model": settings.embedding_model,
         "reranker_model": settings.reranker_model if "hybrid_rerank" in modes else None,
         "annotation_status": "ai_assisted_pending_human_review",
         "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means.",
     }
-    (out / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
-    )
+    (out / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"wrote {out}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--dataset", type=Path, default=ROOT / "eval" / "real_questions_v1.jsonl"
-    )
-    parser.add_argument(
-        "--out", type=Path, default=ROOT / "eval" / "runs" / "real_questions_v1"
-    )
+    parser.add_argument("--dataset", type=Path, default=ROOT / "eval" / "real_questions_v1.jsonl")
+    parser.add_argument("--out", type=Path, default=ROOT / "eval" / "runs" / "real_questions_v1")
     parser.add_argument("--modes", default=",".join(MODES))
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--query-ir", action="store_true")
+    parser.add_argument(
+        "--contextual",
+        action="store_true",
+        help="use context_text for dense indexing (requires the ctx collection)",
+    )
     args = parser.parse_args()
     modes = [value.strip() for value in args.modes.split(",") if value.strip()]
     unknown = set(modes) - set(MODES)
     if unknown:
         raise SystemExit(f"unknown modes: {sorted(unknown)}")
     asyncio.run(
-        run(args.dataset, args.out, modes, args.top_k, args.limit, args.query_ir)
+        run(
+            args.dataset,
+            args.out,
+            modes,
+            args.top_k,
+            args.limit,
+            args.query_ir,
+            args.contextual,
+        )
     )
 
 

@@ -196,7 +196,7 @@ uv run python ../../scripts/check_llm.py --generate
 ```bash
 cd apps/api
 uv run pytest -q
-# 113 passed, 2 skipped（BGE 集成测试默认跳过）
+# 114 passed, 2 skipped（BGE 集成测试默认跳过）
 uv run ruff check app tests ../../scripts
 ```
 
@@ -220,7 +220,7 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - 软删除后的异步向量清理：真实上传 1 页测试文档（1 个 point），`DELETE` 返回 204，worker 将其 points 从 1 清到 0，manifest 保持 6 文档/190 points。
 - 同机 MPS 文件锁：BGE-M3 在锁内完成真实 1024 维推理；锁路径 `/tmp/aquaculture_rag_mps.lock`。
 - 可选 `ENABLE_SEMANTIC_CLAIMS=true` 的 BGE-M3 余弦 claim 筛选：真实 SSE 下 `claim_summary.support_rate=0.8`，一条词面 unverified 的说明句被余弦升级；但这只是相似度，不是 NLI。
-- 113 个默认测试通过；2 个真实 BGE 集成测试通过。
+- 114 个默认测试通过；2 个真实 BGE 集成测试通过。
 
 **未验证 / 不足**
 
@@ -315,23 +315,47 @@ cd apps/api
 - 所有 56 个唯一 gold child chunk 均存在于 Qdrant；gold parent chunk 按设计不是独立 point，主指标按返回的 parent 上下文计，另报 child 精确指标。
 - 局限：3 份真实标准、190 个 child points，AI 辅助待人工复核，无置信区间；不能据此宣称通用优越性。
 
-### Contextual Retrieval 小样本检查（非基准）
+### Contextual Retrieval 同 qrels 消融
 
-`kb_chunks_bge_m3_ctx_v1` 已按同一批 6 个 active 文档重建（190 points，`contextual=true`），但只做了两条查询的 smoke，不是同 qrels 消融：
+`kb_chunks_bge_m3_ctx_v1` 与 raw collection 使用同一 70 题、同一 gold、同一 BGE-M3/BGE-Reranker（190 points）；dense 输入换成 `context_text`，BM25 仍用 raw content。完整表见 [retrieval-evaluation-2026-10-20.md](retrieval-evaluation-2026-10-20.md) 5.1 节。
 
-- “扣蟹培育的水质指标有哪些？”：四模式都能把 DB36 第 7 页“8.1 水质指标”排进结果，gate 判充分。
-- “DB32/T 5292—2025 生态育苗的水温和pH适宜范围是多少？”（修复前）：Dense 的 top1 是第 5 页“4.3 水质要求（盐度）”，BM25 的 top1/top2 是封面和目次，Hybrid/Reranker 的 top1 是第 4 页术语；真正的第 6 页“6.4 水质控制（水温 18~21 ℃、pH 6.5~8.5）”没有排到第 1。gate 仍判充分，说明**检索到相关词不等于检索到答案证据**。
-- 已定位并修复一个直接噪声源：`100 mg/L 的漂白粉...` 这类 55 字符句子被 `HEADING_RE` 当成章节标题，进入 `context_text`。修复包括 parser 数字标题规则、`sanitize_heading_path`、以及 [repair_context.py](scripts/repair_context.py) 对现有 123 个 chunk 的 metadata 修复（不改 chunk ID/content/ordinal）。
-- 修复后重建 ctx collection 再测：Dense 的 top1 仍是第 5 页“4.3 水质要求”，但第 6 页“6.4 水质控制”升到**第 2**；Hybrid/Reranker 的 top1 是第 4 页术语，第 6 页也在第 2；BM25 仍是封面/目次。没有变成 top1，不能声称 contextual 收益。
-- 结论：Contextual Retrieval 继续默认关闭；heading 噪声已降低，但“盐度 4.3”与“水温/pH 6.4”的同章节语义竞争仍在。下一步需做 70 题同 qrels 消融，而不是只修一个 heading。
+Query IR 开启时：
 
-### 图谱多跳 smoke
+| mode | raw Recall@5 | ctx Recall@5 | raw nDCG@10 | ctx nDCG@10 |
+|---|---:|---:|---:|---:|
+| Dense | 0.8632 | 0.9005 | 0.8863 | 0.9308 |
+| Hybrid | 0.8582 | 0.9303 | 0.8881 | 0.9431 |
+| Hybrid + Reranker | 0.8980 | 0.8930 | 0.9354 | 0.9549 |
 
-`expand_entities("浮头怎么办？", max_hops=2, bidirectional=True)` 在人工审核的 11 实体/8 关系图上返回：
+结论必须分检索器说：
 
-`浮头 -> 溶解氧 -> 水质`（2 跳）与 `浮头 -> 溶解氧 -> 增氧`（反向 2 跳），每条 trace 都带 `path`、`direction`、`hop`。这证明多跳遍历和 provenance 代码路径可用。
+- Dense/Hybrid 的 top-10 排序明显提升，Hybrid Recall@5 +0.0721；
+- BGE reranker 的 Recall@5 小幅回退 0.0050，但 nDCG@10 +0.0195；说明 contextual 让候选整体更靠前，少数题上 reranker 仍把另一个相关段挤出 top5；
+- BM25 的 sparse 向量仍是 raw content，理论上应完全一致，观测到的小差异不能归因于 contextual；
+- R064 的清单完整性失败在两种 collection 都存在，3 题不足题仍只正确拒答 2 题。
 
-但把 `GRAPH_EXPANSION=true` 用于真实检索时，该 query 没有返回证据 chunk；当前图关系主要来自示例/合成资料的 mention，尚未覆盖 DB36/DB46/DB32 的足够实体。不能据此声称图谱提升了真实问答效果，只能声称“机制和 trace 已验证”。
+单查询 smoke 仍保留一个反例：修复 `100 mg/L` 正文被误判 heading 后，DB32 “水温/pH”查询里正确答案从“未进 top1”升到**第 2**，但 top1 仍是第 5 页“4.3 水质要求（盐度）”；Contextual 没有解决同章节语义竞争。
+
+因此默认仍关闭 `ENABLE_CONTEXTUAL_RETRIEVAL`：它已有 70 题同 qrels 的正向证据，但 reranker 的 top5 回退和人工 qrels 未复核，不能宣称全面胜出。
+
+### 图谱多跳与真实语料 smoke
+
+`expand_entities("浮头怎么办？", max_hops=2, bidirectional=True)` 在人工审核的 11 实体/10 关系图上返回：
+
+`浮头 -> 溶解氧 -> 水质`（2 跳）与 `浮头 -> 溶解氧 -> 增氧`（反向 2 跳），每条 trace 都带 `path`、`direction`、`hop`。
+
+本轮补充了 `SPECIES_HABITAT` 种子边（中华绒螯蟹/凡纳滨对虾 -> 水质），因此物种级查询有真实语料证据：
+
+```text
+expand_entities("中华绒螯蟹生态育苗的水质指标有哪些？")
+seed_terms = ["中华绒螯蟹", "水质"]
+expanded_terms = ["亚硝酸盐","氨氮","水温","溶解氧","盐度","酸碱度","增氧","浮头","凡纳滨对虾"]
+relation_trace = 10 条，含 2 跳 "水质 -> 溶解氧 -> 增氧"
+```
+
+`GRAPH_EXPANSION=true` + `hybrid` 对该 query 返回 8 条证据，页码覆盖 DB32 第 4/5/6/7 页和通用水质资料第 1 页；graph 关闭时同样能返回这些页，graph 开启主要把第 5 页上移，**没有新增证据集合**。
+
+原始 `浮头怎么办？` 仍没有足够的真实语料 chunk 覆盖，不能声称图谱提升了症状类问答。当前结论仍是“机制、trace 和真实物种级证据路径可用，但没有同 qrels 图检索增益”。
 
 ### DB32 SSE 真模型 smoke
 

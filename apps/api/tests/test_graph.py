@@ -84,3 +84,10 @@ def test_no_graph_match_returns_empty_expansion():
     expansion = expand_entities("今天上海天气怎么样？", graph)
     assert expansion.seed_entity_ids == []
     assert expansion.expanded_entity_ids == []
+
+
+def test_seed_graph_connects_species_to_water_quality():
+    from app.graph.seed import SEED_RELATIONS
+
+    assert ("中华绒螯蟹", "水质", "SPECIES_HABITAT") in SEED_RELATIONS
+    assert ("凡纳滨对虾", "水质", "SPECIES_HABITAT") in SEED_RELATIONS
