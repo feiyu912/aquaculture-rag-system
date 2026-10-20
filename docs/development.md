@@ -76,7 +76,7 @@ node scripts/review.mjs "/chat" --w 390 --h 844 --out chat-mobile --dark
 | 多品种元数据 | ✅ | 文档可关联多个品种；Qdrant 品种过滤；问题中自动识别单一品种 |
 | Typed Query IR | ✅（规则 v1） | 意图、品种、阶段、水质指标、年份/规范标记；只有可信字段编译为硬过滤 |
 | Contextual Retrieval | ✅（可开关） | `context_text` 与原文分开存储；索引文本可切换，引用仍用原文 |
-| 声明级引用检查 | ✅（v0） | 回答拆句、映射 `[S1]`、词面支持性；明确不是 NLI |
+| 声明级引用检查 | ✅（v0） | 回答拆句、带引用表格行、映射 `[S1]`、词面支持性；可选 BGE-M3 余弦筛选；明确不是 NLI |
 | 索引 manifest | ✅ | `index_manifests` 记录 collection/embedding/dim/chunk hash/点数；查询期拒绝混检 |
 | 检索 Trace | ✅（本地调试） | `GET /api/debug/query-logs/{request_id}` |
 | 轻量领域图 / 证据补检 | ✅（默认关闭） | 种子图、实体 mention、有界多跳 Graph-to-Chunk、facet 补检 |
@@ -233,7 +233,7 @@ uv run pytest -q
 uv run ruff check app tests ../../scripts
 ```
 
-当前默认 **104 个单元测试**（另有 2 个真实 BGE 集成测试默认跳过）覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词/权重、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/多跳扩展、证据要求/定向补检、自适应路由守卫、消融指标与模块选择、别名扩展、LLM Planner 校验/回退。
+当前默认 **108 个单元测试**（另有 2 个真实 BGE 集成测试默认跳过）覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词/权重、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/多跳扩展、证据要求/定向补检、自适应路由守卫、消融指标与模块选择、别名扩展、LLM Planner 校验/回退、表格 claim、语义 claim、软删除清理、MPS 文件锁。
 
 真实模型集成测试：
 
@@ -355,6 +355,7 @@ EMBEDDING_DEVICE=mps          # 或 cuda / cpu / auto
 EMBEDDING_USE_FP16=true
 MPS_LOCK_ENABLED=true         # 同机多进程串行化 MPS 推理
 MPS_LOCK_PATH=/tmp/aquaculture_rag_mps.lock
+ENABLE_SEMANTIC_CLAIMS=false   # 可选：BGE-M3 余弦 claim 筛选，不是 NLI
 QDRANT_COLLECTION=kb_chunks_bge_m3_v1
 INDEX_MANIFEST_REQUIRED=true
 RERANKER_MODEL=BAAI/bge-reranker-v2-m3
@@ -446,12 +447,13 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 
 `app/generation/claims.py`：
 
-- 将回答按段落/句子拆成 claim；
+- 将回答按段落/句子拆成 claim；带 `[S1]` 的 Markdown 表格数据行也会成为 claim（表头/分隔行不抽）；
 - 映射 claim 中的 `[S1]` / `[1]` 到 source；
+- `ENABLE_SEMANTIC_CLAIMS=true` 时，`generation/semantic_claims.py` 用 BGE-M3 余弦相似度对“词面 weak/unverified”的 claim 做二次筛选；默认关闭，仍不是 NLI；
 - 复用 `lexical_overlap_v0` 判断词面支持；
 - 状态：`supported` / `weak` / `unverified` / `uncited`；
 - `citation_check.claim_summary` 写入 SSE、`chat_messages.meta`、`query_logs.citation_check`；
-- 可重算：`POST /api/messages/{message_id}/verify-claims`。
+- 可重算：`POST /api/messages/{message_id}/verify-claims`（仍只做词面校验）。
 
 这只是可解释的 v0 基线，**不能报告为 NLI 或事实正确性**。
 
@@ -488,7 +490,7 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 11. **证据不足是词面规则**，会误拒/误放；阈值和失败案例必须写进论文。
 12. **表格/跨页 bbox** 只保证规范化和页码降级，不保证每个复杂表格的框都精确。
 13. **Query IR 是规则 v1**，不处理复杂否定、指代和隐含条件；LLM IR 尚未接入。
-14. **声明级检查是词面 v0**，会把“同词不同义”判成支持，也会漏掉改写；需要 NLI/人工标注验证。
+14. **声明级检查默认是词面 v0**，会把“同词不同义”判成支持，也会漏掉改写；可选 BGE-M3 余弦筛选只提高召回风险，不是 NLI；需要 NLI/人工标注验证。
 15. **Contextual Retrieval 默认关闭**；开启后必须重建索引，且收益需要在真实数据上验证。
 16. **图扩展是人工审核种子图的有界多跳召回**（默认 2 跳、可反向），不是从论文数据自动抽取的完整领域图；跨文档证据级多跳合并、LangGraph 路由尚未实现，论文中不能扩大表述。
 

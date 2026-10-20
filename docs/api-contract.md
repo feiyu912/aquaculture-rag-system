@@ -354,8 +354,10 @@ const rect = {
 
 - `valid` 只表示引用编号存在且在范围内，**不表示事实正确**。
 - `coverage` 是“有引用的事实句/事实句”比例，不是正确率。
-- `claim_summary.support_rate` 是词面支持率，**不是 NLI/事实准确率**；论文中必须标注 `lexical_overlap_v0`。
+- `claim_summary.support_rate` 是词面支持率，**不是 NLI/事实准确率**；默认论文口径必须标注 `lexical_overlap_v0`。
 - `claims` 仅在 `ENABLE_CLAIM_VERIFICATION=true` 时出现（默认 true）。
+- `ENABLE_SEMANTIC_CLAIMS=true`（默认 false）时，SSE 的 claim 额外可能含 `lexical_status`、`semantic_score`、`semantic_index`；`method` 可能为 `bge_m3_cosine_v0`，`claim_summary.method` 为 `lexical_overlap_v0+bge_m3_cosine_v0`。这只是 BGE-M3 余弦相似度筛选，**不是 NLI，也不是事实正确性**。
+- `POST /api/messages/{message_id}/verify-claims` 仍只做词面校验；语义开关目前只影响 SSE 生成后的 claim report。
 
 #### 2.5.8 `done`
 
@@ -493,7 +495,7 @@ Content-Type: application/json
 ```
 
 - 该方法会写回 `support_status`/`support_score`。
-- 当前是词面重叠，不是语义蕴含；不要展示为“事实已核实”。
+- 当前默认是词面重叠，不是语义蕴含；不要展示为“事实已核实”。可选的 `bge_m3_cosine_v0` 也只是相似度筛选，不是 NLI。
 
 ### 3.2 消息级声明验证
 

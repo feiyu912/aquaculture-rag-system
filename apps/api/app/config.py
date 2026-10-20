@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     planner_max_tokens: int = 2000
     planner_temperature: float = 0.0
     enable_claim_verification: bool = True
+    enable_semantic_claims: bool = False
+    semantic_claim_threshold: float = 0.65
     enable_contextual_retrieval: bool = False
     enable_evidence_requirements: bool = False
     enable_targeted_retrieval: bool = False

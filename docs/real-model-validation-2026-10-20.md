@@ -196,7 +196,7 @@ uv run python ../../scripts/check_llm.py --generate
 ```bash
 cd apps/api
 uv run pytest -q
-# 104 passed, 2 skipped（BGE 集成测试默认跳过）
+# 108 passed, 2 skipped（BGE 集成测试默认跳过）
 uv run ruff check app tests ../../scripts
 ```
 
@@ -219,7 +219,8 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - 三份真实地方标准的上传、解析、版本、页码引用、Qdrant 检索。
 - 软删除后的异步向量清理：真实上传 1 页测试文档（1 个 point），`DELETE` 返回 204，worker 将其 points 从 1 清到 0，manifest 保持 6 文档/190 points。
 - 同机 MPS 文件锁：BGE-M3 在锁内完成真实 1024 维推理；锁路径 `/tmp/aquaculture_rag_mps.lock`。
-- 104 个默认测试通过；2 个真实 BGE 集成测试通过。
+- 可选 `ENABLE_SEMANTIC_CLAIMS=true` 的 BGE-M3 余弦 claim 筛选：真实 SSE 下 `claim_summary.support_rate=0.8`，一条词面 unverified 的说明句被余弦升级；但这只是相似度，不是 NLI。
+- 108 个默认测试通过；2 个真实 BGE 集成测试通过。
 
 **未验证 / 不足**
 
@@ -337,7 +338,9 @@ cd apps/api
 
 - `sources[0]` 是 DB32 第 6 页 `6.4 水质控制`，quote 含“适宜水温为18 ℃~21 ℃。适宜pH为6.5~8.5”；答案给出 18~21 ℃、6.5~8.5，并引用 `[S1]`。
 - `citation_check.valid=true`，`cited_indices=[1,5]`，`coverage=1.0`；第一次 smoke 时 Markdown 表格行没有被抽取成 claim，`support_rate=0.167`。已修复 `split_claims` 对带 `[S1]` 的表格数据行的抽取，并加单元测试。
-- 重跑后 `claim_summary.support_rate=0.5`（3 supported / 1 weak / 1 uncited / 1 unverified）；“水温 18~21 ℃ [S1]”“pH 6.5~8.5 [S1]”等表格/列表行被正确检查。但方法仍是 `lexical_overlap_v0`，`coverage`/`support_rate` 不是事实正确率，也不是 NLI。
+- 词面模式重跑：`support_rate=0.5`（3 supported / 1 weak / 1 uncited / 1 unverified）；“水温 18~21 ℃ [S1]”“pH 6.5~8.5 [S1]”等表格/列表行被正确检查。
+- 语义模式（`ENABLE_SEMANTIC_CLAIMS=true`）重跑：`support_rate=0.8`（4 supported / 1 uncited），一条词面 unverified 的“另一标准 pH 7.5~8.5”说明句被 BGE-M3 余弦分数 0.662 升级为 supported。这条句子确实与 S5 有关，但“另一标准/不适用”的对比关系不是余弦相似度能验证的，说明语义筛选会**过度支持**。
+- 方法仍是 `lexical_overlap_v0` 或可选 `bge_m3_cosine_v0`；`coverage`/`support_rate` 不是事实正确率，也不是 NLI。
 
 ### 尚未解决
 

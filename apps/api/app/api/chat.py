@@ -17,6 +17,7 @@ from app.db import SessionLocal, get_db
 from app.generation.citations import validate_answer
 from app.generation.claims import summarize_claims, verify_claims
 from app.generation.llm import Generator, LLMError, MockGenerator, build_generator
+from app.generation.semantic_claims import verify_claims_semantic
 from app.ingestion.embedder import get_embedder
 from app.models import ChatCitation, ChatMessage, ChatSession, KbDocument, QueryLog
 from app.query.planner import planner_from_generator
@@ -249,9 +250,21 @@ async def chat_stream(
         citation_report = validate_answer(answer, len(evidence))
         report = citation_report.as_dict()
         if settings.enable_claim_verification:
-            claims = verify_claims(answer, [item.as_source() for item in evidence])
+            sources = [item.as_source() for item in evidence]
+            if settings.enable_semantic_claims:
+                claims = verify_claims_semantic(
+                    answer,
+                    sources,
+                    embedder,
+                    threshold=settings.semantic_claim_threshold,
+                )
+            else:
+                claims = verify_claims(answer, sources)
             report["claims"] = claims
             report["claim_summary"] = summarize_claims(claims)
+            if settings.enable_semantic_claims:
+                report["claim_summary"]["method"] = "lexical_overlap_v0+bge_m3_cosine_v0"
+                report["claim_summary"]["semantic_threshold"] = settings.semantic_claim_threshold
         now = time.perf_counter()
         timings = {
             **retrieval.timings,
