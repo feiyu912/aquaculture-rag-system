@@ -44,12 +44,42 @@ def _strip_markup(text: str) -> str:
     return text.strip()
 
 
+def _table_claim(line: str) -> str | None:
+    """Turn a cited markdown table data row into a checkable claim.
+
+    Tables are a common answer shape for numeric limits.  Header/separator
+    rows have no citation and are ignored; a data row is only kept when it
+    carries at least one ``[S1]`` marker.  This is still a lexical check, not
+    table-cell entailment.
+    """
+    cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+    cells = [cell for cell in cells if cell]
+    if not cells:
+        return None
+    if all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells):
+        return None
+    if not any(CITATION_RE.search(cell) for cell in cells):
+        return None
+    claim = " ".join(cells)
+    # Table cells can be numeric-only (e.g. "pH | 6.5~8.5"), so unlike prose
+    # claims we do not require a CJK character here.
+    return claim if len(claim) >= 8 else None
+
+
 def split_claims(answer: str) -> list[str]:
     claims: list[str] = []
     seen: set[str] = set()
     for raw_line in answer.splitlines():
         line = raw_line.strip()
-        if not line or line.startswith("|") or line.startswith(SKIP_PREFIXES):
+        if not line or line.startswith(SKIP_PREFIXES):
+            continue
+        if line.startswith("|"):
+            table_claim = _table_claim(line)
+            if table_claim is None:
+                continue
+            if table_claim not in seen:
+                seen.add(table_claim)
+                claims.append(table_claim)
             continue
         line = _strip_markup(line)
         line_indices = CITATION_RE.findall(line)

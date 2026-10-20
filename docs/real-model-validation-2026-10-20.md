@@ -196,7 +196,7 @@ uv run python ../../scripts/check_llm.py --generate
 ```bash
 cd apps/api
 uv run pytest -q
-# 103 passed, 2 skipped（BGE 集成测试默认跳过）
+# 104 passed, 2 skipped（BGE 集成测试默认跳过）
 uv run ruff check app tests ../../scripts
 ```
 
@@ -219,7 +219,7 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - 三份真实地方标准的上传、解析、版本、页码引用、Qdrant 检索。
 - 软删除后的异步向量清理：真实上传 1 页测试文档（1 个 point），`DELETE` 返回 204，worker 将其 points 从 1 清到 0，manifest 保持 6 文档/190 points。
 - 同机 MPS 文件锁：BGE-M3 在锁内完成真实 1024 维推理；锁路径 `/tmp/aquaculture_rag_mps.lock`。
-- 103 个默认测试通过；2 个真实 BGE 集成测试通过。
+- 104 个默认测试通过；2 个真实 BGE 集成测试通过。
 
 **未验证 / 不足**
 
@@ -336,7 +336,8 @@ cd apps/api
 默认 `hybrid_rerank` 对“DB32/T 5292—2025 生态育苗的水温和pH适宜范围是多少？”的 SSE 结果：
 
 - `sources[0]` 是 DB32 第 6 页 `6.4 水质控制`，quote 含“适宜水温为18 ℃~21 ℃。适宜pH为6.5~8.5”；答案给出 18~21 ℃、6.5~8.5，并引用 `[S1]`。
-- `citation_check.valid=true`，`cited_indices=[1,5]`，`coverage=1.0`；但 `claim_summary.support_rate=0.167`，因为答案中的 Markdown 表格行没有被抽取成 claim，两个表头/说明句也被标成 `uncited`。这再次说明 citation coverage/support rate 只是**词面检查**，不是事实正确率。
+- `citation_check.valid=true`，`cited_indices=[1,5]`，`coverage=1.0`；第一次 smoke 时 Markdown 表格行没有被抽取成 claim，`support_rate=0.167`。已修复 `split_claims` 对带 `[S1]` 的表格数据行的抽取，并加单元测试。
+- 重跑后 `claim_summary.support_rate=0.5`（3 supported / 1 weak / 1 uncited / 1 unverified）；“水温 18~21 ℃ [S1]”“pH 6.5~8.5 [S1]”等表格/列表行被正确检查。但方法仍是 `lexical_overlap_v0`，`coverage`/`support_rate` 不是事实正确率，也不是 NLI。
 
 ### 尚未解决
 

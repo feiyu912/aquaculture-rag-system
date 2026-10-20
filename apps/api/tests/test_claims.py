@@ -3,15 +3,35 @@ from __future__ import annotations
 from app.generation.claims import split_claims, summarize_claims, verify_claims
 
 
-def test_split_claims_skips_table_and_meta():
+def test_split_claims_keeps_cited_table_rows_and_skips_meta():
     answer = """根据知识库中的资料，可以整理出以下信息：
 - 溶解氧应保持在 5 mg/L 以上 [S1]。低氧时及时增氧 [S1]。
 | 日期 | 溶解氧 |
 | --- | --- |
+| 2026-10-20 | 5 mg/L [S1] |
 以上内容仅供参考。
 """
     claims = split_claims(answer)
-    assert claims == ["溶解氧应保持在 5 mg/L 以上 [S1]。", "低氧时及时增氧 [S1]。"]
+    assert claims == [
+        "溶解氧应保持在 5 mg/L 以上 [S1]。",
+        "低氧时及时增氧 [S1]。",
+        "2026-10-20 5 mg/L [S1]",
+    ]
+
+
+def test_table_cell_claims_are_checked_lexically():
+    answer = """| 指标 | 适宜范围 |
+| --- | --- |
+| 水温 | 18 ℃~21 ℃ [S1] |
+| pH | 6.5~8.5 [S1] |
+"""
+    claims = verify_claims(
+        answer,
+        [{"index": 1, "quote": "适宜水温为18 ℃~21 ℃。适宜pH为6.5~8.5。"}],
+    )
+    assert len(claims) == 2
+    assert all(item["status"] == "supported" for item in claims)
+    assert all(item["method"] == "lexical_overlap_v0" for item in claims)
 
 
 def test_claim_without_citation_is_uncited():
