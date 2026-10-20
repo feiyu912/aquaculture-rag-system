@@ -33,6 +33,18 @@ async def collect() -> dict:
                 .order_by(KbDocument.created_at)
             )
         ).all()
+        active_document_ids = [doc.id for doc, _ in rows]
+        allowed_version_ids = set(
+            (
+                await db.execute(
+                    select(KbDocumentVersion.id).where(
+                        KbDocumentVersion.document_id.in_(active_document_ids)
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
 
     versions = [
         {
@@ -60,10 +72,29 @@ async def collect() -> dict:
         else:
             vector_size = getattr(vectors, "size", None)
         points = client.count(collection_name=settings.qdrant_collection, exact=True).count
+        allowed_version_strs = {str(item) for item in allowed_version_ids}
+        orphan_ids: set[str] = set()
+        next_offset = None
+        while True:
+            records, next_offset = client.scroll(
+                collection_name=settings.qdrant_collection,
+                limit=256,
+                offset=next_offset,
+                with_payload=["document_version_id"],
+                with_vectors=False,
+            )
+            for record in records:
+                version_id = (record.payload or {}).get("document_version_id")
+                if version_id and version_id not in allowed_version_strs:
+                    orphan_ids.add(str(version_id))
+            if next_offset is None:
+                break
     finally:
         client.close()
 
     warnings: list[str] = []
+    if orphan_ids:
+        warnings.append("Qdrant contains points from versions outside active documents")
     if len(models) > 1:
         warnings.append("active versions use more than one embedding model")
     if len(hashes) > 1:
@@ -82,6 +113,7 @@ async def collect() -> dict:
         "collection_vector_size": vector_size,
         "collection_points": int(points),
         "active_versions": len(versions),
+        "orphan_version_ids": sorted(orphan_ids),
         "active_embedding_models": models,
         "active_chunk_config_hashes": hashes,
         "missing_metadata": missing_metadata,

@@ -122,6 +122,32 @@ async def get_active_versions(db: AsyncSession) -> list[uuid.UUID]:
     return [row[0] for row in result.all() if row[0] is not None]
 
 
+async def _embedding_mismatches(
+    db: AsyncSession, version_ids: list[uuid.UUID]
+) -> list[dict[str, str]]:
+    """Detect active versions indexed with a different embedding model.
+
+    Reusing a Qdrant collection after switching from the development hashing
+    embedder to BGE-M3 would mix incompatible vectors.  Refuse retrieval until
+    the caller rebuilds the index instead of returning silently meaningless
+    neighbours.
+    """
+    if not version_ids:
+        return []
+    rows = (
+        await db.execute(
+            select(KbDocumentVersion.id, KbDocumentVersion.embedding_model).where(
+                KbDocumentVersion.id.in_(version_ids)
+            )
+        )
+    ).all()
+    mismatched: list[dict[str, str]] = []
+    for version_id, model in rows:
+        if model and model != settings.embedding_model:
+            mismatched.append({"version_id": str(version_id), "embedding_model": model})
+    return mismatched
+
+
 async def _active_version_rows(
     db: AsyncSession,
 ) -> tuple[list[uuid.UUID], list[str]]:
@@ -169,6 +195,7 @@ async def retrieve(
             explicit_category=category,
         )
     adaptive_route = query_ir.strategy if query_ir else "simple"
+    embedding_mismatches = await _embedding_mismatches(db, active_versions)
     base_modules = {
         "graph": settings.enable_graph_expansion,
         "decomposition": settings.enable_query_decomposition,
@@ -180,6 +207,31 @@ async def retrieve(
         if settings.enable_adaptive_routing
         else base_modules
     )
+    if embedding_mismatches:
+        gate = Sufficiency(False, "index_embedding_mismatch", [], [], 0.0, 0.0, 0.0, None)
+        return RetrievalResult(
+            evidence=[],
+            active_versions=active_versions,
+            timings={"retrieval_ms": 0},
+            rankings={},
+            config=_config(
+                mode,
+                None,
+                None,
+                "none",
+                gate,
+                query_ir,
+                route=adaptive_route,
+                modules=modules,
+                compatibility={
+                    "configured": settings.embedding_model,
+                    "mismatched": embedding_mismatches,
+                },
+            ),
+            sufficient=False,
+            gate=gate.as_dict(),
+        )
+
     if not active_versions:
         gate = Sufficiency(False, "no_active_versions", [], [], 0.0, 0.0, 0.0, None)
         return RetrievalResult(
@@ -658,6 +710,7 @@ def _config(
     graph_expansion: dict | None = None,
     route: str | None = None,
     modules: dict | None = None,
+    compatibility: dict | None = None,
 ) -> dict:
     return {
         "dense_top_k": settings.dense_top_k,
@@ -687,6 +740,8 @@ def _config(
         "adaptive_route": route,
         "adaptive_routing_enabled": settings.enable_adaptive_routing,
         "adaptive_modules": modules or {},
+        "index_compatibility": compatibility
+        or {"configured": settings.embedding_model, "mismatched": []},
         "evidence_min_terms": settings.evidence_min_terms,
         "evidence_min_weight": settings.evidence_min_weight,
         "evidence_min_coverage": settings.evidence_min_coverage,

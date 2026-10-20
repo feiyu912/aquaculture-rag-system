@@ -23,7 +23,7 @@
 | 声明级引用检查 | ✅（v0） | 回答拆句、映射 `[S1]`、词面支持性；明确不是 NLI |
 | 检索 Trace | ✅（本地调试） | `GET /api/debug/query-logs/{request_id}` |
 | 轻量领域图 / 证据补检 | ✅（默认关闭） | 种子图、实体 mention、一跳 Graph-to-Chunk、facet 补检 |
-| 多跳 / LangGraph 路由 | ⏳ Phase 2b/3 | 当前只有一跳图和确定性 route；未做问题分解与 LangGraph |
+| 多跳 / LangGraph 路由 | ⏳ Phase 2b/3 | 已有规则问题分解 + 一跳图 + 确定性 route；真正多跳证据合并、LangGraph 未实现 |
 | 文档版本更新 | ✅ | 新版本入库成功后才激活，旧版本归档 |
 | 版本回滚 | ✅ | 校验 Qdrant 中该版本仍有向量 |
 | 后台任务恢复 | ✅ | ARQ 重试 + 失败重试接口 + worker 启动回收超时任务 |
@@ -176,12 +176,25 @@ uv run pytest -q
 uv run ruff check app tests ../../scripts
 ```
 
-当前 **64 个单元测试**覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/一跳扩展、证据要求/定向补检、自适应路由守卫。
+当前 **67 个单元测试**覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/一跳扩展、证据要求/定向补检、自适应路由守卫与模块选择。
 
 端到端测试（需要 API + worker 运行）：
 
 ```bash
 uv run python ../../scripts/smoke_test.py
+```
+
+索引一致性诊断（只读；检查 active 版本的 embedding/chunk 配置与 Qdrant 维度/点数）：
+
+```bash
+uv run python ../../scripts/check_index.py
+```
+
+清理 soft-deleted 文档遗留的 Qdrant 向量（默认 dry-run；不删除 PostgreSQL 行和原始 PDF）：
+
+```bash
+uv run python ../../scripts/purge_deleted_vectors.py
+uv run python ../../scripts/purge_deleted_vectors.py --apply
 ```
 
 批量评测（经 API，四种检索模式）：
@@ -243,6 +256,8 @@ apps/api/app/
 scripts/
   migrate_db.py           建表 + 增量迁移
   smoke_test.py           A/B/C 端到端验收
+  check_index.py          只读索引一致性诊断
+  purge_deleted_vectors.py 清理 soft-deleted 文档的孤儿向量（默认 dry-run）
   seed_graph.py           种子图 + 旧 chunk mention 回填
   evaluate.py             批量评测、导出 JSONL/CSV
   evaluate_ablations.py   增强模块消融（直接调用检索服务）
@@ -400,7 +415,7 @@ Qdrant upsert → 按版本计数校验 → PostgreSQL 单事务切换 current_v
 4. 完成 PDF.js 查看器：页码跳转 + bbox 高亮 + 多 location 切换。
 5. 增加 `reindex` 与旧版本清理任务、Qdrant/PostgreSQL 对账。
 6. 建立 200 条人工评测集（含 gold chunk / 证据句），跑检索消融 E1；把支持性验证从词面 v0 升级到 NLI 或人工标注。
-7. **Phase 2b**：做问题分解与多查询、多跳证据合并；图已有一跳/mention/Graph-to-Chunk 基础，但关系和数据仍需扩充与审核。
+7. **Phase 2b**：规则问题分解与多查询已实现；下一步做真正的多跳证据合并（第二跳基于第一跳证据），图已有一跳/mention/Graph-to-Chunk 基础，但关系和数据仍需扩充与审核。
 8. **Phase 3**：用 LangGraph 编排 `SIMPLE / SEMANTIC_EXPANSION / MULTI_HOP / REGULATION / CALCULATION`，加 PDF.js bbox 高亮与 Next.js 前端。
 9. 与陶江老师确认品种清单和数据来源后，再扩充品种；当前不预收集几十个品种。
 

@@ -2,17 +2,21 @@
 
 本科毕业设计项目：**《基于检索增强生成的水产养殖知识问答系统设计与实现》**
 
-> 当前状态：**技术方案 v1.0 已定稿；可运行纵向切片 + 四个验收场景的关键补强已完成。**
+> 当前状态：**技术方案 v1.0 已定稿；可运行纵向切片 + A/B/C 验收场景的关键补强已完成。**
 > 方案基线见 [技术方案](docs/technical-plan.md)，启动方式见 [开发说明](docs/development.md)。
+>
+> **本机默认运行态（不是论文实验态）**：Dense=`HashingEmbedder`；Reranker=`noop`；
+> LLM=`mock`；Parser=`PyMuPDF`；前端=静态单页。BGE-M3、BGE-Reranker、MinerU、
+> LangGraph、PDF.js 尚未启用或尚未实现。详见 [架构审计](docs/audit-2026-10-20.md)。
 
 ## 项目定位
 
 面向水产养殖专业知识查询，构建一个可更新、可追溯、可评测的 RAG Web 系统：
 
-- **混合检索**：BGE-M3 Dense + Qdrant BM25 → RRF → BGE-Reranker-v2-m3
-- **知识更新**：文档与版本分离，版本化索引，激活后异步清理旧版本
-- **可验证引用**：Source ID 映射、引用有效性校验、证据支持性评估、PDF 原文定位
-- **轻量工作流**：LangGraph 只负责路由、必要重试和证据不足分支
+- **混合检索（目标选型）**：BGE-M3 Dense + Qdrant BM25 → RRF → BGE-Reranker-v2-m3（当前 Dense/Reranker 为开发占位）
+- **知识更新**：文档与版本分离，版本化索引，激活后旧版本归档（自动清理尚未实现）
+- **可验证引用**：Source ID 映射、引用有效性校验、证据支持性评估、PDF 页码定位（bbox 高亮待接入）
+- **轻量工作流（目标）**：LangGraph 负责路由、必要重试和证据不足分支（当前为确定性路由，无 LangGraph）
 - **可复现实验**：检索消融、回答质量、引用可靠性、系统性能四组实验
 
 ## 当前骨架已验证
