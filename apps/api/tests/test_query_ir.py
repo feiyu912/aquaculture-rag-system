@@ -54,3 +54,23 @@ def test_explicit_category_is_preserved_but_not_inferred():
 def test_route_is_deterministic():
     ir = build_query_ir("中华绒螯蟹蜕壳期溶解氧偏低且摄食下降，应该检查什么？", OPTIONS)
     assert route_query(ir) == ir.strategy
+
+
+def test_growth_stage_aliases_are_canonicalized():
+    ir = build_query_ir("中华绒螯蟹生态育苗和扣蟹培育对水温和pH的要求", OPTIONS)
+    assert "生态育苗" in ir.growth_stage
+    assert "扣蟹培育" in ir.growth_stage
+    assert ir.water_parameters == ["酸碱度", "水温"]
+    assert build_query_ir("大眼幼体阶段溶解氧要求", OPTIONS).growth_stage == ["幼体"]
+
+
+def test_market_name_alias_becomes_species_filter():
+    ir = build_query_ir("河蟹养殖对溶解氧的要求", OPTIONS)
+    assert ir.species == ["中华绒螯蟹"]
+    assert ir.species_filter == "中华绒螯蟹"
+
+
+def test_disease_aliases_are_canonicalized():
+    ir = build_query_ir("河蟹黑鳃病和烂鳃病怎么处理", OPTIONS)
+    assert "黑鳃" in ir.diseases
+    assert "烂鳃" in ir.diseases

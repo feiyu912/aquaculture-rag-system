@@ -1,0 +1,133 @@
+[
+  {
+    "id": "P01",
+    "question": "中华绒螯蟹生态育苗和扣蟹培育对水温和pH的要求分别是什么？",
+    "expected": {
+      "intent": "complex",
+      "species": ["中华绒螯蟹"],
+      "growth_stage": ["生态育苗", "扣蟹培育"],
+      "water_parameters": ["水温", "酸碱度"],
+      "diseases": [],
+      "subquestions_min": 2,
+      "hard_filter": "中华绒螯蟹"
+    }
+  },
+  {
+    "id": "P02",
+    "question": "南美白对虾和中华绒螯蟹在盐度适应上有什么差别？",
+    "expected": {
+      "intent": "complex",
+      "species": ["中华绒螯蟹", "凡纳滨对虾"],
+      "growth_stage": [],
+      "water_parameters": ["盐度"],
+      "diseases": [],
+      "subquestions_min": 2,
+      "hard_filter": null
+    }
+  },
+  {
+    "id": "P03",
+    "question": "DB36 和 DB46 对溶解氧下限的要求是否一致？",
+    "expected": {
+      "intent": "complex",
+      "species": [],
+      "growth_stage": [],
+      "water_parameters": ["溶解氧"],
+      "diseases": [],
+      "subquestions_min": 2,
+      "hard_filter": null
+    }
+  },
+  {
+    "id": "P04",
+    "question": "扣蟹培育阶段氨氮和亚硝酸盐超标时，先换水还是增氧？",
+    "expected": {
+      "intent": "complex",
+      "species": [],
+      "growth_stage": ["扣蟹培育"],
+      "water_parameters": ["氨氮", "亚硝酸盐"],
+      "diseases": [],
+      "subquestions_min": 2,
+      "hard_filter": null
+    }
+  },
+  {
+    "id": "P05",
+    "question": "2026 年最新规范中，中华绒螯蟹育苗禁用哪些渔药？",
+    "expected": {
+      "intent": "regulation",
+      "species": ["中华绒螯蟹"],
+      "growth_stage": [],
+      "water_parameters": [],
+      "diseases": [],
+      "subquestions_min": 1,
+      "hard_filter": "中华绒螯蟹",
+      "requested_year": 2026
+    }
+  },
+  {
+    "id": "P06",
+    "question": "河蟹晚上浮头，第二天应该怎么处理？",
+    "expected": {
+      "intent": "complex",
+      "species": ["中华绒螯蟹"],
+      "growth_stage": [],
+      "water_parameters": [],
+      "diseases": ["浮头"],
+      "subquestions_min": 2,
+      "hard_filter": "中华绒螯蟹"
+    }
+  },
+  {
+    "id": "P07",
+    "question": "生态育苗池水盐度 16‰~23‰、水温低于 12℃ 时还能布苗吗？",
+    "expected": {
+      "intent": null,
+      "species": [],
+      "growth_stage": ["生态育苗"],
+      "water_parameters": ["盐度", "水温"],
+      "diseases": [],
+      "subquestions_min": 2,
+      "hard_filter": null
+    }
+  },
+  {
+    "id": "P08",
+    "question": "凡纳滨对虾养殖前期和中期的投喂与水质管理分别怎么做？",
+    "expected": {
+      "intent": "complex",
+      "species": ["凡纳滨对虾"],
+      "growth_stage": ["养殖前期", "养殖中期"],
+      "water_parameters": [],
+      "diseases": [],
+      "subquestions_min": 2,
+      "hard_filter": "凡纳滨对虾"
+    }
+  },
+  {
+    "id": "P09",
+    "question": "DB32 生态育苗的 pH 6.5~8.5 与 DB36 扣蟹培育的 pH 7.5~8.5 是否冲突？",
+    "expected": {
+      "intent": "complex",
+      "species": [],
+      "growth_stage": ["生态育苗", "扣蟹培育"],
+      "water_parameters": ["酸碱度"],
+      "diseases": [],
+      "subquestions_min": 2,
+      "hard_filter": null
+    }
+  },
+  {
+    "id": "P10",
+    "question": "池塘氨氮正常但溶解氧偏低，需要马上增氧吗？",
+    "expected": {
+      "intent": null,
+      "species": [],
+      "growth_stage": [],
+      "water_parameters": ["氨氮", "溶解氧"],
+      "diseases": [],
+      "subquestions_min": 1,
+      "hard_filter": null
+    }
+  }
+]

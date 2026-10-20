@@ -14,7 +14,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.species import GENERAL_SPECIES, parse_species
+from app.species import GENERAL_SPECIES, SPECIES_ALIASES, parse_species
 
 Intent = Literal["fact", "complex", "regulation", "calculation"]
 Strategy = Literal["simple", "semantic_expansion", "multi_hop", "regulation", "calculation"]
@@ -48,6 +48,22 @@ GROWTH_STAGES = (
     "养殖前期",
     "养殖中期",
     "养殖后期",
+    "生态育苗",
+    "扣蟹培育",
+    "亲本",
+    "幼蟹",
+    "成蟹",
+)
+GROWTH_ALIASES = (
+    ("生态育苗", "生态育苗"),
+    ("扣蟹培育", "扣蟹培育"),
+    ("大眼幼体", "幼体"),
+    ("蟹苗", "苗种"),
+    ("虾苗", "苗种"),
+    ("亲蟹", "亲本"),
+    ("抱卵蟹", "亲本"),
+    ("幼蟹", "幼蟹"),
+    ("成蟹", "成蟹"),
 )
 DISEASE_TERMS = (
     "病害",
@@ -62,6 +78,13 @@ DISEASE_TERMS = (
     "应激",
     "死亡",
     "感染",
+)
+DISEASE_ALIASES = (
+    ("黑鳃病", "黑鳃"),
+    ("烂鳃病", "烂鳃"),
+    ("白斑病", "白斑"),
+    ("肝胰腺坏死", "肝胰腺"),
+    ("摄食量下降", "摄食下降"),
 )
 REGULATION_TERMS = (
     "规范",
@@ -108,6 +131,7 @@ class QueryIR(BaseModel):
     planner_assumptions: list[str] = Field(default_factory=list)
     planner_constraints: list[dict] = Field(default_factory=list)
     planner_subquestions: list[str] = Field(default_factory=list)
+    planner_tasks: list[dict] = Field(default_factory=list)
     rewritten_query: str | None = None
 
 
@@ -131,6 +155,12 @@ def _species_mentions(question: str, options: list[str]) -> tuple[list[str], lis
     """
     known = sorted({s for s in options if s and s != GENERAL_SPECIES}, key=len, reverse=True)
     exact = [s for s in known if s in question]
+    aliases = [
+        canonical
+        for alias, canonical in SPECIES_ALIASES.items()
+        if canonical in known and alias in question
+    ]
+    exact = list(dict.fromkeys([*exact, *aliases]))
     if exact:
         # Drop a shorter overlap such as "对虾" when "凡纳滨对虾" matched.
         return exact, []
@@ -164,6 +194,9 @@ def build_query_ir(
     species = [s for s in species if s != GENERAL_SPECIES]
 
     stages = _contains_any(normalized, GROWTH_STAGES)
+    for alias, canonical in GROWTH_ALIASES:
+        if alias in normalized and canonical not in stages:
+            stages.append(canonical)
     parameters = _contains_any(normalized, WATER_PARAMETERS)
     water_alias_used = False
     for alias, canonical in WATER_ALIASES:
@@ -180,6 +213,9 @@ def build_query_ir(
             canonical_parameters.append(value)
     parameters = canonical_parameters
     diseases = _contains_any(normalized, DISEASE_TERMS)
+    for alias, canonical in DISEASE_ALIASES:
+        if alias in normalized and canonical not in diseases:
+            diseases.append(canonical)
     regulation_hits = _contains_any(normalized, REGULATION_TERMS)
     calculation_hits = _contains_any(normalized, CALCULATION_TERMS)
     year_match = YEAR_RE.search(normalized)

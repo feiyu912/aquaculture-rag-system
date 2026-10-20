@@ -32,3 +32,13 @@ def test_detect_ambiguous_species_returns_none():
 def test_detect_unique_suffix_alias():
     options = [GENERAL_SPECIES, "凡纳滨对虾"]
     assert detect_species("对虾养殖的盐度", options) == "凡纳滨对虾"
+
+
+def test_market_names_are_canonicalized():
+    assert parse_species("河蟹") == ["中华绒螯蟹"]
+    assert parse_species("南美白对虾") == ["凡纳滨对虾"]
+
+
+def test_detect_market_name_alias():
+    options = [GENERAL_SPECIES, "中华绒螯蟹", "凡纳滨对虾"]
+    assert detect_species("河蟹晚上浮头怎么办", options) == "中华绒螯蟹"

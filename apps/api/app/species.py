@@ -6,6 +6,22 @@ GENERAL_SPECIES = "通用"
 MAX_SPECIES = 20
 SPECIES_SPLIT_RE = re.compile(r"[,，、;；/|]+")
 GENERAL_ALIASES = {"通用", "全部", "不限", "通用知识", "general", "all"}
+# Common aquaculture market names.  They are only canonicalized; the caller
+# still decides whether the canonical species is a hard filter.
+SPECIES_ALIASES = {
+    "河蟹": "中华绒螯蟹",
+    "绒螯蟹": "中华绒螯蟹",
+    "中华绒螯蟹": "中华绒螯蟹",
+    "南美白对虾": "凡纳滨对虾",
+    "白对虾": "凡纳滨对虾",
+    "南美白": "凡纳滨对虾",
+    "凡纳滨对虾": "凡纳滨对虾",
+}
+
+
+def canonical_species(value: str) -> str:
+    cleaned = _clean(value)
+    return SPECIES_ALIASES.get(cleaned.lower(), SPECIES_ALIASES.get(cleaned, cleaned))
 
 
 def _clean(value: str) -> str:
@@ -29,6 +45,8 @@ def parse_species(raw: str | None) -> list[str]:
             continue
         if value.lower() in GENERAL_ALIASES:
             value = GENERAL_SPECIES
+        else:
+            value = canonical_species(value)
         if len(value) > 32:
             raise ValueError("品种名称过长")
         if value not in seen:
@@ -67,6 +85,10 @@ def detect_species(question: str, options: list[str]) -> str | None:
         if not option:
             continue
         if option.lower() in text:
+            hits.append(option)
+            continue
+        aliases = [alias for alias, canonical in SPECIES_ALIASES.items() if canonical == option]
+        if any(alias.lower() in text for alias in aliases):
             hits.append(option)
             continue
         # "对虾" should select "凡纳滨对虾" when that is the only known species.

@@ -70,6 +70,7 @@ class Settings(BaseSettings):
     enable_query_ir: bool = True
     enable_llm_planner: bool = False
     planner_max_tokens: int = 2000
+    planner_timeout_s: float = 90.0
     planner_temperature: float = 0.0
     enable_claim_verification: bool = True
     enable_semantic_claims: bool = False
@@ -84,7 +85,7 @@ class Settings(BaseSettings):
     graph_max_related: int = 12
     graph_bidirectional: bool = True
     enable_query_decomposition: bool = False
-    max_query_variants: int = 4
+    max_query_variants: int = 6
     enable_adaptive_routing: bool = False
     max_targeted_retrieval: int = 1
 

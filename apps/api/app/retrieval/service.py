@@ -17,7 +17,7 @@ from app.models import KbChunk, KbDocument, KbDocumentVersion
 from app.query.decompose import decompose_question
 from app.query.expand import alias_variants
 from app.query.ir import QueryIR, build_query_ir
-from app.query.planner import LLMQueryPlanner
+from app.query.planner import LLMQueryPlanner, should_use_llm_planner
 from app.query.router import select_modules
 from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, tokenize
 from app.retrieval.index_manifest import check_manifest
@@ -225,7 +225,16 @@ async def retrieve(
             explicit_category=category,
         )
         if settings.enable_llm_planner and _attempt == 0:
-            if planner is None:
+            if not should_use_llm_planner(query_ir):
+                planner_trace = {
+                    "enabled": True,
+                    "used_llm": False,
+                    "error": None,
+                    "skipped": "simple_rule_ir",
+                    "duration_ms": 0.0,
+                    "plan": None,
+                }
+            elif planner is None:
                 planner_trace = {
                     "enabled": True,
                     "used_llm": False,
@@ -379,13 +388,21 @@ async def retrieve(
 
     query_variants = [query_text]
     if query_ir is not None:
+        rewritten = (query_ir.rewritten_query or "").strip()
+        if rewritten and rewritten not in query_variants:
+            query_variants.append(rewritten)
+        for task in query_ir.planner_tasks:
+            inherited = str(task.get("effective_query") or "").strip()
+            if inherited and inherited not in query_variants:
+                query_variants.append(inherited)
+        if not query_ir.planner_tasks:
+            for variant in query_ir.planner_subquestions:
+                inherited = _inherit_constraints(variant, query_ir)
+                if inherited not in query_variants:
+                    query_variants.append(inherited)
         for variant in alias_variants(question, query_ir):
             if variant not in query_variants:
                 query_variants.append(variant)
-        for variant in query_ir.planner_subquestions:
-            inherited = _inherit_constraints(variant, query_ir)
-            if inherited not in query_variants:
-                query_variants.append(inherited)
     if modules["decomposition"] and query_ir is not None:
         for variant in decompose_question(question, query_ir):
             if variant not in query_variants:

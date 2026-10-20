@@ -235,7 +235,7 @@ data: <单行 JSON>
 ```
 
 - `sufficient=false` 时 `sources` 通常为 `[]`，但事件仍会发送。
-- `llm_planner` 在规则模式为 `null`；开启后包含 `used_llm`、`error`、`attempts`、`plan`、`subquestions`。
+- `llm_planner` 在规则模式为 `null`；开启后包含 `used_llm`、`error`、`attempts`、`plan`、`subquestions`、`tasks`、`constraints`、`assumptions`。单 facet 事实问题会被跳过并带 `skipped=simple_rule_ir`，以避免不必要的模型延迟。
 - `query_ir` 可能为 `null`（Query IR 关闭时）。
 
 #### 2.5.5 `sources`
@@ -856,7 +856,7 @@ GET /api/health
 | planner_assumptions | 模型推断但未确认的假设 |
 | planner_constraints | 每条约束的 `source`/`strength`/`accepted_as_hard`/`filter_applied`/`scope` |
 | planner_subquestions | 规划出的子问题文本（向后兼容） |
-| planner_tasks | 结构化检索任务：`question`/`facet`/`inherits`/`inherited_constraints`/`applicable_constraints`/`effective_query`/`soft_constraints` |
+| planner_tasks | 结构化检索任务：`question`/`facet`/`inherits`/`inherited_constraints`/`applicable_constraints`/`effective_query`/`soft_constraints`/`unverified_species_in_text` |
 | rewritten_query | 保留原意的检索改写（可为空） |
 
 `status.llm_planner`：
@@ -877,7 +877,8 @@ GET /api/health
       "question": "…",
       "facet": "水质",
       "inherits": ["species", "growth_stage"],
-      "inherited_constraints": {"species": ["中华绒螯蟹"], "growth_stage": ["扣蟹培育"]},
+      "inherited_constraints": {"species": ["中华绒螯蟹"]},
+      "applicable_constraints": {"species": ["中华绒螯蟹"], "growth_stage": ["扣蟹培育"]},
       "effective_query": "中华绒螯蟹 扣蟹培育 …",
       "soft_constraints": [],
       "source": "llm"
@@ -932,4 +933,4 @@ GET /api/health
 |---|---|
 | 2026-10-20 | 初版；按真实 FastAPI/OpenAPI 整理；新增 `GET /api/debug/stats`、文档 source 元数据字段、`chunk_id`/`location`/`bbox` 顶层字段；文档列表支持 `q/status/limit/offset` |
 | 2026-10-20b | 复核真实响应：补充 `/api/health` 的 `max_sources`/`rerank_top_k`；修正 PDF 原文件接口已支持 Range/206（不是“无特殊处理”）；补充 18 路由回归测试说明 |
-| 2026-10-20c | Planner 结构化任务：新增 `planner_tasks`，记录子问题 facet/继承字段/effective_query；明确非 species hard 约束降级规则 |
+| 2026-10-20c | Planner 结构化任务：新增 `planner_tasks`，记录子问题 facet/继承字段/effective_query；明确非 species hard 约束降级规则；补充 simple 跳过与 `applicable_constraints` |
