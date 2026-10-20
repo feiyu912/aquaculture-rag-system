@@ -18,6 +18,7 @@ export function SourcePanelDrawer({
   onSelect,
   onOpenPdf,
   onClose,
+  maxSources,
 }: {
   open: boolean;
   sources: Source[];
@@ -25,7 +26,10 @@ export function SourcePanelDrawer({
   onSelect: (index: number) => void;
   onOpenPdf?: (source: Source) => void;
   onClose: () => void;
+  maxSources?: number;
 }) {
+  const atCap = typeof maxSources === "number" && sources.length >= maxSources;
+
   return (
     <div
       className={`fixed inset-0 z-40 xl:hidden ${open ? "pointer-events-auto" : "pointer-events-none"}`}

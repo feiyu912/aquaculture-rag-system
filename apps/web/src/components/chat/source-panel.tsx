@@ -1,10 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { PanelRightClose } from "lucide-react";
+import { Info, PanelRightClose } from "lucide-react";
 
 import { SourceCard } from "@/components/chat/source-card";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Source } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +19,7 @@ export function SourcePanel({
   onSelect,
   onOpenPdf,
   onClose,
+  maxSources,
   className,
 }: {
   sources: Source[];
@@ -21,9 +27,12 @@ export function SourcePanel({
   onSelect: (index: number) => void;
   onOpenPdf?: (source: Source) => void;
   onClose?: () => void;
+  /** Server-side cap on citations; shown when it is actually reached. */
+  maxSources?: number;
   className?: string;
 }) {
   const cardRefs = React.useRef(new Map<number, HTMLElement>());
+  const atCap = typeof maxSources === "number" && sources.length >= maxSources;
 
   React.useEffect(() => {
     if (selectedIndex === null) return;
@@ -42,12 +51,26 @@ export function SourcePanel({
         <span className="text-[13px] font-semibold text-foreground">引用来源</span>
         <span className="rounded-full bg-surface-inset px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
           {sources.length}
+          {maxSources ? ` / ${maxSources}` : ""}
         </span>
+        {atCap && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-warning/25 bg-warning-soft px-1.5 py-0.5 text-[10.5px] font-medium text-warning">
+                <Info className="size-3" />
+                已达引用上限
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[220px]">
+              服务端每次最多返回 {maxSources} 条来源，由后端 MAX_SOURCES 控制；提高上限会同时增加模型上下文与回答时延。
+            </TooltipContent>
+          </Tooltip>
+        )}
         {onClose && (
           <Button
             variant="ghost"
             size="icon-sm"
-            className="ml-auto"
+            className={atCap ? "" : "ml-auto"}
             onClick={onClose}
             aria-label="收起引用面板"
           >

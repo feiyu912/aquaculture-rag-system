@@ -60,4 +60,7 @@ async def health(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
         "embedding_model": settings.embedding_model,
         "embedding_device": settings.embedding_device,
         "reranker_model": settings.reranker_model,
+        # Retrieval limits the UI should surface instead of guessing.
+        "max_sources": settings.max_sources,
+        "rerank_top_k": settings.rerank_top_k,
     }

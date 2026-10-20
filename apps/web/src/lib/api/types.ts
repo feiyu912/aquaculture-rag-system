@@ -18,6 +18,9 @@ export interface HealthResponse {
   embedding_model: string;
   embedding_device: string;
   reranker_model: string;
+  /** Maximum number of sources handed to the model and persisted as citations. */
+  max_sources?: number;
+  rerank_top_k?: number;
 }
 
 /** Canonical bbox snapshot produced by `PyMuPDFParser._canonical_bbox`. */
