@@ -3,6 +3,9 @@ from __future__ import annotations
 import threading
 from typing import Protocol
 
+from app.config import settings
+from app.runtime.mps_lock import exclusive_mps_lock
+
 
 class Reranker(Protocol):
     name: str
@@ -44,6 +47,7 @@ class BGEReranker:
         self.name = name or "BAAI/bge-reranker-v2-m3"
         self.device = resolve_device(device)
         self._lock = threading.Lock()
+        self._mps_lock_path = settings.mps_lock_path if settings.mps_lock_enabled else None
         self._model = FlagReranker(
             model_name_or_path,
             use_fp16=use_fp16,
@@ -56,7 +60,7 @@ class BGEReranker:
         if not candidates:
             return []
         pairs = [[query, text] for _, text in candidates]
-        with self._lock:
+        with self._lock, exclusive_mps_lock(self._mps_lock_path if self.device == "mps" else None):
             scores = self._model.compute_score(pairs, normalize=True)
         if isinstance(scores, float):
             scores = [scores]

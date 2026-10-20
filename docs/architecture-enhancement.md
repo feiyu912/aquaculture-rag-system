@@ -19,6 +19,8 @@
 | 10 | 去重 / 多样性 | 部分 | parent 聚合、RRF | 没有显式 MMR / section diversity 控制 |
 | 11 | 证据完整性 / 补充检索 | ✅ 可开关 | `ENABLE_EVIDENCE_REQUIREMENTS`、`ENABLE_TARGETED_RETRIEVAL` | facet 覆盖检查 + 最多一次定向补检；默认关闭 |
 | 12 | 声明级引用验证 | ✅ v0 | `generation/claims.py` | 句子级 `[S1]` 映射 + 词面支持性；**不是 NLI** |
+| 13 | 软删除向量清理 | ✅ 基础 | `maintenance/cleanup.py`、ARQ task、CLI | 删除后 best-effort 异步清理派生 points 并刷新 manifest；DB/原文件保留，归档 retention 未做 |
+| 14 | MPS 多进程并发 | ✅ 基础 | `runtime/mps_lock.py` | 同机 `fcntl` 文件锁串行化 MPS 推理；不减少每进程模型内存 |
 
 ## 2. 目标链路（Phase 2/3 完成后）
 
@@ -67,7 +69,7 @@ Query IR → species/category hard filter → Dense + BM25 → RRF
 - Contextual Retrieval：`context_text` 入库，索引开关，引用仍用原文。
 - 声明级引用检查 v0：`[S1]` 映射、状态、summary 持久化。
 - 检索 Trace：`GET /api/debug/query-logs/{request_id}`。
-- 回归：96 个默认单元测试（另 2 个真实 BGE 集成测试）、A/B/C smoke、四模式评测；图和补检默认关闭。
+- 回归：103 个默认单元测试（另 2 个真实 BGE 集成测试）、A/B/C smoke、四模式评测；图和补检默认关闭。
 
 ### Phase 2b（下一步）
 

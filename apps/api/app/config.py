@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     qdrant_vector_size: int = 1024
     embedding_model: str = "BAAI/bge-m3"
     embedding_device: str = "auto"  # auto | mps | cuda | cpu
+    mps_lock_enabled: bool = True
+    mps_lock_path: str = "/tmp/aquaculture_rag_mps.lock"
     embedding_use_fp16: bool = False
     embedding_batch_size: int = 8
     embedding_max_length: int = 1024

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -42,6 +43,8 @@ from app.schemas import (
     VersionOut,
 )
 from app.species import GENERAL_SPECIES, normalize_species_list, parse_species
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["documents"])
 
@@ -441,31 +444,24 @@ async def list_document_citations(
         raise HTTPException(status_code=404, detail="文档不存在")
 
     rows = (
-        (
-            await db.execute(
-                select(ChatCitation, ChatMessage, ChatSession)
-                .join(ChatMessage, ChatMessage.id == ChatCitation.message_id)
-                .join(ChatSession, ChatSession.id == ChatMessage.session_id)
-                .where(
-                    ChatCitation.document_id == document_id,
-                    ChatMessage.role == "assistant",
-                )
-                .order_by(ChatCitation.created_at.desc())
-                .limit(max(1, min(limit, 200)))
+        await db.execute(
+            select(ChatCitation, ChatMessage, ChatSession)
+            .join(ChatMessage, ChatMessage.id == ChatCitation.message_id)
+            .join(ChatSession, ChatSession.id == ChatMessage.session_id)
+            .where(
+                ChatCitation.document_id == document_id,
+                ChatMessage.role == "assistant",
             )
+            .order_by(ChatCitation.created_at.desc())
+            .limit(max(1, min(limit, 200)))
         )
-        .all()
-    )
+    ).all()
     if not rows:
         return []
 
     version_ids = {row[0].document_version_id for row in rows}
     versions = (
-        (
-            await db.execute(
-                select(KbDocumentVersion).where(KbDocumentVersion.id.in_(version_ids))
-            )
-        )
+        (await db.execute(select(KbDocumentVersion).where(KbDocumentVersion.id.in_(version_ids))))
         .scalars()
         .all()
         if version_ids
@@ -522,7 +518,9 @@ async def get_document(
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(document_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> None:
+async def delete_document(
+    request: Request, document_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+) -> None:
     doc = await db.get(KbDocument, document_id)
     if doc is None:
         raise HTTPException(status_code=404, detail="文档不存在")
@@ -561,6 +559,19 @@ async def delete_document(document_id: uuid.UUID, db: AsyncSession = Depends(get
         job.error_message = "文档已删除，任务取消"
         job.finished_at = datetime.now(UTC)
     await db.commit()
+
+    # Vector cleanup is derived work: the DB rows/files stay for retention and
+    # audit. Enqueue best-effort; a missing queue must not turn a successful
+    # soft-delete into an HTTP error. The CLI can always finish the cleanup.
+    pool = getattr(request.app.state, "arq_pool", None)
+    if pool is not None:
+        try:
+            await pool.enqueue_job(
+                "cleanup_deleted_vectors",
+                _job_id=f"cleanup:{document_id}:{uuid.uuid4().hex[:8]}",
+            )
+        except Exception as exc:  # pragma: no cover - depends on Redis failure
+            logger.warning("failed to enqueue cleanup for %s: %s", document_id, exc)
 
 
 @router.get("/documents/{document_id}/file")

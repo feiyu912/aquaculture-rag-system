@@ -660,7 +660,8 @@ DELETE /api/documents/{document_id}
 - 文档 `status=deleted`，`current_version_id=null`
 - 非 failed 版本变为 `archived`
 - 排队/运行中的任务变为 `cancelled`
-- **不立即删除 Qdrant 向量**；用 `scripts/purge_deleted_vectors.py` 清理（默认 dry-run，`--apply` 后刷新 manifest 的 active 文档/点数；目前不是 API 内自动任务）。
+- **不立即删除 Qdrant 向量**；删除成功后 best-effort 向 ARQ 入队 `cleanup_deleted_vectors`，由 worker 清理孤儿 points 并刷新 manifest 的 active 文档/点数。
+- Redis/ARQ 不可用时删除仍返回 `204`（向量清理不阻塞软删除）；可运行 `scripts/purge_deleted_vectors.py --apply` 兜底，默认 dry-run。
 - 已删除文档不再出现在列表/详情/文件接口；历史引用仍可读消息
 
 404：不存在。

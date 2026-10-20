@@ -9,6 +9,7 @@ from sqlalchemy import and_, or_, select
 from app.config import settings
 from app.db import SessionLocal
 from app.ingestion.pipeline import ingest_version
+from app.maintenance.cleanup import purge_deleted_vectors
 from app.models import KbDocumentVersion, KbIngestJob
 from app.retrieval.vector_store import ensure_collection
 
@@ -69,6 +70,18 @@ async def recover_stale_jobs(ctx: dict) -> int:
     return len(jobs)
 
 
+async def cleanup_deleted_vectors(ctx: dict) -> dict:
+    """Best-effort vector cleanup after a document is soft-deleted.
+
+    This is intentionally idempotent and safe to retry: it only looks at
+    documents whose status is already ``deleted`` and removes their derived
+    points.  The manual CLI remains the fallback if Redis/ARQ is unavailable.
+    """
+    result = await purge_deleted_vectors(apply=True)
+    logger.info("cleanup_deleted_vectors finished: %s", result)
+    return result
+
+
 async def startup(ctx: dict) -> None:
     ensure_collection()
     ctx["pipeline_version"] = "v1"
@@ -81,7 +94,7 @@ async def shutdown(ctx: dict) -> None:
 
 
 class WorkerSettings:
-    functions = [ingest_version]
+    functions = [ingest_version, cleanup_deleted_vectors]
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     queue_name = settings.arq_queue
     on_startup = startup

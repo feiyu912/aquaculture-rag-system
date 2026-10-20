@@ -196,7 +196,7 @@ uv run python ../../scripts/check_llm.py --generate
 ```bash
 cd apps/api
 uv run pytest -q
-# 96 passed, 2 skipped（BGE 集成测试默认跳过）
+# 103 passed, 2 skipped（BGE 集成测试默认跳过）
 uv run ruff check app tests ../../scripts
 ```
 
@@ -217,7 +217,9 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - 独立 collection 重建、manifest、查询期守卫、点数对账。
 - BM25 分词/权重与 Qdrant IDF 配置。
 - 三份真实地方标准的上传、解析、版本、页码引用、Qdrant 检索。
-- 96 个默认测试通过；2 个真实 BGE 集成测试通过。
+- 软删除后的异步向量清理：真实上传 1 页测试文档（1 个 point），`DELETE` 返回 204，worker 将其 points 从 1 清到 0，manifest 保持 6 文档/190 points。
+- 同机 MPS 文件锁：BGE-M3 在锁内完成真实 1024 维推理；锁路径 `/tmp/aquaculture_rag_mps.lock`。
+- 103 个默认测试通过；2 个真实 BGE 集成测试通过。
 
 **未验证 / 不足**
 
@@ -227,7 +229,24 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - PDF.js bbox 高亮；当前只有页码跳转和 bbox 数据。
 - MinerU 对扫描件/表格/双栏的收益。
 - Contextual Retrieval 在真实数据上的收益：已做两条 query 的小样本检查，结果混合/偏负，尚不能做同 qrels 消融。
-- 旧版本/文档的完整保留与清理任务。
+- 多进程 MPS 的内存占用未压测；文件锁只串行推理，不减少每个进程各自的模型内存。
+- 旧版本/归档版本的保留策略与自动 retention 仍未实现（当前只清理软删除文档的派生向量）。
+
+### 软删除异步清理与 MPS 锁 smoke
+
+软删除链路：
+
+1. 上传 1 页、1 个 child chunk 的临时 PDF，Qdrant 该版本点数 = 1。
+2. `DELETE /api/documents/{id}` 返回 204，DB 行与原始 PDF 保留，版本归档。
+3. API best-effort 入队 `cleanup_deleted_vectors`；worker 调用 `purge_deleted_vectors(apply=True)`，该版本点数变为 0。
+4. worker 刷新 manifest，active 文档/点数仍为 6/190，没有误删 active 文档。
+
+MPS 锁：
+
+- `BGEM3Embedder`/`BGEReranker` 原先只有线程锁；多个 uvicorn/ARQ 进程仍可能同时提交 Metal 工作。
+- 新增 `app/runtime/mps_lock.py`，在 `device=mps` 且 `MPS_LOCK_ENABLED=true` 时用 `fcntl.flock` 跨进程串行化推理。
+- 新增测试覆盖锁创建、线程串行化、异常透传、禁用时 no-op；真实 BGE-M3 在锁内完成一次 1024 维 embed。
+- **限制**：锁不减少内存；每个进程仍各有一份模型。生产部署仍建议 API/worker 各一个进程，或把推理集中到专用服务。
 
 ## 8. 下一步
 

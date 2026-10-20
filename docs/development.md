@@ -67,7 +67,7 @@ node scripts/review.mjs "/chat" --w 390 --h 844 --out chat-mobile --dark
 | PDF 解析 | ✅（开发用） | PyMuPDF 适配器；MinerU 适配器留接口 |
 | 坐标归一化 | ✅ | PDF points、左下原点、CropBox、未旋转 |
 | 结构感知 + Parent-Child 切分 | ✅ | 标题路径、表格独立父块、跨页 location |
-| Dense 检索 | ✅ | `BAAI/bge-m3`（FlagEmbedding，MPS/fp16）；`HashingEmbedder` 仅保留离线回退 |
+| Dense 检索 | ✅ | `BAAI/bge-m3`（FlagEmbedding，MPS/fp16）；同机多进程用 `MPS_LOCK_PATH` 文件锁串行化；`HashingEmbedder` 仅保留离线回退 |
 | BM25 | ✅ | 应用侧 BM25 词项权重 + Qdrant 稀疏向量 IDF |
 | RRF | ✅ | 应用侧融合，保留两路排名日志 |
 | Reranker | ✅ | `BAAI/bge-reranker-v2-m3` 本地权重真实重排；`NoopReranker` 仅消融 |
@@ -233,7 +233,7 @@ uv run pytest -q
 uv run ruff check app tests ../../scripts
 ```
 
-当前默认 **96 个单元测试**（另有 2 个真实 BGE 集成测试默认跳过）覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词/权重、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/多跳扩展、证据要求/定向补检、自适应路由守卫、消融指标与模块选择、别名扩展、LLM Planner 校验/回退。
+当前默认 **103 个单元测试**（另有 2 个真实 BGE 集成测试默认跳过）覆盖：坐标归一化、切分、表格父块、RRF、BM25 分词/权重、引用解析与覆盖率、证据门槛、品种解析/识别、引用支持性接口、检索模式、示例 PDF 解析、Query IR、问题分解、声明级检查、Contextual text、图实体/多跳扩展、证据要求/定向补检、自适应路由守卫、消融指标与模块选择、别名扩展、LLM Planner 校验/回退。
 
 真实模型集成测试：
 
@@ -255,12 +255,14 @@ uv run python ../../scripts/smoke_test.py
 uv run python ../../scripts/check_index.py
 ```
 
-清理 soft-deleted 文档遗留的 Qdrant 向量（默认 dry-run；不删除 PostgreSQL 行和原始 PDF）：
+`DELETE /api/documents/{id}` 成功后会自动 best-effort 入队 `cleanup_deleted_vectors`；Redis/ARQ 不可用时仍返回 204，不阻塞软删除。手工兜底（默认 dry-run；不删除 PostgreSQL 行和原始 PDF）：
 
 ```bash
 uv run python ../../scripts/purge_deleted_vectors.py
 uv run python ../../scripts/purge_deleted_vectors.py --apply
 ```
+
+`--apply` 和 worker 都会刷新 active 文档/点数的 manifest。
 
 批量评测（经 API，四种检索模式）：
 
@@ -351,6 +353,8 @@ uv sync --extra bge
 EMBEDDING_MODEL=BAAI/bge-m3
 EMBEDDING_DEVICE=mps          # 或 cuda / cpu / auto
 EMBEDDING_USE_FP16=true
+MPS_LOCK_ENABLED=true         # 同机多进程串行化 MPS 推理
+MPS_LOCK_PATH=/tmp/aquaculture_rag_mps.lock
 QDRANT_COLLECTION=kb_chunks_bge_m3_v1
 INDEX_MANIFEST_REQUIRED=true
 RERANKER_MODEL=BAAI/bge-reranker-v2-m3

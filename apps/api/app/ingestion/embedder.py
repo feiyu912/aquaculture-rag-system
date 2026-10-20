@@ -7,6 +7,9 @@ import threading
 from functools import lru_cache
 from typing import Protocol
 
+from app.config import settings
+from app.runtime.mps_lock import exclusive_mps_lock
+
 CJK_RUN_RE = re.compile(r"[\u4e00-\u9fff]+")
 WORD_RE = re.compile(r"[a-z0-9_]+")
 
@@ -106,6 +109,7 @@ class BGEM3Embedder:
         # MPS/CUDA inference is not safe under concurrent calls from ARQ jobs.
         # Serialize here so multiple ingestions share one model without racing.
         self._lock = threading.Lock()
+        self._mps_lock_path = settings.mps_lock_path if settings.mps_lock_enabled else None
         self._model = BGEM3FlagModel(
             model_name,
             use_fp16=use_fp16,
@@ -115,7 +119,7 @@ class BGEM3Embedder:
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        with self._lock:
+        with self._lock, exclusive_mps_lock(self._mps_lock_path if self.device == "mps" else None):
             result = self._model.encode(
                 texts,
                 batch_size=self.batch_size,
