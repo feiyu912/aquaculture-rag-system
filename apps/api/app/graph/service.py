@@ -56,6 +56,8 @@ class GraphExpansion:
     seed_terms: list[str]
     expanded_terms: list[str]
     relation_trace: list[dict]
+    max_hops: int = 1
+    bidirectional: bool = False
 
     def as_dict(self) -> dict:
         return {
@@ -64,6 +66,8 @@ class GraphExpansion:
             "seed_terms": self.seed_terms,
             "expanded_terms": self.expanded_terms,
             "relation_trace": self.relation_trace,
+            "max_hops": self.max_hops,
+            "bidirectional": self.bidirectional,
         }
 
 
@@ -119,39 +123,89 @@ def mention_entities(text: str, graph: GraphData) -> dict[uuid.UUID, int]:
     return counts
 
 
-def expand_entities(question: str, graph: GraphData, max_related: int = 12) -> GraphExpansion:
+def expand_entities(
+    question: str,
+    graph: GraphData,
+    max_related: int = 12,
+    *,
+    max_hops: int = 2,
+    bidirectional: bool = True,
+) -> GraphExpansion:
+    """Expand verified graph relations up to ``max_hops`` with a path trace.
+
+    The graph is intentionally small and only contains human-reviewed edges.
+    Expansion is bounded both by ``max_related`` and by ``max_hops``; a path is
+    recorded for every newly reached entity so the trace can be audited.  When
+    ``bidirectional`` is true, reverse traversal is allowed (e.g. 浮头 -> 溶解氧
+    -> 增氧), which is necessary for management questions expressed from the
+    symptom side.
+    """
+    if max_hops < 1:
+        raise ValueError("max_hops must be >= 1")
     mentions = mention_entities(question, graph)
     seed_ids = list(mentions)
     expanded = set(seed_ids)
-    trace: list[dict] = []
+    adjacency: dict[uuid.UUID, list[tuple[uuid.UUID, str, str]]] = {}
     for relation in graph.relations:
-        if relation.source_id in seed_ids and relation.target_id not in expanded:
-            expanded.add(relation.target_id)
-            trace.append(
-                {
-                    "source": graph.entities[relation.source_id].name
-                    if relation.source_id in graph.entities
-                    else str(relation.source_id),
-                    "target": graph.entities[relation.target_id].name
-                    if relation.target_id in graph.entities
-                    else str(relation.target_id),
-                    "relation_type": relation.relation_type,
-                }
+        if relation.source_id not in graph.entities or relation.target_id not in graph.entities:
+            continue
+        adjacency.setdefault(relation.source_id, []).append(
+            (relation.target_id, relation.relation_type, "forward")
+        )
+        if bidirectional:
+            adjacency.setdefault(relation.target_id, []).append(
+                (relation.source_id, relation.relation_type, "reverse")
             )
-        if len(expanded) >= len(seed_ids) + max_related:
+
+    def name(entity_id: uuid.UUID) -> str:
+        return graph.entities[entity_id].name if entity_id in graph.entities else str(entity_id)
+
+    paths: dict[uuid.UUID, list[uuid.UUID]] = {item: [item] for item in seed_ids}
+    trace: list[dict] = []
+    frontier = list(seed_ids)
+    for hop in range(1, max_hops + 1):
+        next_frontier: list[uuid.UUID] = []
+        for source_id in frontier:
+            for target_id, relation_type, direction in adjacency.get(source_id, []):
+                if target_id in expanded:
+                    continue
+                expanded.add(target_id)
+                path = [*paths[source_id], target_id]
+                paths[target_id] = path
+                trace.append(
+                    {
+                        "source": name(source_id),
+                        "target": name(target_id),
+                        "relation_type": relation_type,
+                        "direction": direction,
+                        "hop": hop,
+                        "path": [name(item) for item in path],
+                        "path_entity_ids": [str(item) for item in path],
+                    }
+                )
+                next_frontier.append(target_id)
+                if len(expanded) >= len(seed_ids) + max_related:
+                    break
+            if len(expanded) >= len(seed_ids) + max_related:
+                break
+        frontier = next_frontier
+        if not frontier or len(expanded) >= len(seed_ids) + max_related:
             break
+
     seed_terms = [graph.entities[item].name for item in seed_ids if item in graph.entities]
-    expanded_terms = [
+    expanded_terms = sorted(
         graph.entities[item].name
         for item in expanded
         if item in graph.entities and item not in seed_ids
-    ]
+    )
     return GraphExpansion(
         seed_entity_ids=seed_ids,
         expanded_entity_ids=sorted(expanded, key=lambda item: str(item)),
         seed_terms=seed_terms,
         expanded_terms=expanded_terms,
         relation_trace=trace,
+        max_hops=max_hops,
+        bidirectional=bidirectional,
     )
 
 

@@ -356,7 +356,13 @@ async def retrieve(
         graph_started = time.perf_counter()
         graph = await load_graph(db)
         if graph.entities:
-            graph_expansion = expand_entities(query_text, graph)
+            graph_expansion = expand_entities(
+                query_text,
+                graph,
+                max_related=settings.graph_max_related,
+                max_hops=settings.graph_max_hops,
+                bidirectional=settings.graph_bidirectional,
+            )
             if graph_expansion.expanded_entity_ids:
                 graph_ids = [
                     str(chunk_id)
@@ -833,6 +839,9 @@ def _config(
         "graph_expansion": graph_expansion,
         "graph_top_k": settings.graph_top_k,
         "graph_rrf_weight": settings.graph_rrf_weight,
+        "graph_max_hops": settings.graph_max_hops,
+        "graph_max_related": settings.graph_max_related,
+        "graph_bidirectional": settings.graph_bidirectional,
         "query_decomposition": settings.enable_query_decomposition,
         "contextual_retrieval": settings.enable_contextual_retrieval,
         "max_query_variants": settings.max_query_variants,

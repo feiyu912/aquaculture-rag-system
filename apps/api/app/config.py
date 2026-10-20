@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     enable_graph_expansion: bool = False
     graph_top_k: int = 10
     graph_rrf_weight: float = 0.7
+    graph_max_hops: int = 2
+    graph_max_related: int = 12
+    graph_bidirectional: bool = True
     enable_query_decomposition: bool = False
     max_query_variants: int = 4
     enable_adaptive_routing: bool = False

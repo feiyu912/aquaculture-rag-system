@@ -195,7 +195,7 @@ uv run python ../../scripts/check_llm.py --generate
 ```bash
 cd apps/api
 uv run pytest -q
-# 93 passed, 2 skipped（BGE 集成测试默认跳过）
+# 96 passed, 2 skipped（BGE 集成测试默认跳过）
 uv run ruff check app tests ../../scripts
 ```
 
@@ -216,7 +216,7 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - 独立 collection 重建、manifest、查询期守卫、点数对账。
 - BM25 分词/权重与 Qdrant IDF 配置。
 - 两份真实地方标准的上传、解析、版本、页码引用、Qdrant 检索。
-- 93 个默认测试通过；2 个真实 BGE 集成测试通过。
+- 96 个默认测试通过；2 个真实 BGE 集成测试通过。
 
 **未验证 / 不足**
 

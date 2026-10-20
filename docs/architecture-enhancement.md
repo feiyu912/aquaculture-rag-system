@@ -55,10 +55,10 @@ Query IR → species/category hard filter → Dense + BM25 → RRF
 - PostgreSQL 轻量图：`graph_entities` / `graph_aliases` / `graph_relations` / `kb_chunk_entities`。
 - 关系带 `review_status`、`confidence`、可选 `provenance_document_version_id`；只加载 `verified` 关系。
 - 入库时用最长别名匹配建立 chunk→entity mention；`scripts/seed_graph.py` 可回填旧文档。
-- 查询时：实体链接 → 一跳关系扩展 → Graph-to-Chunk（按 mention 取 active version 的 child chunk）→ 以 `GRAPH_RRF_WEIGHT` 参与 RRF。
+- 查询时：实体链接 → 有界多跳关系扩展（默认 `GRAPH_MAX_HOPS=2`，可双向）→ Graph-to-Chunk（按 mention 取 active version 的 child chunk）→ 以 `GRAPH_RRF_WEIGHT` 参与 RRF；trace 记录每跳 `path`/`direction`。
 - 没有 `RELATED_TO` 万能关系；没有 Neo4j；没有跨文档推断。
 - 当前图来源于人工审核的 11 个种子实体/8 条关系，不是从论文数据自动抽取的完整领域图。
-- 规则问题分解：多指标问题拆成 facet 子查询，子查询保留品种/阶段前缀并继承原问题硬过滤；原问题始终参与召回。多跳证据合并尚未实现。
+- 规则问题分解：多指标问题拆成 facet 子查询，子查询保留品种/阶段前缀并继承原问题硬过滤；原问题始终参与召回。图谱多跳扩展已实现路径 trace；跨文档**证据级**多跳推理仍未实现。
 
 ### Phase 1（已完成）
 
@@ -67,7 +67,7 @@ Query IR → species/category hard filter → Dense + BM25 → RRF
 - Contextual Retrieval：`context_text` 入库，索引开关，引用仍用原文。
 - 声明级引用检查 v0：`[S1]` 映射、状态、summary 持久化。
 - 检索 Trace：`GET /api/debug/query-logs/{request_id}`。
-- 回归：77 个默认单元测试（另 2 个真实 BGE 集成测试）、A/B/C smoke、四模式评测；图和补检默认关闭。
+- 回归：96 个默认单元测试（另 2 个真实 BGE 集成测试）、A/B/C smoke、四模式评测；图和补检默认关闭。
 
 ### Phase 2b（下一步）
 
