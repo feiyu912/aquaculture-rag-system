@@ -226,7 +226,7 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 - BGE-Reranker 收益是否稳定超过 RRF；当前只有单机延迟和少量样例。
 - PDF.js bbox 高亮；当前只有页码跳转和 bbox 数据。
 - MinerU 对扫描件/表格/双栏的收益。
-- Contextual Retrieval 在真实数据上的收益（集合可另建，但尚未评测）。
+- Contextual Retrieval 在真实数据上的收益：已做两条 query 的小样本检查，结果混合/偏负，尚不能做同 qrels 消融。
 - 旧版本/文档的完整保留与清理任务。
 
 ## 8. 下一步
@@ -234,7 +234,7 @@ RUN_BGE_TESTS=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 1. 已完成 OpenAI 兼容网关的 `check_llm.py --generate` 与真实 SSE；下一步补 DeepSeek 原生 endpoint 的可选验证（不是当前阻塞项）。
 2. 扩充真实文献到至少 20–50 份，建立人工 qrels，分别评 Dense/BM25/Hybrid/+Reranker。
 3. 测量 reranker 候选数（8/16/20）与 P50/P95、nDCG，决定默认候选数。
-4. 建 `kb_chunks_bge_m3_ctx_v1`，对 Contextual Retrieval 做同 qrels 消融。
+4. `kb_chunks_bge_m3_ctx_v1` 已重建为 6 文档/190 points；下一步修正脏 heading 后做同 qrels 消融。
 5. 接 PDF.js bbox 高亮；再评估 MinerU。
 
 ## LLM-Assisted NL2IR / Query Planner（真实模型）
@@ -294,6 +294,15 @@ cd apps/api
 - 上一版两文档语料中 BM25 的 nDCG@10 最高，加入 DB32 干扰项后排序变化，说明结果对语料/候选池敏感。
 - 所有 56 个唯一 gold child chunk 均存在于 Qdrant；gold parent chunk 按设计不是独立 point，主指标按返回的 parent 上下文计，另报 child 精确指标。
 - 局限：3 份真实标准、190 个 child points，AI 辅助待人工复核，无置信区间；不能据此宣称通用优越性。
+
+### Contextual Retrieval 小样本检查（非基准）
+
+`kb_chunks_bge_m3_ctx_v1` 已按同一批 6 个 active 文档重建（190 points，`contextual=true`），但只做了两条查询的 smoke，不是同 qrels 消融：
+
+- “扣蟹培育的水质指标有哪些？”：四模式都能把 DB36 第 7 页“8.1 水质指标”排进结果，gate 判充分。
+- “DB32/T 5292—2025 生态育苗的水温和pH适宜范围是多少？”：Dense 的 top1 是第 5 页“4.3 水质要求（盐度）”，BM25 的 top1/top2 是封面和目次，Hybrid/Reranker 的 top1 是第 4 页术语；真正的第 6 页“6.4 水质控制（水温 18~21 ℃、pH 6.5~8.5）”没有排到第 1。gate 仍判充分，说明**检索到相关词不等于检索到答案证据**。
+- 该 chunk 的 `context_text` heading 被解析成上一段的长句，是上下文噪声的一个直接来源；不能通过放宽 gate 掩盖。
+- 结论：Contextual Retrieval 继续默认关闭；在修正 heading/表格结构并做 70 题同 qrels 消融前，不声称收益。
 
 ### 尚未解决
 
