@@ -20,6 +20,7 @@ def score_ranking(
     ``gold`` maps a chunk ID to relevance grade.  A retrieved item not in gold
     contributes zero; duplicate ranked IDs should be removed by the caller.
     """
+    ranked = list(dict.fromkeys(ranked))
     relevant = set(gold)
     first = next(
         (index for index, chunk_id in enumerate(ranked, start=1) if chunk_id in relevant), None
@@ -40,7 +41,10 @@ def score_ranking(
         result[f"recall@{k}"] = (
             round(len(retrieved & relevant) / len(relevant), 4) if relevant else 0.0
         )
-        gained = [gold[chunk_id] for chunk_id in ranked[:k] if chunk_id in gold]
+        # Keep every position: an irrelevant hit at rank 1 must still push the
+        # relevant item down.  Filtering to relevant-only items (the old
+        # behaviour) re-ranked them from position 1 and overestimated nDCG.
+        gained = [gold.get(chunk_id, 0) for chunk_id in ranked[:k]]
         ideal_dcg = dcg(ideal, k)
         result[f"ndcg@{k}"] = round(dcg(gained, k) / ideal_dcg, 4) if ideal_dcg else 0.0
     return result

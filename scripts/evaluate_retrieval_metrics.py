@@ -18,19 +18,18 @@ import asyncio
 import csv
 import hashlib
 import json
-import math
 import statistics
 import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "apps" / "api"))
 
 from app.config import settings
 from app.db import SessionLocal, engine
+from app.evaluation.retrieval_metrics import score_ranking
 from app.ingestion.embedder import get_embedder
 from app.retrieval.bm25 import BM25SparseEncoder
 from app.retrieval.rerank import build_reranker
@@ -67,41 +66,6 @@ def dedupe(values: list[str]) -> list[str]:
         if value not in seen:
             seen.add(value)
             result.append(value)
-    return result
-
-
-def _dcg(grades: list[int], k: int) -> float:
-    return sum((2**grade - 1) / math.log2(index + 2) for index, grade in enumerate(grades[:k]))
-
-
-def score_ranking(
-    ranked: list[str], gold: dict[str, int], ks: tuple[int, ...] = (5, 10)
-) -> dict[str, Any]:
-    relevant = set(gold)
-    first = next(
-        (index for index, chunk_id in enumerate(ranked, start=1) if chunk_id in relevant),
-        None,
-    )
-    result: dict[str, Any] = {
-        "first_relevant_rank": first,
-        "mrr@10": round(1.0 / first, 4) if first and first <= 10 else 0.0,
-        "gold_rank": {
-            chunk_id: next(
-                (i for i, value in enumerate(ranked, start=1) if value == chunk_id),
-                None,
-            )
-            for chunk_id in relevant
-        },
-    }
-    for k in ks:
-        retrieved = set(ranked[:k])
-        result[f"recall@{k}"] = (
-            round(len(retrieved & relevant) / len(relevant), 4) if relevant else 0.0
-        )
-        ideal = sorted(gold.values(), reverse=True)
-        dcg = _dcg([gold[chunk_id] for chunk_id in ranked[:k] if chunk_id in gold], k)
-        idcg = _dcg(ideal, k)
-        result[f"ndcg@{k}"] = round(dcg / idcg, 4) if idcg else 0.0
     return result
 
 

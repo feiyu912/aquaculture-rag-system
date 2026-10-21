@@ -1,5 +1,9 @@
 # LLM-Assisted Query Planner：实现与验收（2026-10-20）
 
+> **nDCG 更正（2026-10-21）**：本文 nDCG 数值由旧 scorer 计算，已确认系统性高估；
+> 更正后的数值与重算方法见 [ndcg-correction-2026-10-21.md](ndcg-correction-2026-10-21.md)。
+> 本文保留原值作为历史记录，Recall/MRR 不受影响。
+
 > 目标：把自然语言问题变成**有类型、可校验、可回退**的 Query IR 和检索任务；LLM 只负责提出计划，不能直接把推断变成硬过滤。
 > 默认开关：`ENABLE_LLM_PLANNER=false`。本文所有真实模型结果均在显式开启后测得，不改变默认线上行为。
 
