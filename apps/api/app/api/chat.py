@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 import uuid
 from datetime import UTC, datetime
@@ -27,6 +28,8 @@ from app.retrieval.service import Evidence, RetrievalResult, retrieve
 from app.schemas import ChatRequest
 
 router = APIRouter(prefix="/api", tags=["chat"])
+
+logger = logging.getLogger(__name__)
 
 SSE_HEADERS = {
     "Cache-Control": "no-cache",
@@ -86,36 +89,38 @@ async def chat_stream(
     session_id = session.id
     assistant_id = assistant_message.id
 
-    embedder = get_embedder(
-        settings.embedding_model,
-        settings.qdrant_vector_size,
-        settings.embedding_device,
-        settings.embedding_use_fp16,
-        settings.embedding_batch_size,
-        settings.embedding_max_length,
-    )
-    bm25 = BM25SparseEncoder(k1=settings.bm25_k1, b=settings.bm25_b, avg_len=settings.bm25_avg_len)
-    reranker = (
-        build_reranker(
-            settings.reranker_model,
-            path=settings.reranker_path or None,
-            device=settings.reranker_device,
-            use_fp16=settings.reranker_use_fp16,
-        )
-        if payload.retrieval_mode == "hybrid_rerank"
-        else None
-    )
-    planner = None
-    planner_generator = None
-    if settings.enable_llm_planner:
-        try:
-            planner_generator = build_generator()
-            planner = planner_from_generator(planner_generator)
-        except LLMError:
-            # The planner is optional; missing configuration falls back to the
-            # rule IR.  The generation leg will still fail explicitly later.
-            planner_generator = None
     try:
+        embedder = get_embedder(
+            settings.embedding_model,
+            settings.qdrant_vector_size,
+            settings.embedding_device,
+            settings.embedding_use_fp16,
+            settings.embedding_batch_size,
+            settings.embedding_max_length,
+        )
+        bm25 = BM25SparseEncoder(
+            k1=settings.bm25_k1, b=settings.bm25_b, avg_len=settings.bm25_avg_len
+        )
+        reranker = (
+            build_reranker(
+                settings.reranker_model,
+                path=settings.reranker_path or None,
+                device=settings.reranker_device,
+                use_fp16=settings.reranker_use_fp16,
+            )
+            if payload.retrieval_mode == "hybrid_rerank"
+            else None
+        )
+        planner = None
+        planner_generator = None
+        if settings.enable_llm_planner:
+            try:
+                planner_generator = build_generator()
+                planner = planner_from_generator(planner_generator)
+            except LLMError:
+                # The planner is optional; missing configuration falls back to
+                # the rule IR.  The generation leg will still fail explicitly.
+                planner_generator = None
         retrieval: RetrievalResult = await retrieve(
             db,
             question,
@@ -397,7 +402,9 @@ async def _persist_success(
                 session_id=session_id,
                 message_id=assistant_id,
                 question=question,
-                route=str(retrieval.config.get("adaptive_route") or "rag"),
+                route=str(
+                    (retrieval.config.get("adaptive_route") if retrieval else None) or "rag"
+                ),
                 retrieval_config=retrieval.config,
                 active_versions=[str(v) for v in retrieval.active_versions],
                 timings=timings,
@@ -436,25 +443,37 @@ async def _persist_failure(
     session_id: uuid.UUID,
     retrieval: RetrievalResult | None = None,
 ) -> None:
-    async with SessionLocal() as db:
-        message = await db.get(ChatMessage, assistant_id)
-        if message:
-            message.content = partial
-            message.status = "failed"
-            message.meta = {**(message.meta or {}), "request_id": request_id, "error": error[:500]}
-            message.latency_ms = int((time.perf_counter() - started) * 1000)
-        db.add(
-            QueryLog(
-                request_id=request_id,
-                session_id=session_id,
-                message_id=assistant_id,
-                question=question,
-                route=str(retrieval.config.get("adaptive_route") or "rag"),
-                retrieval_config=retrieval.config if retrieval else {},
-                active_versions=[str(v) for v in retrieval.active_versions] if retrieval else [],
-                timings={"total_ms": round((time.perf_counter() - started) * 1000, 1)},
-                token_usage={},
-                citation_check={"error": error[:500]},
+    """Persist a terminal failed state; never mask the original exception."""
+    try:
+        async with SessionLocal() as db:
+            message = await db.get(ChatMessage, assistant_id)
+            if message:
+                message.content = partial
+                message.status = "failed"
+                message.meta = {
+                    **(message.meta or {}),
+                    "request_id": request_id,
+                    "error": error[:500],
+                }
+                message.latency_ms = int((time.perf_counter() - started) * 1000)
+            db.add(
+                QueryLog(
+                    request_id=request_id,
+                    session_id=session_id,
+                    message_id=assistant_id,
+                    question=question,
+                    route=str(
+                        (retrieval.config.get("adaptive_route") if retrieval else None) or "rag"
+                    ),
+                    retrieval_config=retrieval.config if retrieval else {},
+                    active_versions=(
+                        [str(v) for v in retrieval.active_versions] if retrieval else []
+                    ),
+                    timings={"total_ms": round((time.perf_counter() - started) * 1000, 1)},
+                    token_usage={},
+                    citation_check={"error": error[:500]},
+                )
             )
-        )
-        await db.commit()
+            await db.commit()
+    except Exception:
+        logger.exception("could not persist failed state for message %s", assistant_id)

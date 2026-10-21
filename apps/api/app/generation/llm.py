@@ -182,6 +182,7 @@ class ChatCompletionsGenerator:
         base_url: str,
         model: str,
         name: str,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         if not api_key.strip():
             raise LLMError(f"{name} API key is not configured")
@@ -192,6 +193,7 @@ class ChatCompletionsGenerator:
         self._api_key = api_key.strip()
         self._base_url = base_url.rstrip("/")
         self._model = model
+        self._transport = transport
         self.last_usage: dict = {}
 
     async def complete(
@@ -265,22 +267,28 @@ class ChatCompletionsGenerator:
         url = self._base_url + "/chat/completions"
         try:
             async with (
-                httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client,
+                httpx.AsyncClient(
+                    timeout=httpx.Timeout(90.0, connect=10.0), transport=self._transport
+                ) as client,
                 client.stream("POST", url, json=payload, headers=headers) as response,
             ):
-                if response.status_code >= 400:
-                    body = (await response.aread()).decode("utf-8", "ignore")
-                    raise LLMError(f"{self.name} HTTP {response.status_code}: {body[:300]}")
+                saw_done = False
+                finish_reason: str | None = None
                 async for line in response.aiter_lines():
                     if not line.startswith("data:"):
                         continue
                     data = line[5:].strip()
-                    if not data or data == "[DONE]":
+                    if not data:
+                        continue
+                    if data == "[DONE]":
+                        saw_done = True
                         continue
                     try:
                         event = json.loads(data)
                     except json.JSONDecodeError:
                         continue
+                    if event.get("error"):
+                        raise LLMError(f"{self.name} stream error: {str(event['error'])[:300]}")
                     usage = event.get("usage")
                     if usage:
                         self.last_usage = {
@@ -290,10 +298,18 @@ class ChatCompletionsGenerator:
                     choices = event.get("choices") or []
                     if not choices:
                         continue
+                    finish_reason = choices[0].get("finish_reason") or finish_reason
                     delta = choices[0].get("delta") or {}
                     content = delta.get("content")
                     if content:
                         yield content
+                if finish_reason in {"length", "content_filter"}:
+                    raise LLMError(f"{self.name} stream stopped by finish_reason={finish_reason}")
+                if not saw_done and finish_reason != "stop":
+                    raise LLMError(
+                        f"{self.name} stream ended without [DONE] or finish_reason "
+                        f"(finish_reason={finish_reason!r})"
+                    )
         except httpx.HTTPError as exc:
             raise LLMError(f"{self.name} request failed: {exc}") from exc
 
