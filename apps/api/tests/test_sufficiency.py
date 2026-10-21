@@ -63,3 +63,25 @@ def test_disease_spelling_alias_matches_gate():
     )
     assert result.sufficient
     assert "黑鳃病" in result.matched_terms
+
+
+def test_complete_drug_list_question_requires_a_declared_list():
+    question = "水产养殖禁用渔药完整清单有哪些？"
+    partial = "禁用渔药包括氯霉素、孔雀石绿等，使用时应严格执行休药期。"
+    gate = assess_evidence(question, [partial])
+    assert gate.sufficient is False
+    assert gate.reason == "list_completeness_unverified"
+
+    denied = "本标准未列出完整清单，仅给出部分示例：氯霉素、孔雀石绿。"
+    assert assess_evidence(question, [denied]).sufficient is False
+
+    declared = "禁用渔药清单如下：氯霉素、孔雀石绿、呋喃唑酮、硝基呋喃类。"
+    assert assess_evidence(question, [declared]).sufficient is True
+
+
+def test_completeness_guard_does_not_touch_ordinary_questions():
+    gate = assess_evidence(
+        "扣蟹培育池塘条件包括哪些方面？",
+        ["扣蟹培育池塘应具备环沟、防逃墙、水草和独立的进排水系统。"],
+    )
+    assert gate.reason == "matched"

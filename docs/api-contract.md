@@ -462,7 +462,8 @@ requirement”逐条补检索；每次补检索都重新走同一 gate，阈值�
 ```
 
 - 上限 `MAX_TARGETED_RETRIEVAL=2`；每次只补一个 requirement，避免一条稀释查询。
-- `no_query_terms` / `no_evidence` / `current_regulation_unverified` 直接跳过补检索。
+- `no_query_terms` / `no_evidence` / `current_regulation_unverified` /
+  `list_completeness_unverified` 直接跳过补检索（清单完整性不是补检索能解决的）。
 - `sufficient_after=false` 时最终 `sources=[]`；补检索不会放宽阈值，也不会把弱证据放进回答。
 
 #### 2.5.10 `error`

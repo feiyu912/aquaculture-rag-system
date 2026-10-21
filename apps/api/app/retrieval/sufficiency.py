@@ -164,6 +164,34 @@ def _contains(term: str, text: str, text_terms: set[str]) -> bool:
     return len(term) >= 2 and term in text
 
 
+# Questions that ask for an exhaustive regulatory list cannot be satisfied by a
+# passage that merely mentions one or two items.  These patterns are a narrow,
+# deterministic guard, not a semantic completeness model: a passage must declare
+# an actual list (``清单如下``) and must not deny completeness.
+_LIST_INTENT = ("清单", "名录", "名单", "目录")
+_LIST_SCOPE = ("完整", "全部", "所有", "有哪些", "包括哪些", "具体有哪些")
+_LIST_RISK = ("禁用", "禁药", "渔药", "兽药", "药残", "违禁")
+_LIST_DECLARED = ("清单如下", "名录如下", "目录如下", "完整清单", "完整名录", "共列出")
+_LIST_DENIED = ("未列出完整", "不完整", "未包含全部", "不含完整", "无法确认完整")
+
+
+def asks_for_complete_list(question: str) -> bool:
+    return (
+        any(term in question for term in _LIST_INTENT)
+        and any(term in question for term in _LIST_SCOPE)
+        and any(term in question for term in _LIST_RISK)
+    )
+
+
+def has_declared_complete_list(texts: list[str]) -> bool:
+    for text in texts:
+        if any(phrase in text for phrase in _LIST_DENIED):
+            continue
+        if any(phrase in text for phrase in _LIST_DECLARED):
+            return True
+    return False
+
+
 def assess_evidence(
     question: str,
     texts: list[str],
@@ -249,6 +277,18 @@ def assess_evidence(
         len(terms) == 1 and len(best.matched_terms) == 1 and best.matched_weight >= min_weight
     )
     if strong_enough or single_domain:
+        if asks_for_complete_list(question) and not has_declared_complete_list(texts):
+            return Sufficiency(
+                sufficient=False,
+                reason="list_completeness_unverified",
+                query_terms=best.query_terms,
+                matched_terms=best.matched_terms,
+                matched_weight=best.matched_weight,
+                total_weight=best.total_weight,
+                coverage=best.coverage,
+                best_index=best.best_index,
+                missing_terms=["complete_list"],
+            )
         return Sufficiency(
             sufficient=True,
             reason="matched",

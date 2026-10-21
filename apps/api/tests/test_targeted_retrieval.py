@@ -83,3 +83,7 @@ def test_covering_first_keeps_order_when_nothing_covers():
 def test_heading_counts_for_coverage():
     assert term_present("扣蟹培育", "正文\n扣蟹培育池")
     assert term_present("酸碱度", "pH值7.5~8.5")
+
+
+def test_complete_list_gap_does_not_trigger_a_retry():
+    assert build_targeted_queries("禁用渔药完整清单", [], ["complete_list"]) == []

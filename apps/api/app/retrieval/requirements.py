@@ -95,6 +95,10 @@ def build_targeted_queries(
     structured requirement exists.
     """
     targets: list[dict] = []
+    if "complete_list" in gate_missing_terms:
+        # Completeness cannot be repaired by re-querying: either an authority
+        # declares the list or the answer must stay a deterministic refusal.
+        return targets
     for requirement in requirements:
         if requirement.covered:
             continue
