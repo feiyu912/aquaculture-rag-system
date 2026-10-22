@@ -17,14 +17,22 @@ from app.config import settings
 from app.db import SessionLocal, get_db
 from app.generation.citations import validate_answer
 from app.generation.claims import summarize_claims, verify_claims
+from app.generation.context import context_budget, finalize_evidence
 from app.generation.llm import Generator, LLMError, MockGenerator, build_generator
 from app.generation.semantic_claims import verify_claims_semantic
 from app.ingestion.embedder import get_embedder
 from app.models import ChatCitation, ChatMessage, ChatSession, KbDocument, QueryLog
 from app.query.planner import planner_from_generator
 from app.retrieval.bm25 import BM25SparseEncoder
+from app.retrieval.direct import try_faq_direct
 from app.retrieval.rerank import build_reranker
 from app.retrieval.service import Evidence, RetrievalResult, retrieve
+from app.runtime_settings import (
+    LLM_MODEL_KEY,
+    apply_llm_override,
+    env_llm_model,
+    get_setting,
+)
 from app.schemas import ChatRequest
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -39,11 +47,7 @@ SSE_HEADERS = {
 
 
 def _llm_model_name() -> str:
-    if settings.llm_provider == "deepseek":
-        return settings.deepseek_model
-    if settings.llm_provider in {"openai_compatible", "openai"}:
-        return settings.openai_model or settings.llm_provider
-    return "mock"
+    return env_llm_model(settings)
 
 
 def _sse(event: str, data: dict) -> str:
@@ -60,8 +64,18 @@ async def chat_stream(
     if not question:
         raise HTTPException(status_code=400, detail="问题不能为空")
 
+    answer_mode = payload.answer_mode
+    if answer_mode != "document_rag" and not settings.enable_faq_retrieval:
+        raise HTTPException(status_code=400, detail="FAQ 检索未启用，answer_mode 仅支持 document_rag")
+    if answer_mode == "faq_direct" and not settings.enable_faq_direct_answer:
+        raise HTTPException(status_code=400, detail="FAQ 直答未启用")
+
     started = time.perf_counter()
     request_id = uuid.uuid4().hex
+
+    llm_override = await get_setting(db, LLM_MODEL_KEY)
+    model_name = llm_override or _llm_model_name()
+    generator_config = apply_llm_override(settings, llm_override)
 
     if payload.session_id:
         session = await db.get(ChatSession, payload.session_id)
@@ -80,7 +94,7 @@ async def chat_stream(
         role="assistant",
         content="",
         status="streaming",
-        model=_llm_model_name(),
+        model=model_name,
         meta={"request_id": request_id},
     )
     db.add_all([user_message, assistant_message])
@@ -115,7 +129,7 @@ async def chat_stream(
         planner_generator = None
         if settings.enable_llm_planner:
             try:
-                planner_generator = build_generator()
+                planner_generator = build_generator(generator_config)
                 planner = planner_from_generator(planner_generator)
             except LLMError:
                 # The planner is optional; missing configuration falls back to
@@ -131,6 +145,7 @@ async def chat_stream(
             category=payload.category,
             species=payload.species,
             mode=payload.retrieval_mode,
+            include_faq=answer_mode != "document_rag",
         )
     except Exception as exc:
         await _persist_failure(
@@ -144,13 +159,71 @@ async def chat_stream(
         )
         raise HTTPException(status_code=503, detail="检索服务暂不可用") from exc
 
-    evidence: list[Evidence] = retrieval.evidence[: settings.max_sources]
-    for index, item in enumerate(evidence, start=1):
-        item.source_index = index
+    # Retrieval already budgets documents at MAX_SOURCES and appends at most
+    # FAQ_SUPPLEMENT_K verified FAQ items.  Do not truncate to MAX_SOURCES here:
+    # that would drop the FAQ evidence the sufficiency gate just counted.  The
+    # same returned list is used for the gate result, the sources event,
+    # generation and citation persistence.
+    evidence: list[Evidence] = finalize_evidence(
+        list(retrieval.evidence),
+        document_slots=settings.max_sources,
+        faq_slots=settings.faq_supplement_k,
+    )
+    faq_direct_trace: dict | None = None
+    answer_mode_used = "document_rag" if answer_mode == "document_rag" else "document_faq_rag"
+    if answer_mode == "faq_direct":
+        if retrieval.sufficient:
+            # Documents already answer it: never prefer a FAQ over an original.
+            faq_direct_trace = {"used": False, "fallback_reason": "documents_sufficient"}
+        else:
+            direct, faq_direct_trace = await try_faq_direct(
+                question,
+                retrieval.query_ir,
+                embedder,
+                bm25,
+                retrieval.active_versions,
+            )
+            if direct is not None:
+                evidence = [
+                    Evidence(
+                        source_index=1,
+                        document_id=None,
+                        version_id=None,
+                        parent_chunk_id=None,
+                        child_chunk_id=None,
+                        title=f"FAQ：{direct.question[:60]}",
+                        version_no=0,
+                        page=None,
+                        quote=direct.answer[:260],
+                        content=direct.answer,
+                        location={"coordinate_system": "faq", "faq_id": str(direct.faq_id)},
+                        score=direct.score,
+                        species=[],
+                        heading_path=[],
+                        source_type="faq",
+                        media_type="faq",
+                        faq_id=direct.faq_id,
+                        evidence_level="L2_verified_faq",
+                        authority=direct.authority,
+                        verification_status="verified",
+                        publisher=direct.publisher,
+                        source_url=direct.source_url,
+                        supplemental=False,
+                    )
+                ]
+                retrieval.sufficient = True
+                retrieval.gate = {"sufficient": True, "reason": "faq_direct"}
+                answer_mode_used = "faq_direct"
+
+    evidence_budget = context_budget(
+        evidence,
+        document_slots=settings.max_sources,
+        faq_slots=settings.faq_supplement_k,
+    )
 
     try:
         generator: Generator = planner_generator or (
-            build_generator()
+            build_generator(generator_config)
             if evidence or settings.llm_provider != "deepseek"
             else MockGenerator()
         )
@@ -192,6 +265,13 @@ async def chat_stream(
                 "graph_expansion": retrieval.config.get("graph_expansion"),
                 "llm_planner": retrieval.config.get("llm_planner"),
                 "gate": retrieval.gate,
+                "answer_mode": answer_mode,
+                "answer_mode_used": answer_mode_used,
+                "faq_supplement": retrieval.config.get("faq_supplement"),
+                "faq_direct": faq_direct_trace,
+                "applicability_filter": retrieval.config.get("applicability_filter"),
+                "strict_source_filter": retrieval.config.get("strict_source_filter"),
+                "context_budget": evidence_budget,
             },
         )
         yield _sse("sources", {"sources": [item.as_source() for item in evidence]})
@@ -290,14 +370,14 @@ async def chat_stream(
             report=report,
             timings=timings,
             usage=generator.last_usage,
-            model=_llm_model_name(),
+            model=model_name,
             cost_usd=cost_usd,
         )
         yield _sse(
             "done",
             {
                 "message_id": str(assistant_id),
-                "model": _llm_model_name(),
+                "model": model_name,
                 "usage": generator.last_usage,
                 "cost_usd": cost_usd,
                 "timings": timings,
@@ -381,6 +461,9 @@ async def _persist_success(
             "graph_expansion": retrieval.config.get("graph_expansion"),
         }
         for item in evidence:
+            stored_location = dict(item.location) if isinstance(item.location, dict) else None
+            if item.locations:
+                stored_location = {**(stored_location or {}), "locations": item.locations}
             db.add(
                 ChatCitation(
                     message_id=assistant_id,
@@ -390,7 +473,9 @@ async def _persist_success(
                     chunk_id=item.parent_chunk_id,
                     quote=item.quote,
                     page=item.page,
-                    bbox=item.location,
+                    source_type=item.source_type,
+                    faq_id=item.faq_id,
+                    bbox=stored_location,
                     score=item.score,
                     support_status="unverified",
                     support_score=None,

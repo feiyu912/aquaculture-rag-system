@@ -42,6 +42,8 @@ class KbDocument(Base, TimestampMixin):
     source_url: Mapped[str | None] = mapped_column(Text)
     publish_year: Mapped[int | None] = mapped_column(Integer)
     current_version_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    # active | staging | deleted.  Retrieval derives its version filter from
+    # ``status == "active"``, so a staged document is indexed but invisible.
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     doc_metadata: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
@@ -49,7 +51,52 @@ class KbDocument(Base, TimestampMixin):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
-    __table_args__ = (Index("ix_kb_documents_status", "status"),)
+    # Provenance / applicability metadata.  Distinct from ``publish_year``:
+    # a web page needs the *fetch* time, and a standard needs its effective
+    # date; neither can be inferred from the other.
+    source_type: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pdf", server_default="pdf"
+    )
+    authority_level: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="unknown", server_default="unknown"
+    )
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    effective_date: Mapped[str | None] = mapped_column(String(32))
+    # Applicability is metadata, never a hard filter unless the user asks for it.
+    growth_stages: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, default=list, server_default="{}"
+    )
+    region: Mapped[str | None] = mapped_column(String(64))
+    # A different document can supersede an older one (e.g. a new version of a
+    # standard published under a new code).  Same-document updates use
+    # KbDocumentVersion instead.
+    supersedes_document_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    superseded_by_document_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    # verified | pending | rejected.  Legacy manual uploads default to verified;
+    # collector-imported material is written as pending and must be promoted.
+    # Two *separate* review axes.  Technical review is about provenance and
+    # parsing and may be automated; domain review is about aquaculture facts and
+    # may only be recorded by a human domain reviewer.  Automated checks must
+    # never write ``domain_review_status``.
+    technical_review_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pending", server_default="pending"
+    )
+    domain_review_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pending", server_default="pending"
+    )
+    review_flags: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    verification_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="verified", server_default="verified"
+    )
+
+    __table_args__ = (
+        Index("ix_kb_documents_status", "status"),
+        Index("ix_kb_documents_source_type", "source_type"),
+        Index("ix_kb_documents_authority", "authority_level"),
+    )
 
 
 class KbDocumentVersion(Base, TimestampMixin):
@@ -196,9 +243,17 @@ class ChatCitation(Base, TimestampMixin):
         Uuid, ForeignKey("chat_messages.id", ondelete="CASCADE"), nullable=False
     )
     source_index: Mapped[int] = mapped_column(Integer, nullable=False)
-    document_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    document_version_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    # Nullable because a verified-FAQ citation has no document/version of its
+    # own; ``source_type`` says which branch produced the evidence.
+    document_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    document_version_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
     chunk_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    source_type: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="document", server_default="document"
+    )
+    faq_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("faq_entries.id", ondelete="SET NULL")
+    )
     quote: Mapped[str] = mapped_column(Text, nullable=False)
     page: Mapped[int | None] = mapped_column(Integer)
     bbox: Mapped[dict | list | None] = mapped_column(JSONB)
@@ -209,6 +264,7 @@ class ChatCitation(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("message_id", "source_index", name="uq_citation_source"),
         Index("ix_citations_version", "document_version_id"),
+        Index("ix_citations_faq", "faq_id"),
     )
 
 
@@ -298,3 +354,104 @@ class KbChunkEntity(Base):
     mention_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     __table_args__ = (Index("ix_chunk_entities_entity", "entity_id"),)
+
+
+class FaqEntry(Base, TimestampMixin):
+    """A curated question/answer pair with a traceable evidence chain.
+
+    A FAQ is *not* a document chunk: it has no page or bbox.  Its citations
+    point at ``supporting`` chunks, so an answer can still be traced to the
+    original standard.  Only ``review_status="verified"`` rows are indexed into
+    Qdrant, which is what keeps unreviewed model output out of retrieval.
+    """
+
+    __tablename__ = "faq_entries"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    # Normalised question used for exact-duplicate detection and clustering.
+    question_norm: Mapped[str] = mapped_column(Text, nullable=False)
+    question_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    species: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    topic: Mapped[str | None] = mapped_column(String(64))
+    growth_stages: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    region: Mapped[str | None] = mapped_column(String(64))
+
+    source_dataset: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    # Strongest authority level of the supporting documents (derived, stored for
+    # cheap filtering); never set by the importer to something stronger.
+    source_authority: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="unknown", server_default="unknown"
+    )
+    original_id: Mapped[str | None] = mapped_column(String(128))
+    original_source_url: Mapped[str | None] = mapped_column(Text)
+    source_license: Mapped[str | None] = mapped_column(String(64))
+    # Original model/web answer is kept for provenance but is never the answer
+    # that gets served: ``answer`` above is the reviewed text.
+    original_answer: Mapped[str | None] = mapped_column(Text)
+
+    # [{document_id, version_id, chunk_id, page, quote, score, title}]
+    supporting: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    evidence_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="none"
+    )  # none | partial | supported | conflict
+    quality_flags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    cluster_id: Mapped[str | None] = mapped_column(String(64))
+
+    review_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pending", server_default="pending"
+    )  # pending | verified | rejected
+    usage_scope: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="knowledge", server_default="knowledge"
+    )  # knowledge | dev | eval
+    confidence: Mapped[float | None] = mapped_column(Float)
+    review_notes: Mapped[str | None] = mapped_column(Text)
+    reviewer: Mapped[str | None] = mapped_column(String(64))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    index_collection: Mapped[str | None] = mapped_column(String(128))
+
+    __table_args__ = (
+        UniqueConstraint("question_hash", name="uq_faq_question_hash"),
+        Index("ix_faq_review_status", "review_status"),
+        Index("ix_faq_topic", "topic"),
+        Index("ix_faq_cluster", "cluster_id"),
+        Index("ix_faq_scope", "usage_scope"),
+    )
+
+
+class DataRun(Base, TimestampMixin):
+    """Audit record for a collection / import run.
+
+    Kept in PostgreSQL (not only in logs) so the thesis can report exactly
+    which URLs were fetched, which were blocked by robots, and how many rows a
+    FAQ import produced.
+    """
+
+    __tablename__ = "data_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)  # crawl | faq_import | index
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="running")
+    params: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    stats: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (Index("ix_data_runs_kind", "kind", "created_at"),)
+
+
+class AppSetting(Base):
+    """Small key/value store for runtime-tunable settings (e.g. LLM model)."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )

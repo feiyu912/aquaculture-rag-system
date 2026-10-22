@@ -1,0 +1,310 @@
+{
+  "documents": {
+    "active": 6,
+    "deleted": 104
+  },
+  "versions": {
+    "ready": 8,
+    "archived": 132
+  },
+  "active": [
+    {
+      "document_id": "4bf20f9d-e491-4c8d-8ead-088e388d83ee",
+      "version_id": "8028e381-5c13-45b0-9d91-c73cf1a79cfe",
+      "title": "DB32_T 5292—2025 中华绒螯蟹生态育苗技术规范",
+      "status": "ready",
+      "version": 1,
+      "embedding_model": "BAAI/bge-m3",
+      "chunk_config_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+      "db_chunks": {
+        "child": 35,
+        "parent": 32
+      },
+      "qdrant_points": 35
+    },
+    {
+      "document_id": "ad725ae7-2638-4fd3-b6c6-2df079bd5f37",
+      "version_id": "9dbe5cbd-ce28-4283-a2ef-5dc3e8fa18fe",
+      "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+      "status": "ready",
+      "version": 1,
+      "embedding_model": "BAAI/bge-m3",
+      "chunk_config_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+      "db_chunks": {
+        "child": 109,
+        "parent": 88
+      },
+      "qdrant_points": 109
+    },
+    {
+      "document_id": "33108e81-7ad5-42b8-b506-5c579c53e2f4",
+      "version_id": "f8663169-017b-4963-b96d-02935a20e91b",
+      "title": "凡纳滨对虾养殖示例资料",
+      "status": "ready",
+      "version": 1,
+      "embedding_model": "hashing-dev-1024",
+      "chunk_config_hash": "9ebd65122c3e0a430d480fa9316b85308cc94721b29227ab10f898aef1810d34",
+      "db_chunks": {
+        "child": 2,
+        "parent": 2
+      },
+      "qdrant_points": 2
+    },
+    {
+      "document_id": "3f534c05-99c9-493e-9e18-323f9ee9a3c1",
+      "version_id": "2b5511ca-7886-4e40-964e-5a069da06694",
+      "title": "DB36_T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程",
+      "status": "ready",
+      "version": 1,
+      "embedding_model": "BAAI/bge-m3",
+      "chunk_config_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+      "db_chunks": {
+        "child": 34,
+        "parent": 30
+      },
+      "qdrant_points": 34
+    },
+    {
+      "document_id": "782612e2-6ffc-435b-a299-530390218d0d",
+      "version_id": "1b8aad45-f785-4ee2-8996-75c4fc1f5b8b",
+      "title": "中华绒螯蟹养殖示例资料",
+      "status": "ready",
+      "version": 1,
+      "embedding_model": "hashing-dev-1024",
+      "chunk_config_hash": "9ebd65122c3e0a430d480fa9316b85308cc94721b29227ab10f898aef1810d34",
+      "db_chunks": {
+        "child": 2,
+        "parent": 2
+      },
+      "qdrant_points": 2
+    },
+    {
+      "document_id": "9ec24f08-7908-4f51-b53c-4e3bc9498af6",
+      "version_id": "924dec59-9e7e-413b-b8bf-3ce9ea6609ff",
+      "title": "水产养殖水质通用资料",
+      "status": "ready",
+      "version": 1,
+      "embedding_model": "hashing-dev-1024",
+      "chunk_config_hash": "9ebd65122c3e0a430d480fa9316b85308cc94721b29227ab10f898aef1810d34",
+      "db_chunks": {
+        "child": 5,
+        "parent": 5
+      },
+      "qdrant_points": 5
+    }
+  ],
+  "collections": [
+    {
+      "name": "kb_chunks_dev_v1",
+      "points": 12,
+      "vectors": "{'dense': VectorParams(size=1024, distance=<Distance.COSINE: 'Cosine'>, hnsw_config=None, quantization_config=None, on_disk=None, datatype=None, multivector_config=None)}",
+      "sparse": "{'bm25': SparseVectorParams(index=None, modifier=<Modifier.IDF: 'idf'>)}"
+    },
+    {
+      "name": "kb_chunks_bge_m3_ctx_v1",
+      "points": 190,
+      "vectors": "{'dense': VectorParams(size=1024, distance=<Distance.COSINE: 'Cosine'>, hnsw_config=None, quantization_config=None, on_disk=None, datatype=None, multivector_config=None)}",
+      "sparse": "{'bm25': SparseVectorParams(index=None, modifier=<Modifier.IDF: 'idf'>)}"
+    },
+    {
+      "name": "kb_chunks_bge_m3_v1",
+      "points": 190,
+      "vectors": "{'dense': VectorParams(size=1024, distance=<Distance.COSINE: 'Cosine'>, hnsw_config=None, quantization_config=None, on_disk=None, datatype=None, multivector_config=None)}",
+      "sparse": "{'bm25': SparseVectorParams(index=None, modifier=<Modifier.IDF: 'idf'>)}"
+    }
+  ],
+  "graph": {
+    "relations": 10,
+    "verified": 10,
+    "verified_without_provenance": 10
+  },
+  "manifests": [
+    {
+      "collection": "kb_chunks_bge_m3_ctx_v1",
+      "status": "active",
+      "embedding_model": "BAAI/bge-m3",
+      "point_count": 190,
+      "document_count": 6,
+      "chunk_hash": "b55b38183c1d93857fd80439275cee36fcb5a4d7d07c99ba20e8a804de49bdee",
+      "bm25_hash": ""
+    },
+    {
+      "collection": "kb_chunks_bge_m3_v1",
+      "status": "active",
+      "embedding_model": "BAAI/bge-m3",
+      "point_count": 190,
+      "document_count": 6,
+      "chunk_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+      "bm25_hash": "e3851c722cd28f3a34f4ef8f1faf595d844274c6d3831b2c72f23603c81cf13f"
+    }
+  ],
+  "gold_version_active": true,
+  "special_gold_chunks": {
+    "R061": [
+      {
+        "parent_id": "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+        "content": "8.1水质指标溶氧量5mg/L以上，pH值7.5~8.5，透明度30cm~50cm，氨氮低于0.5mg/L，亚硝酸盐低于0.05mg/L。",
+        "heading": [
+          "中华绒螯蟹池塘培育扣蟹技术规程",
+          "中华绒螯蟹池塘培育扣蟹技术规程",
+          "8.1水质指标"
+        ],
+        "page_from": 7,
+        "page_to": 7,
+        "locations": [
+          {
+            "bbox": [
+              70.92,
+              170.01,
+              543.85,
+              213.39
+            ],
+            "page": 7,
+            "origin": "bottom-left",
+            "rotation": 0,
+            "page_width": 595.3,
+            "page_height": 841.9,
+            "coordinate_system": "pdf_points"
+          }
+        ]
+      },
+      {
+        "parent_id": "060eb863-f8b9-5f94-872d-2d440b740886",
+        "content": "凡纳滨对虾Penaeus vannamei俗称南美白对虾，隶属于节肢动物门（Arthropoda），软甲纲（Malacostraca），十足目（Decapoda），对虾科（Penaeidae），对虾属（Penaeus），为广温广盐性热带虾类。\n南美白对虾幼体发育阶段包括无节幼体、溞状幼体、糠虾幼体、后期幼体阶段，具体如下：\n无节幼体Nauplius stage, N幼体卵圆形、倒梨形，具3对附肢，为游泳器官，体不分节，具尾叉，幼体不摄食，吸取卵黄营养，营浮游生活，一般分为6期。后期无节幼体出现其他附肢雏芽，体节增加。\n溞状幼体Zoer stage, Z体分为头胸部与腹部，分节明显，出现复眼，颚足双肢型为运动器官，后期尾肢生出，形成尾扇。溞状幼体为浮游生活，开始摄食，多为滤食性，后期具捕食能力。\n糠虾幼体Mysis stage, M腹部发达，出现腹肢，胸肢双肢型，营浮游生活，捕食能力强。\n后期幼体Postlarva stege, P又称十足幼体，即最末一期幼体，具全部体节与附肢，外形与成体相似，有属的分类阶元的典型特征，经数次蜕皮变为幼虾，又称仔虾。\n育苗Seedling从无节幼体培育至仔虾的过程。\n中间培育Intermediate Culture俗称标粗，指仔虾日龄6期培育至体长1.2 cm以上幼虾的过程。\n养成Cultivate指把体长1.2 cm的幼虾养成至商品虾的过程。\n4养殖环境养殖场应选择海流畅通，周边无污染源，海水悬浮物少，交通便利，供电、给排水等基础设施配套齐全；海、淡水资源丰富，水源水质应符合GB 11607的规定，幼体培育用水水质应符合NY 5052的规定，生产用水应经沉淀、砂滤净化处理后使用。盐度26～35，pH值7.8～8.5，溶解氧含量保持5 mg/L以上。\n5养殖设施",
+        "heading": [
+          "纳滨对虾）",
+          "农产品全产业链生产规范南美白对虾（凡纳滨对虾）"
+        ],
+        "page_from": 7,
+        "page_to": 7,
+        "locations": [
+          {
+            "bbox": [
+              70.92,
+              139.54,
+              543.85,
+              727.35
+            ],
+            "page": 7,
+            "origin": "bottom-left",
+            "rotation": 0,
+            "page_width": 595.3,
+            "page_height": 841.9,
+            "coordinate_system": "pdf_points"
+          }
+        ]
+      }
+    ],
+    "R062": [
+      {
+        "parent_id": "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+        "content": "8.1水质指标溶氧量5mg/L以上，pH值7.5~8.5，透明度30cm~50cm，氨氮低于0.5mg/L，亚硝酸盐低于0.05mg/L。",
+        "heading": [
+          "中华绒螯蟹池塘培育扣蟹技术规程",
+          "中华绒螯蟹池塘培育扣蟹技术规程",
+          "8.1水质指标"
+        ],
+        "page_from": 7,
+        "page_to": 7,
+        "locations": [
+          {
+            "bbox": [
+              70.92,
+              170.01,
+              543.85,
+              213.39
+            ],
+            "page": 7,
+            "origin": "bottom-left",
+            "rotation": 0,
+            "page_width": 595.3,
+            "page_height": 841.9,
+            "coordinate_system": "pdf_points"
+          }
+        ]
+      },
+      {
+        "parent_id": "060eb863-f8b9-5f94-872d-2d440b740886",
+        "content": "凡纳滨对虾Penaeus vannamei俗称南美白对虾，隶属于节肢动物门（Arthropoda），软甲纲（Malacostraca），十足目（Decapoda），对虾科（Penaeidae），对虾属（Penaeus），为广温广盐性热带虾类。\n南美白对虾幼体发育阶段包括无节幼体、溞状幼体、糠虾幼体、后期幼体阶段，具体如下：\n无节幼体Nauplius stage, N幼体卵圆形、倒梨形，具3对附肢，为游泳器官，体不分节，具尾叉，幼体不摄食，吸取卵黄营养，营浮游生活，一般分为6期。后期无节幼体出现其他附肢雏芽，体节增加。\n溞状幼体Zoer stage, Z体分为头胸部与腹部，分节明显，出现复眼，颚足双肢型为运动器官，后期尾肢生出，形成尾扇。溞状幼体为浮游生活，开始摄食，多为滤食性，后期具捕食能力。\n糠虾幼体Mysis stage, M腹部发达，出现腹肢，胸肢双肢型，营浮游生活，捕食能力强。\n后期幼体Postlarva stege, P又称十足幼体，即最末一期幼体，具全部体节与附肢，外形与成体相似，有属的分类阶元的典型特征，经数次蜕皮变为幼虾，又称仔虾。\n育苗Seedling从无节幼体培育至仔虾的过程。\n中间培育Intermediate Culture俗称标粗，指仔虾日龄6期培育至体长1.2 cm以上幼虾的过程。\n养成Cultivate指把体长1.2 cm的幼虾养成至商品虾的过程。\n4养殖环境养殖场应选择海流畅通，周边无污染源，海水悬浮物少，交通便利，供电、给排水等基础设施配套齐全；海、淡水资源丰富，水源水质应符合GB 11607的规定，幼体培育用水水质应符合NY 5052的规定，生产用水应经沉淀、砂滤净化处理后使用。盐度26～35，pH值7.8～8.5，溶解氧含量保持5 mg/L以上。\n5养殖设施",
+        "heading": [
+          "纳滨对虾）",
+          "农产品全产业链生产规范南美白对虾（凡纳滨对虾）"
+        ],
+        "page_from": 7,
+        "page_to": 7,
+        "locations": [
+          {
+            "bbox": [
+              70.92,
+              139.54,
+              543.85,
+              727.35
+            ],
+            "page": 7,
+            "origin": "bottom-left",
+            "rotation": 0,
+            "page_width": 595.3,
+            "page_height": 841.9,
+            "coordinate_system": "pdf_points"
+          }
+        ]
+      },
+      {
+        "parent_id": "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+        "content": "7.4水质控制亲虾培育要求海水盐度28～35，盐度要稳定，不能过低或突变；培育池水温28℃～29℃，pH 7.8～8.3为宜；溶解氧5 mg/L以上。",
+        "heading": [
+          "纳滨对虾）",
+          "农产品全产业链生产规范南美白对虾（凡纳滨对虾）",
+          "7.4水质控制"
+        ],
+        "page_from": 10,
+        "page_to": 10,
+        "locations": [
+          {
+            "bbox": [
+              70.92,
+              404.91,
+              538.57,
+              454.35
+            ],
+            "page": 10,
+            "origin": "bottom-left",
+            "rotation": 0,
+            "page_width": 595.3,
+            "page_height": 841.9,
+            "coordinate_system": "pdf_points"
+          }
+        ]
+      }
+    ],
+    "R064": [],
+    "R066": [
+      {
+        "parent_id": "c03e4cf9-8f83-50da-a126-77e13722a908",
+        "content": "6.4水质控制适宜水温为18 ℃~21 ℃。适宜pH 为6.5~8.5，pH 持续升高的池塘使用乳酸菌等生物制剂调节。\n水体氨氮高于0.5 mg/L 时，补充小球藻，密度控制在20 万cells/mL~40 万cells/mL。水质调控遵循“先清后肥”的原则，Z3 前水体透明度控制在50 cm~60 cm，Z3 后透明度控制在30 cm~40 cm。定期用枯草芽孢杆菌或补充小球藻或部分换水，预防倒藻。",
+        "heading": [
+          "中华绒螯蟹生态育苗技术规范",
+          "6.4水质控制"
+        ],
+        "page_from": 6,
+        "page_to": 6,
+        "locations": [
+          {
+            "bbox": [
+              74.53,
+              266.87,
+              551.96,
+              351.7
+            ],
+            "page": 6,
+            "origin": "bottom-left",
+            "rotation": 0,
+            "page_width": 612.28,
+            "page_height": 858.9,
+            "coordinate_system": "pdf_points"
+          }
+        ]
+      }
+    ]
+  }
+}

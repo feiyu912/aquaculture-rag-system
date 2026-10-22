@@ -72,6 +72,7 @@ export function useDocumentMutations() {
     queryClient.invalidateQueries({ queryKey: ["documents"] });
     queryClient.invalidateQueries({ queryKey: ["document"] });
     queryClient.invalidateQueries({ queryKey: ["species"] });
+    queryClient.invalidateQueries({ queryKey: ["manage"] });
   };
 
   const upload = useMutation({

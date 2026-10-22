@@ -16,7 +16,7 @@ export function SourcePanelDrawer({
   sources,
   selectedIndex,
   onSelect,
-  onOpenPdf,
+  onOpenSource,
   onClose,
   maxSources,
 }: {
@@ -24,7 +24,7 @@ export function SourcePanelDrawer({
   sources: Source[];
   selectedIndex: number | null;
   onSelect: (index: number) => void;
-  onOpenPdf?: (source: Source) => void;
+  onOpenSource?: (source: Source) => void;
   onClose: () => void;
   maxSources?: number;
 }) {
@@ -70,11 +70,11 @@ export function SourcePanelDrawer({
             <div className="flex flex-col gap-2.5">
               {sources.map((source) => (
                 <SourceCard
-                  key={`${source.document_id}-${source.index}`}
+                  key={source.source_id || `${source.source_type}-${source.faq_id ?? source.document_id ?? "none"}-${source.index}`}
                   source={source}
                   active={selectedIndex === source.index}
                   onSelect={onSelect}
-                  onOpenPdf={onOpenPdf}
+                  onOpenSource={onOpenSource}
                 />
               ))}
             </div>

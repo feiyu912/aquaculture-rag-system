@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { ChatEmptyState, ChatToolbar } from "@/components/chat/chat-empty-state";
 import { Composer } from "@/components/chat/composer";
@@ -12,6 +13,8 @@ import { SourcePanelDrawer } from "@/components/chat/source-panel-drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { documentsApi } from "@/lib/api/documents";
 import type { RetrievalMode, Source } from "@/lib/api/types";
+import { useCatalogStats } from "@/hooks/use-management";
+import { unavailableReasonLabel } from "@/lib/labels";
 import type { useChat } from "@/hooks/use-chat";
 
 type ChatController = ReturnType<typeof useChat>;
@@ -33,6 +36,7 @@ export function ChatWorkspace({
   const [draft, setDraft] = React.useState("");
   const [panelOpen, setPanelOpen] = React.useState(false);
   const [activeSourceIndex, setActiveSourceIndex] = React.useState<number | null>(null);
+  const [activeMessageId, setActiveMessageId] = React.useState<string | null>(null);
   const panelDismissedRef = React.useRef(false);
 
   const { data: speciesOptions } = useQuery({
@@ -41,23 +45,36 @@ export function ChatWorkspace({
     staleTime: 60_000,
   });
 
-  const { data: documents } = useQuery({
-    queryKey: ["documents"],
-    queryFn: documentsApi.list,
-    staleTime: 30_000,
-  });
+  const { data: catalogStats } = useCatalogStats();
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const stickToBottomRef = React.useRef(true);
 
-  const activeSources: Source[] = React.useMemo(() => {
+  const latestWithSources = React.useMemo(() => {
     const withSources = chat.messages.filter(
       (message) => message.role === "assistant" && (message.sources?.length ?? 0) > 0,
     );
-    const last = withSources[withSources.length - 1];
-    return last?.sources ?? [];
+    return withSources[withSources.length - 1] ?? null;
   }, [chat.messages]);
+
+  // Follow the newest answer by default. Selecting a citation in an older
+  // answer pins that message, so S1 always opens that message's own S1 — not
+  // the same index in the newest answer.
+  const lastSeenLatestRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (latestWithSources && latestWithSources.id !== lastSeenLatestRef.current) {
+      lastSeenLatestRef.current = latestWithSources.id;
+      setActiveMessageId(latestWithSources.id);
+      setActiveSourceIndex(null);
+    }
+  }, [latestWithSources]);
+
+  const activeMessage = React.useMemo(
+    () => chat.messages.find((message) => message.id === activeMessageId) ?? null,
+    [chat.messages, activeMessageId],
+  );
+  const activeSources: Source[] = activeMessage?.sources ?? [];
 
   const handleScroll = () => {
     const node = scrollRef.current;
@@ -71,8 +88,15 @@ export function ChatWorkspace({
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [chat.messages, chat.status]);
 
-  const handleSelectSource = (index: number) => {
+  const handleSelectSource = (messageId: string, index: number) => {
+    setActiveMessageId(messageId);
     setActiveSourceIndex(index);
+    setPanelOpen(true);
+  };
+
+  const handleShowSources = (messageId: string) => {
+    setActiveMessageId(messageId);
+    setActiveSourceIndex(null);
     setPanelOpen(true);
   };
 
@@ -100,7 +124,38 @@ export function ChatWorkspace({
     });
   }, []);
 
-  const handleOpenPdf = (source: Source) => {
+  const handleOpenSource = (source: Source) => {
+    if (source.available === false) {
+      toast.error("来源不可访问", {
+        description: unavailableReasonLabel(source.unavailable_reason),
+      });
+      return;
+    }
+    if (source.media_type === "faq") {
+      if (!source.faq_id) {
+        toast.error("FAQ 引用缺少条目标识，无法打开");
+        return;
+      }
+      router.push(`/source?faq_id=${encodeURIComponent(source.faq_id)}`);
+      return;
+    }
+    if (!source.document_id) {
+      toast.error("引用缺少文档标识，无法打开原文");
+      return;
+    }
+    if (source.media_type === "html") {
+      const params = new URLSearchParams({ document_id: source.document_id });
+      if (source.version_id) params.set("version_id", source.version_id);
+      if (source.page) params.set("page", String(source.page));
+      router.push(`/source?${params.toString()}`);
+      return;
+    }
+    if (!source.version_id) {
+      toast.error("引用的 PDF 版本已不存在", {
+        description: "为避免把旧定位套到新版本，已阻止打开。",
+      });
+      return;
+    }
     const params = new URLSearchParams({
       document_id: source.document_id,
       version_id: source.version_id,
@@ -108,8 +163,26 @@ export function ChatWorkspace({
     if (source.page) params.set("page", String(source.page));
     // Carry the canonical bbox so the reader can highlight the exact region
     // that was quoted, not just the page.
-    if (source.location?.bbox) {
-      params.set("bbox", source.location.bbox.map((value) => value.toFixed(2)).join(","));
+    const bbox = source.location?.bbox;
+    if (bbox) {
+      params.set("bbox", bbox.map((value) => value.toFixed(2)).join(","));
+    }
+    const locations = (source.locations ?? []).filter(
+      (entry) =>
+        typeof entry.page === "number" &&
+        Array.isArray(entry.bbox) &&
+        entry.bbox.length === 4,
+    );
+    if (locations.length > 1) {
+      params.set(
+        "loc",
+        JSON.stringify(
+          locations.map((entry) => ({
+            page: entry.page,
+            bbox: entry.bbox,
+          })),
+        ),
+      );
     }
     router.push(`/reader?${params.toString()}`);
   };
@@ -121,7 +194,7 @@ export function ChatWorkspace({
     void chat.send(question);
   };
 
-  const hasDocuments = (documents?.length ?? 0) > 0;
+  const hasDocuments = (catalogStats?.documents.published ?? 0) > 0;
 
   return (
     <div className="flex h-full min-h-0">
@@ -158,10 +231,11 @@ export function ChatWorkspace({
             ) : (
               <MessageList
                 messages={chat.messages}
+                activeMessageId={activeMessageId}
                 activeSourceIndex={activeSourceIndex}
                 onCitationSelect={handleSelectSource}
                 onRetry={(messageId) => void chat.retry(messageId)}
-                onShowSources={() => setPanelOpen(true)}
+                onShowSources={handleShowSources}
                 bottomRef={bottomRef}
               />
             )}
@@ -186,16 +260,20 @@ export function ChatWorkspace({
             className="hidden xl:flex"
             sources={activeSources}
             selectedIndex={activeSourceIndex}
-            onSelect={handleSelectSource}
-            onOpenPdf={handleOpenPdf}
+            onSelect={(index) => {
+              if (activeMessageId) handleSelectSource(activeMessageId, index);
+            }}
+            onOpenSource={handleOpenSource}
             onClose={() => setPanelOpen(false)}
           />
           <SourcePanelDrawer
             open={panelOpen}
             sources={activeSources}
             selectedIndex={activeSourceIndex}
-            onSelect={handleSelectSource}
-            onOpenPdf={handleOpenPdf}
+            onSelect={(index) => {
+              if (activeMessageId) handleSelectSource(activeMessageId, index);
+            }}
+            onOpenSource={handleOpenSource}
             onClose={() => setPanelOpen(false)}
           />
         </>

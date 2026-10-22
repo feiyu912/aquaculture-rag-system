@@ -102,9 +102,9 @@ function AssistantMessage({
 }: {
   message: ChatMessageType;
   activeSourceIndex: number | null;
-  onCitationSelect: (index: number) => void;
+  onCitationSelect: (messageId: string, index: number) => void;
   onRetry: (messageId: string) => void;
-  onShowSources: () => void;
+  onShowSources: (messageId: string) => void;
 }) {
   const sources = message.sources ?? [];
   const insufficient = message.meta?.sufficient === false && sources.length === 0;
@@ -160,7 +160,7 @@ function AssistantMessage({
             content={message.content}
             availableIndices={sources.map((source) => source.index)}
             activeIndex={activeSourceIndex}
-            onCitationSelect={onCitationSelect}
+            onCitationSelect={(index) => onCitationSelect(message.id, index)}
           />
         ) : isStreaming ? (
           <div className="flex items-center gap-2 py-1 text-[13px] text-subtle-foreground">
@@ -215,7 +215,7 @@ function AssistantMessage({
         {sources.length > 0 && (
           <button
             type="button"
-            onClick={onShowSources}
+            onClick={() => onShowSources(message.id)}
             className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-muted px-2.5 py-1 text-[11.5px] font-medium text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
           >
             <span className="tabular">{sources.length}</span> 个引用来源
@@ -231,6 +231,7 @@ function AssistantMessage({
 
 export function MessageList({
   messages,
+  activeMessageId,
   activeSourceIndex,
   onCitationSelect,
   onRetry,
@@ -238,10 +239,11 @@ export function MessageList({
   bottomRef,
 }: {
   messages: ChatMessageType[];
+  activeMessageId: string | null;
   activeSourceIndex: number | null;
-  onCitationSelect: (index: number) => void;
+  onCitationSelect: (messageId: string, index: number) => void;
   onRetry: (messageId: string) => void;
-  onShowSources: () => void;
+  onShowSources: (messageId: string) => void;
   bottomRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
@@ -253,7 +255,7 @@ export function MessageList({
           <AssistantMessage
             key={message.id}
             message={message}
-            activeSourceIndex={activeSourceIndex}
+            activeSourceIndex={message.id === activeMessageId ? activeSourceIndex : null}
             onCitationSelect={onCitationSelect}
             onRetry={onRetry}
             onShowSources={onShowSources}

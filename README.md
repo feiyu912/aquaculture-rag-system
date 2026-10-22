@@ -153,6 +153,12 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 | [增强架构与状态](docs/architecture-enhancement.md) | 12 项增强能力的实现状态、Phase 2/3 计划、论文口径边界 |
 | [架构审计（2026-10-20）](docs/audit-2026-10-20.md) | 实际执行路径、模块完成度、差距与风险、下一阶段优先级 |
 | [待定项](docs/open-items.md) | 数据来源、硬件、模板等尚未锁死的事项 |
+| [公开数据来源清单](docs/data-sources.md) | 标准/政策/统计数据获取渠道、总库优先路径、首批文档清单 |
+| [HF 问答数据集对接调研](docs/qa-dataset-integration.md) | 老师建议的 HF 数据源调研、与 seed/评测格式的适配、候选池 pipeline |
+| [公开数据源调研与采集计划（2026-10-21）](docs/data-source-survey-2026-10-21.md) | 逐个源的可达性实测、许可与优先级、分阶段采集计划、每批指标 |
+| [数据建设与 FAQ 增强最小方案（2026-10-21）](docs/data-faq-plan-2026-10-21.md) | 代码审计结论、合规边界、最小改动清单、实施顺序 |
+| [分层可信证据与污染防护（2026-10-21）](docs/layered-trust-design.md) | 四级来源模型、索引隔离、两阶段检索、A/B/C/D 实测结果 |
+| [staging 文档审核卡片（2026-10-21）](docs/review/staging-review-2026-10-21.md) | 17 篇逐篇审核卡片、technical/domain 双状态、可发布候选与排除清单 |
 
 ## 仓库结构
 

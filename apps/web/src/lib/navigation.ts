@@ -1,4 +1,11 @@
-import { Activity, BookOpenText, Library, MessageSquareText } from "lucide-react";
+import {
+  Activity,
+  BookOpenText,
+  Database,
+  HelpCircle,
+  Library,
+  MessageSquareText,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface NavItem {
@@ -22,6 +29,18 @@ export const NAV_ITEMS: NavItem[] = [
     label: "知识库",
     description: "文档上传、版本与解析状态",
     icon: Library,
+  },
+  {
+    href: "/data",
+    label: "数据建设",
+    description: "来源登记、采集批次与失败原因",
+    icon: Database,
+  },
+  {
+    href: "/faq",
+    label: "FAQ",
+    description: "FAQ 审核、证据链与索引状态",
+    icon: HelpCircle,
   },
   {
     href: "/reader",

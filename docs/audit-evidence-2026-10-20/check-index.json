@@ -1,0 +1,72 @@
+{
+  "collection": "kb_chunks_bge_m3_v1",
+  "configured_embedding_model": "BAAI/bge-m3",
+  "configured_vector_size": 1024,
+  "collection_vector_size": 1024,
+  "collection_points": 190,
+  "active_versions": 6,
+  "manifest": {
+    "embedding_model": "BAAI/bge-m3",
+    "vector_size": 1024,
+    "chunk_config_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+    "status": "active",
+    "document_count": 6,
+    "point_count": 190
+  },
+  "orphan_version_ids": [],
+  "active_embedding_models": [
+    "BAAI/bge-m3",
+    "hashing-dev-1024"
+  ],
+  "active_chunk_config_hashes": [
+    "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+    "9ebd65122c3e0a430d480fa9316b85308cc94721b29227ab10f898aef1810d34"
+  ],
+  "missing_metadata": [],
+  "warnings": [],
+  "ok": true,
+  "versions": [
+    {
+      "title": "水产养殖水质通用资料",
+      "version_id": "924dec59-9e7e-413b-b8bf-3ce9ea6609ff",
+      "version_no": 1,
+      "embedding_model": "hashing-dev-1024",
+      "chunk_config_hash": "9ebd65122c3e0a430d480fa9316b85308cc94721b29227ab10f898aef1810d34"
+    },
+    {
+      "title": "中华绒螯蟹养殖示例资料",
+      "version_id": "1b8aad45-f785-4ee2-8996-75c4fc1f5b8b",
+      "version_no": 1,
+      "embedding_model": "hashing-dev-1024",
+      "chunk_config_hash": "9ebd65122c3e0a430d480fa9316b85308cc94721b29227ab10f898aef1810d34"
+    },
+    {
+      "title": "凡纳滨对虾养殖示例资料",
+      "version_id": "f8663169-017b-4963-b96d-02935a20e91b",
+      "version_no": 1,
+      "embedding_model": "hashing-dev-1024",
+      "chunk_config_hash": "9ebd65122c3e0a430d480fa9316b85308cc94721b29227ab10f898aef1810d34"
+    },
+    {
+      "title": "DB36_T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程",
+      "version_id": "2b5511ca-7886-4e40-964e-5a069da06694",
+      "version_no": 1,
+      "embedding_model": "BAAI/bge-m3",
+      "chunk_config_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0"
+    },
+    {
+      "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+      "version_id": "9dbe5cbd-ce28-4283-a2ef-5dc3e8fa18fe",
+      "version_no": 1,
+      "embedding_model": "BAAI/bge-m3",
+      "chunk_config_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0"
+    },
+    {
+      "title": "DB32_T 5292—2025 中华绒螯蟹生态育苗技术规范",
+      "version_id": "8028e381-5c13-45b0-9d91-c73cf1a79cfe",
+      "version_no": 1,
+      "embedding_model": "BAAI/bge-m3",
+      "chunk_config_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0"
+    }
+  ]
+}

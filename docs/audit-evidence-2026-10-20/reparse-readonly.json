@@ -1,0 +1,59 @@
+[
+  {
+    "title": "DB36_T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程",
+    "file_hash_matches": true,
+    "stored_parser_version": "1.28.2",
+    "runtime_parser_version": "1.28.2",
+    "stored_chunk_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+    "runtime_chunk_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+    "stored_parents": 30,
+    "stored_children": 34,
+    "fresh_parents": 29,
+    "fresh_children": 32,
+    "shared_ids": 2,
+    "stored_total": 64,
+    "fresh_total": 61,
+    "fresh_env_parents": []
+  },
+  {
+    "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+    "file_hash_matches": true,
+    "stored_parser_version": "1.28.2",
+    "runtime_parser_version": "1.28.2",
+    "stored_chunk_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+    "runtime_chunk_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+    "stored_parents": 88,
+    "stored_children": 109,
+    "fresh_parents": 94,
+    "fresh_children": 113,
+    "shared_ids": 40,
+    "stored_total": 197,
+    "fresh_total": 207,
+    "fresh_env_parents": [
+      {
+        "text": "4养殖环境养殖场应选择海流畅通，周边无污染源，海水悬浮物少，交通便利，供电、给排水等基础设施配套齐全；海、淡水资源丰富，水源水质应符合GB 11607的规定，幼体培育用水水质应符合NY 5052的规定，生产用水应经沉淀、砂滤净化处理后使用。盐度26～35，pH值7.8～8.5，溶解氧含量保持5 mg/L以上。",
+        "heading": [
+          "纳滨对虾）",
+          "4养殖环境"
+        ],
+        "id": "0b351996-3bc7-5723-a988-92edbf231b8c"
+      }
+    ]
+  },
+  {
+    "title": "DB32_T 5292—2025 中华绒螯蟹生态育苗技术规范",
+    "file_hash_matches": true,
+    "stored_parser_version": "1.28.2",
+    "runtime_parser_version": "1.28.2",
+    "stored_chunk_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+    "runtime_chunk_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+    "stored_parents": 32,
+    "stored_children": 35,
+    "fresh_parents": 31,
+    "fresh_children": 33,
+    "shared_ids": 19,
+    "stored_total": 67,
+    "fresh_total": 64,
+    "fresh_env_parents": []
+  }
+]

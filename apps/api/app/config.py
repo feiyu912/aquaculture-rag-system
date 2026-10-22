@@ -107,6 +107,14 @@ class Settings(BaseSettings):
     enable_source_aware_retrieval: bool = True
     source_anchor_max: int = 3
     source_anchor_slots: int = 2
+    # --- layered trust / FAQ ------------------------------------------------
+    # Off by default: phase one answers from original documents only, and the
+    # verified-FAQ supplement must be switched on deliberately.
+    enable_faq_retrieval: bool = False
+    enable_faq_direct_answer: bool = False
+    faq_supplement_k: int = 2
+    # Minimum dense+BM25 agreement before a FAQ may be offered as supplement.
+    faq_min_score: float = 0.0
     source_anchor_top_k: int = 40
     source_anchor_rerank_limit: int = 8
 

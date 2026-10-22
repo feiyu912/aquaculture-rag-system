@@ -1,0 +1,284 @@
+[
+  {
+    "path": "eval/runs/real_questions_v1/manifest.json",
+    "sha256": "a6549fa2f990460a7313a0adc72c0be2cbd21003d019444435b7bca8635dd808",
+    "metadata": {
+      "generated_at": "2026-10-20T04:00:09.609538+00:00",
+      "git_commit": "64c017d343224f9e83f1e120f47752216041f79b",
+      "dataset": "/Users/kaicheng/coding/python/aquaculture-rag-system/eval/real_questions_v1.jsonl",
+      "dataset_sha256": "dd94dfd501d8a346f66cafeada94fda2c8c9721ce935b34d364bdbdb6872dc6a",
+      "cases": 65,
+      "modes": [
+        "dense",
+        "bm25",
+        "hybrid",
+        "hybrid_rerank"
+      ],
+      "top_k": 10,
+      "query_ir": false,
+      "query_planner": false,
+      "contextual_retrieval": false,
+      "collection": "kb_chunks_bge_m3_v1",
+      "embedding_model": "BAAI/bge-m3",
+      "reranker_model": "BAAI/bge-reranker-v2-m3",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means.",
+      "git_dirty": true
+    }
+  },
+  {
+    "path": "eval/runs/real_questions_v1_query_ir/manifest.json",
+    "sha256": "4b8f2da103bf9b82489510b63d269d2462cc84a44999015dfc39cea1ef6030a7",
+    "metadata": {
+      "generated_at": "2026-10-20T04:02:26.702873+00:00",
+      "git_commit": "64c017d343224f9e83f1e120f47752216041f79b",
+      "dataset": "/Users/kaicheng/coding/python/aquaculture-rag-system/eval/real_questions_v1.jsonl",
+      "dataset_sha256": "dd94dfd501d8a346f66cafeada94fda2c8c9721ce935b34d364bdbdb6872dc6a",
+      "cases": 65,
+      "modes": [
+        "dense",
+        "bm25",
+        "hybrid",
+        "hybrid_rerank"
+      ],
+      "top_k": 10,
+      "query_ir": true,
+      "query_planner": false,
+      "contextual_retrieval": false,
+      "collection": "kb_chunks_bge_m3_v1",
+      "embedding_model": "BAAI/bge-m3",
+      "reranker_model": "BAAI/bge-reranker-v2-m3",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means.",
+      "git_dirty": true
+    }
+  },
+  {
+    "path": "eval/runs/real_questions_v1_1_no_query_ir/manifest.json",
+    "sha256": "8c42f992ef6e52971eaf7548cd1f4e8c9482801e32cc9ebb2abd6fd918edbc05",
+    "metadata": {
+      "generated_at": "2026-10-20T04:31:41.884370+00:00",
+      "git_commit": "acabfc1240b2034c35ce6165dfabb29eb15f8d9e",
+      "git_dirty": true,
+      "dataset": "/Users/kaicheng/coding/python/aquaculture-rag-system/eval/real_questions_v1.jsonl",
+      "dataset_sha256": "09d2a329e9710ae1d3e212b1b927e3ee06bc2a93b5638d2bf2d2e564d6eb01ca",
+      "cases": 70,
+      "modes": [
+        "dense",
+        "bm25",
+        "hybrid",
+        "hybrid_rerank"
+      ],
+      "top_k": 10,
+      "query_ir": false,
+      "query_planner": false,
+      "contextual_retrieval": false,
+      "collection": "kb_chunks_bge_m3_v1",
+      "embedding_model": "BAAI/bge-m3",
+      "reranker_model": "BAAI/bge-reranker-v2-m3",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means."
+    }
+  },
+  {
+    "path": "eval/runs/real_questions_v1_source_aware/manifest.json",
+    "sha256": "e73be564effa1293e186a9d43dba83feca7ea51931cfcc2e712e505effb48174",
+    "metadata": {
+      "generated_at": "2026-10-20T07:22:10.995903+00:00",
+      "git_commit": "a82ccaddb7b3ee5125ed1813bfd6e8283b89f99e",
+      "git_dirty": true,
+      "dataset": "/Users/kaicheng/coding/python/aquaculture-rag-system/eval/real_questions_v1.jsonl",
+      "dataset_sha256": "09d2a329e9710ae1d3e212b1b927e3ee06bc2a93b5638d2bf2d2e564d6eb01ca",
+      "cases": 70,
+      "modes": [
+        "hybrid_rerank"
+      ],
+      "top_k": 10,
+      "query_ir": true,
+      "query_planner": false,
+      "contextual_retrieval": false,
+      "collection": "kb_chunks_bge_m3_v1",
+      "embedding_model": "BAAI/bge-m3",
+      "reranker_model": "BAAI/bge-reranker-v2-m3",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means."
+    }
+  },
+  {
+    "path": "eval/runs/r061_source_aware/manifest.json",
+    "sha256": "a2022722928ad87de2465f67e6584b755d7851c97f8d7267a407d8527724166e",
+    "metadata": {
+      "generated_at": "2026-10-20T07:18:48.117627+00:00",
+      "git_commit": "2538e1f6478733a6db0bab726de4973a9a6af55b",
+      "git_dirty": true,
+      "dataset": "/tmp/r061.jsonl",
+      "dataset_sha256": "4ed9dba65aa26b41dbab3e6162800c4eff77f43948fb030bacf6eb34f031ed1e",
+      "cases": 1,
+      "modes": [
+        "hybrid_rerank"
+      ],
+      "top_k": 10,
+      "query_ir": true,
+      "query_planner": false,
+      "contextual_retrieval": false,
+      "collection": "kb_chunks_bge_m3_v1",
+      "embedding_model": "BAAI/bge-m3",
+      "reranker_model": "BAAI/bge-reranker-v2-m3",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means."
+    }
+  },
+  {
+    "path": "eval/runs/real_questions_v1_1_ctx_no_query_ir/manifest.json",
+    "sha256": "83c86f1ae45ae742ddbe14c60bb2939989745de27b5b58dd6eeb8227c083c146",
+    "metadata": {
+      "generated_at": "2026-10-20T05:22:21.087736+00:00",
+      "git_commit": "b6c4ac6ddd90083f2293fd122769a1671bda94c9",
+      "git_dirty": true,
+      "dataset": "/Users/kaicheng/coding/python/aquaculture-rag-system/eval/real_questions_v1.jsonl",
+      "dataset_sha256": "09d2a329e9710ae1d3e212b1b927e3ee06bc2a93b5638d2bf2d2e564d6eb01ca",
+      "cases": 70,
+      "modes": [
+        "dense",
+        "bm25",
+        "hybrid",
+        "hybrid_rerank"
+      ],
+      "top_k": 10,
+      "query_ir": false,
+      "query_planner": false,
+      "contextual_retrieval": true,
+      "collection": "kb_chunks_bge_m3_ctx_v1",
+      "embedding_model": "BAAI/bge-m3",
+      "reranker_model": "BAAI/bge-reranker-v2-m3",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means."
+    }
+  },
+  {
+    "path": "eval/runs/bge_smoke/manifest.json",
+    "sha256": "ae3af76032bdf38faea9f9ad0ce51b4f20a4ad18a064807fa2e367e2f79b587b",
+    "metadata": {
+      "generated_at": "2026-10-20T02:46:02.193377+00:00",
+      "git_commit": "aaa11c813742b589b508e6b511202261c313df21",
+      "dataset": "/Users/kaicheng/coding/python/aquaculture-rag-system/eval/sample_questions.jsonl",
+      "dataset_sha256": "563c9ae8860aa03cea24b8c5983afb5dcc6b84880e916bff846a8282a3e76964",
+      "cases": 5,
+      "mode": "hybrid",
+      "collection": "kb_chunks_bge_m3_v1",
+      "embedding_model": "BAAI/bge-m3",
+      "reranker_model": "BAAI/bge-reranker-v2-m3",
+      "python_version": "3.13.14",
+      "original_flags": {
+        "enable_graph_expansion": false,
+        "enable_evidence_requirements": false,
+        "enable_targeted_retrieval": false,
+        "enable_query_decomposition": false,
+        "enable_adaptive_routing": false
+      },
+      "configs": {
+        "baseline": {},
+        "graph": {
+          "enable_graph_expansion": true
+        },
+        "requirements": {
+          "enable_evidence_requirements": true
+        },
+        "requirements_retry": {
+          "enable_evidence_requirements": true,
+          "enable_targeted_retrieval": true
+        },
+        "decomposition": {
+          "enable_query_decomposition": true
+        },
+        "adaptive": {
+          "enable_adaptive_routing": true
+        },
+        "full_optional": {
+          "enable_graph_expansion": true,
+          "enable_evidence_requirements": true,
+          "enable_targeted_retrieval": true,
+          "enable_query_decomposition": true
+        },
+        "full_optional_adaptive": {
+          "enable_graph_expansion": true,
+          "enable_evidence_requirements": true,
+          "enable_targeted_retrieval": true,
+          "enable_query_decomposition": true,
+          "enable_adaptive_routing": true
+        }
+      },
+      "outputs": [
+        "details.jsonl",
+        "summary.csv",
+        "manifest.json"
+      ]
+    }
+  },
+  {
+    "path": "eval/runs/real_questions_v1_1_query_ir/manifest.json",
+    "sha256": "94d044263aeaab44023ff8495ef71d5e6d0a21c455735fcc6c82b347a746b8f0",
+    "metadata": {
+      "generated_at": "2026-10-20T04:30:15.759302+00:00",
+      "git_commit": "acabfc1240b2034c35ce6165dfabb29eb15f8d9e",
+      "git_dirty": true,
+      "dataset": "/Users/kaicheng/coding/python/aquaculture-rag-system/eval/real_questions_v1.jsonl",
+      "dataset_sha256": "09d2a329e9710ae1d3e212b1b927e3ee06bc2a93b5638d2bf2d2e564d6eb01ca",
+      "cases": 70,
+      "modes": [
+        "dense",
+        "bm25",
+        "hybrid",
+        "hybrid_rerank"
+      ],
+      "top_k": 10,
+      "query_ir": true,
+      "query_planner": false,
+      "contextual_retrieval": false,
+      "collection": "kb_chunks_bge_m3_v1",
+      "embedding_model": "BAAI/bge-m3",
+      "reranker_model": "BAAI/bge-reranker-v2-m3",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means."
+    }
+  },
+  {
+    "path": "eval/runs/real_questions_v1_1_ctx_query_ir/manifest.json",
+    "sha256": "65e7b91442f53e26e118826df88f6feed92afe90c3103b2fc17f023bf658bc1a",
+    "metadata": {
+      "generated_at": "2026-10-20T05:20:53.334881+00:00",
+      "git_commit": "b6c4ac6ddd90083f2293fd122769a1671bda94c9",
+      "git_dirty": true,
+      "dataset": "/Users/kaicheng/coding/python/aquaculture-rag-system/eval/real_questions_v1.jsonl",
+      "dataset_sha256": "09d2a329e9710ae1d3e212b1b927e3ee06bc2a93b5638d2bf2d2e564d6eb01ca",
+      "cases": 70,
+      "modes": [
+        "dense",
+        "bm25",
+        "hybrid",
+        "hybrid_rerank"
+      ],
+      "top_k": 10,
+      "query_ir": true,
+      "query_planner": false,
+      "contextual_retrieval": true,
+      "collection": "kb_chunks_bge_m3_ctx_v1",
+      "embedding_model": "BAAI/bge-m3",
+      "reranker_model": "BAAI/bge-reranker-v2-m3",
+      "annotation_status": "ai_assisted_pending_human_review",
+      "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means."
+    }
+  },
+  {
+    "path": "eval/runs/planner_retrieval_ab_70_v5.json",
+    "sha256": "1c059a74bfa1feb7be7d61d6c798b8967ea9f6f8c715e6f519dd70bf005ec1b6"
+  },
+  {
+    "path": "eval/runs/answer_quality_v1/details.jsonl",
+    "sha256": "f66f30037ce84ee088d319b0b5ed7372c0b0cb45965f72e7f0c208e5729ebc3c"
+  },
+  {
+    "path": "eval/runs/planner_probes_v1_full/planner_probes_details.json",
+    "sha256": "c16a431a5b03ac12cda14a27293eab92564d757749ab372cd5b000db7b1bf5b0"
+  }
+]

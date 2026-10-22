@@ -70,8 +70,20 @@ class ParsedBlock:
     heading_level: int = 0
     font_size: float | None = None
     rotation: int = 0
+    # Web blocks carry no page geometry; the URL plus a text anchor is the
+    # citation target instead.  Keeping both in one dataclass lets chunking and
+    # indexing stay format-agnostic.
+    url: str | None = None
+    anchor: str | None = None
 
     def location(self) -> dict:
+        if self.url:
+            return {
+                "page": self.page,
+                "coordinate_system": "web_text",
+                "url": self.url,
+                "anchor": self.anchor,
+            }
         return {
             "page": self.page,
             "bbox": [round(v, 2) for v in self.bbox],

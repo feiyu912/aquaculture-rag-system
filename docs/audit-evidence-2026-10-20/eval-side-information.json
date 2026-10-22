@@ -1,0 +1,292 @@
+{
+  "species_metadata_supplied": 66,
+  "category_metadata_supplied": 67,
+  "species_filter_changed_count": 57,
+  "species_filter_changed": [
+    {
+      "id": "R001",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R003",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R004",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R005",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R006",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R007",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R008",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R009",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R010",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R011",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R012",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R013",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R014",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R015",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R016",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R017",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R018",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R019",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R020",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R021",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R022",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R023",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R024",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R025",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R028",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R029",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R031",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R033",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R036",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R038",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R039",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R040",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R041",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R042",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R043",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R044",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R045",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R046",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R047",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R048",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R049",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R050",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R051",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R052",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R053",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R054",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R055",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R056",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R057",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R058",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R059",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R060",
+      "query_only_species": null,
+      "label_supplied_species": "凡纳滨对虾"
+    },
+    {
+      "id": "R066",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R067",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R068",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R069",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    },
+    {
+      "id": "R070",
+      "query_only_species": null,
+      "label_supplied_species": "中华绒螯蟹"
+    }
+  ]
+}

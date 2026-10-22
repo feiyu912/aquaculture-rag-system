@@ -10,19 +10,29 @@ import type { ChatMessage, ChatStatusState } from "@/components/chat/types";
 const LAST_SESSION_KEY = "aqua-rag:last-session";
 
 function citationToSource(citation: CitationOut): Source {
+  const sourceType = citation.source_type ?? "document";
   return {
     source_id: `S${citation.source_index}`,
     index: citation.source_index,
+    source_type: sourceType,
+    media_type:
+      citation.media_type ?? (sourceType === "faq" ? "faq" : citation.page ? "pdf" : "pdf"),
     document_id: citation.document_id,
     version_id: citation.document_version_id,
     version_no: citation.version_no ?? 0,
     title: citation.title ?? "已删除文档",
     species: citation.species ?? [],
     page: citation.page,
+    page_end: citation.page_end ?? citation.page,
     quote: citation.quote,
     heading_path: [],
     // `location` is canonical; `bbox` keeps older rows working.
     location: citation.location ?? citation.bbox ?? null,
+    locations: citation.locations ?? [],
+    faq_id: citation.faq_id ?? null,
+    source_url: citation.source_url ?? null,
+    available: citation.available ?? true,
+    unavailable_reason: citation.unavailable_reason ?? null,
   };
 }
 
@@ -31,6 +41,9 @@ function localId(prefix: string) {
   localIdCounter += 1;
   return `${prefix}-${Date.now().toString(36)}-${localIdCounter}`;
 }
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export interface UseChatOptions {
   retrievalMode: RetrievalMode;
@@ -283,6 +296,10 @@ export function useChat(options: UseChatOptions) {
 
     const requested = new URLSearchParams(window.location.search).get("session_id");
     if (requested) {
+      if (!UUID_RE.test(requested)) {
+        window.localStorage.removeItem(LAST_SESSION_KEY);
+        return;
+      }
       loadSession(requested).catch(() => {
         window.localStorage.removeItem(LAST_SESSION_KEY);
         setMessages([]);

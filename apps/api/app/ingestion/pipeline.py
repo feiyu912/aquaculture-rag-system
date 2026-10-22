@@ -15,7 +15,8 @@ from app.graph.service import link_chunks, load_graph
 from app.ingestion.chunker import build_chunks
 from app.ingestion.context import build_context_text
 from app.ingestion.embedder import get_embedder
-from app.ingestion.parser import ParsedDocument, PyMuPDFParser
+from app.ingestion.html_parser import HtmlParser
+from app.ingestion.parser import DocumentParser, ParsedDocument, PyMuPDFParser
 from app.models import KbChunk, KbDocument, KbDocumentVersion, KbIngestJob
 from app.retrieval.bm25 import BM25SparseEncoder, bm25_config_hash
 from app.retrieval.index_manifest import upsert_manifest
@@ -48,6 +49,37 @@ def chunk_config_hash() -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+def trust_payload(doc: KbDocument) -> dict:
+    """Qdrant payload fields that carry provenance and trust.
+
+    They are stored with every point so the retrieval layer can filter on
+    authority/verification *inside* Qdrant instead of trusting a post-hoc sort.
+    """
+    return {
+        "source_type": "document",
+        "source_authority": doc.authority_level or "unknown",
+        "verification_status": doc.verification_status or "verified",
+        "evidence_level": "L1_original",
+        "publisher": doc.source_org,
+        "effective_date": doc.effective_date,
+        "document_status": doc.status,
+        "growth_stages": list(doc.growth_stages or []),
+        "region": doc.region,
+    }
+
+
+def select_parser(doc: KbDocument | None) -> DocumentParser:
+    """Pick the parser from the document rather than the file extension.
+
+    Web documents are saved as HTML in the same version directory, and the
+    parser name is recorded on the version so a reprocessed document keeps its
+    provenance.
+    """
+    if doc is not None and (doc.source_type or "").lower() in {"web", "html", "htm"}:
+        return HtmlParser(base_url=doc.source_url)
+    return PyMuPDFParser()
+
+
 async def _set_stage(db: AsyncSession, job: KbIngestJob, stage: str, progress: int) -> None:
     job.current_stage = stage
     job.progress = progress
@@ -58,13 +90,13 @@ async def _set_stage(db: AsyncSession, job: KbIngestJob, stage: str, progress: i
 async def ingest_version(ctx: dict, version_id: str) -> dict:
     version_uuid = uuid.UUID(version_id)
     started = time.perf_counter()
-    parser = PyMuPDFParser()
 
     async with SessionLocal() as db:
         version = await db.get(KbDocumentVersion, version_uuid)
         if version is None:
             return {"status": "missing", "version_id": version_id}
         doc = await db.get(KbDocument, version.document_id)
+        parser = select_parser(doc)
         job = (
             await db.execute(
                 select(KbIngestJob).where(KbIngestJob.document_version_id == version_uuid)
@@ -196,6 +228,7 @@ async def ingest_version(ctx: dict, version_id: str) -> dict:
                     version.id,
                     doc.category,
                     doc.species,
+                    trust_payload(doc),
                 )
                 indexed = await asyncio.to_thread(count_version_points, client, version.id)
             finally:
@@ -295,7 +328,11 @@ async def _activate(db: AsyncSession, document_id: uuid.UUID, version_id: uuid.U
     version.status = "ready"
     version.activated_at = _now()
     doc.current_version_id = version.id
-    doc.status = "active"
+    # A staged document keeps its vectors and current version but stays
+    # invisible to retrieval until promoted, because retrieval filters on
+    # ``status == "active"``.  Never auto-publish unreviewed material.
+    if doc.status != "staging":
+        doc.status = "active"
     await db.execute(
         update(KbDocumentVersion)
         .where(

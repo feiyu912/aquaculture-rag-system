@@ -1,0 +1,122 @@
+{
+  "ndcg_app": {
+    "first_relevant_rank": 2,
+    "mrr@10": 0.5,
+    "gold_rank": {
+      "correct": 2
+    },
+    "recall@5": 1.0,
+    "ndcg@5": 1.0,
+    "recall@10": 1.0,
+    "ndcg@10": 1.0
+  },
+  "ndcg_script": {
+    "first_relevant_rank": 2,
+    "mrr@10": 0.5,
+    "gold_rank": {
+      "correct": 2
+    },
+    "recall@5": 1.0,
+    "ndcg@5": 1.0,
+    "recall@10": 1.0,
+    "ndcg@10": 1.0
+  },
+  "contradiction": {
+    "status": "supported",
+    "score": 0.857,
+    "method": "lexical_overlap_v0",
+    "matched_terms": [
+      "mg",
+      "以上",
+      "保持",
+      "养殖",
+      "水体",
+      "溶解氧"
+    ]
+  },
+  "undated_drug_list": {
+    "requires_current_regulation": false,
+    "lexical": {
+      "sufficient": true,
+      "reason": "matched",
+      "query_terms": [
+        "水产养殖",
+        "禁用",
+        "渔药",
+        "完整",
+        "清单"
+      ],
+      "matched_terms": [
+        "水产养殖",
+        "禁用",
+        "渔药",
+        "完整",
+        "清单"
+      ],
+      "matched_weight": 9.0,
+      "total_weight": 9.0,
+      "coverage": 1.0,
+      "best_index": 0,
+      "missing_terms": []
+    },
+    "after_current_gate": {
+      "sufficient": true,
+      "reason": "matched",
+      "query_terms": [
+        "水产养殖",
+        "禁用",
+        "渔药",
+        "完整",
+        "清单"
+      ],
+      "matched_terms": [
+        "水产养殖",
+        "禁用",
+        "渔药",
+        "完整",
+        "清单"
+      ],
+      "matched_weight": 9.0,
+      "total_weight": 9.0,
+      "coverage": 1.0,
+      "best_index": 0,
+      "missing_terms": []
+    }
+  },
+  "crop_offset": {
+    "cropbox": [
+      100.0,
+      100.0,
+      500.0,
+      700.0
+    ],
+    "raw_bbox_crop_relative": [
+      50.0,
+      87.0999984741211,
+      180.67999267578125,
+      103.58799743652344
+    ],
+    "expected_canonical": [
+      50.0,
+      496.41200256347656,
+      180.67999267578125,
+      512.9000015258789
+    ],
+    "actual": []
+  },
+  "bm25_hash_missing_weights": {
+    "same_hash": true,
+    "different_index_vectors": true
+  },
+  "persist_failure": {
+    "error": "AttributeError: 'NoneType' object has no attribute 'config'",
+    "committed": false
+  },
+  "truncated_llm_stream": {
+    "result": [
+      "partial"
+    ],
+    "exception": null,
+    "saw_done_or_finish_reason": false
+  }
+}

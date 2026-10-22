@@ -91,8 +91,17 @@ def upsert_chunks(
     version_id: uuid.UUID,
     category: str,
     species: list[str] | None = None,
+    trust: dict | None = None,
 ) -> None:
+    """Upsert document chunks with trust metadata.
+
+    ``trust`` carries the payload fields that the retrieval layer needs in order
+    to enforce the layered policy *inside Qdrant* rather than after the fact:
+    ``source_type``, ``source_authority``, ``verification_status``,
+    ``evidence_level``, ``publisher`` and ``effective_date``.
+    """
     payload_species = normalize_species_list(species)
+    trust_payload = trust or {}
     points: list[models.PointStruct] = []
     for chunk, dense, sparse in zip(chunks, dense_vectors, sparse_vectors, strict=True):
         points.append(
@@ -113,6 +122,7 @@ def upsert_chunks(
                     "block_type": chunk.block_type,
                     "token_count": chunk.token_count,
                     "content_hash": _content_hash(chunk.content),
+                    **trust_payload,
                 },
             )
         )

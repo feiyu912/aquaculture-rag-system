@@ -9,7 +9,10 @@ from app.ingestion.context import sanitize_heading_path
 from app.ingestion.parser import CJK_RE, ParsedBlock, ParsedDocument
 
 CHUNK_NAMESPACE = uuid.UUID("6f1f5d8e-3f6a-4c2b-9d7e-2a1b3c4d5e6f")
-SENTENCE_RE = re.compile(r"(?<=[。！？!?；;])")
+# Chinese sentences end with a full-width mark; Latin sentences end with a dot
+# followed by whitespace and a capital/quote.  Decimal points ("1.5") and
+# abbreviations followed by a lower-case word ("e.g. it") are left intact.
+SENTENCE_RE = re.compile(r"(?<=[。！？；;])|(?<=[.!?])(?=\s+[\"'(A-Z0-9])")
 
 
 def _sha(text: str) -> str:
@@ -42,6 +45,10 @@ def _merge_locations(blocks: list[ParsedBlock]) -> list[dict]:
         current = by_page.get(block.page)
         if current is None:
             by_page[block.page] = loc
+            continue
+        # Web locations have no geometry to merge; the first block's anchor is
+        # the stable jump target for the whole group.
+        if "bbox" not in loc or "bbox" not in current:
             continue
         x0 = min(current["bbox"][0], loc["bbox"][0])
         y0 = min(current["bbox"][1], loc["bbox"][1])
@@ -107,6 +114,19 @@ def _hard_split(text: str, target: int, overlap: int) -> list[str]:
     return chunks
 
 
+def _overlap_tail(text: str, overlap: int) -> str:
+    """Trailing context for the next chunk, without cutting a Latin word."""
+    if overlap <= 0 or not text:
+        return ""
+    tail = text[-overlap:]
+    if any("\u4e00" <= ch <= "\u9fff" for ch in tail):
+        return tail  # CJK has no word delimiter; characters are safe to cut
+    space = tail.find(" ")
+    if space > 0:
+        return tail[space + 1 :]
+    return ""
+
+
 def _split_text(text: str, target: int, overlap: int) -> list[str]:
     text = text.strip()
     if len(text) <= target:
@@ -128,8 +148,9 @@ def _split_text(text: str, target: int, overlap: int) -> list[str]:
             current += sentence
         else:
             chunks.append(current)
-            tail = current[-overlap:] if overlap > 0 else ""
-            current = (tail + sentence).strip()
+            tail = _overlap_tail(current, overlap)
+            joiner = " " if tail and not tail.endswith(" ") and not sentence[:1].isspace() else ""
+            current = (tail + joiner + sentence).strip()
     if current.strip():
         chunks.append(current)
 
@@ -216,7 +237,10 @@ def build_chunks(
     child_ordinal = 0
     for blocks, heading_path in groups:
         heading_path = sanitize_heading_path(heading_path)
-        content = _join_blocks(blocks).strip()
+        # PDF text layers occasionally carry NUL bytes (seen in DB37/T feed
+        # standards); Postgres rejects them on insert, which failed the whole
+        # document. Strip them at the single point where text enters.
+        content = _join_blocks(blocks).replace("\x00", "").strip()
         if not content:
             continue
         locations = _merge_locations(blocks)

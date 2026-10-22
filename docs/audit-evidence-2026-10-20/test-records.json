@@ -1,0 +1,62 @@
+{
+  "scope": "Recorded from actual tool results in this audit; no re-run after concurrent data changes.",
+  "pytest": {
+    "command": "cd apps/api && .venv/bin/python -m pytest -q",
+    "exit_code": 0,
+    "passed": 164,
+    "skipped": 2,
+    "seconds": 1.02
+  },
+  "typecheck": {
+    "command": "cd apps/web && npm run typecheck",
+    "exit_code": 0
+  },
+  "build": {
+    "command": "cd apps/web && npm run build",
+    "exit_code": 0,
+    "static_pages": 9
+  },
+  "ruff": {
+    "command": "cd apps/api && .venv/bin/python -m ruff check app tests ../../scripts",
+    "exit_code": 1,
+    "findings": [
+      {
+        "file": "scripts/compare_modes.py",
+        "line": 73,
+        "rule": "RUF010"
+      },
+      {
+        "file": "scripts/compare_modes.py",
+        "line": 103,
+        "rule": "SIM115"
+      },
+      {
+        "file": "scripts/evaluate_answer_quality.py",
+        "line": 1,
+        "rule": "EXE001"
+      },
+      {
+        "file": "scripts/evaluate_planner_retrieval.py",
+        "line": 93,
+        "rule": "RUF100"
+      },
+      {
+        "file": "scripts/reindex_collection.py",
+        "line": 33,
+        "rule": "I001"
+      }
+    ]
+  },
+  "reader_e2e": {
+    "command": "cd apps/web && AQUA_WEB_BASE=http://127.0.0.1:3000 ./node_modules/.bin/playwright test e2e/reader.spec.ts --project=desktop-chromium --reporter=line --output=/tmp/aqua-audit-reader-results",
+    "exit_code": 1,
+    "passed": 4,
+    "failed": 1,
+    "seconds": 8.2,
+    "failed_assertion": "reader.spec.ts:62 expected abs offset < 120; received 126.15625",
+    "artifacts": "/tmp/aqua-audit-reader-results"
+  },
+  "cross_message_browser_probe": {
+    "result": "No existing suitable multi-answer session found; no new conversation created. Source finding remains static."
+  }
+}

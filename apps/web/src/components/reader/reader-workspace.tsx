@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, BookOpen, Loader2, Search } from "lucide-react";
 
 import { CitationSidebar, type ReaderCitation } from "@/components/reader/citation-sidebar";
@@ -12,7 +11,7 @@ import { ReaderToolbar } from "@/components/reader/reader-toolbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_BASE_URL } from "@/lib/api/client";
-import { documentsApi } from "@/lib/api/documents";
+import { useDocumentPage } from "@/hooks/use-management";
 import { fetchPdf, type LoadedDocument } from "@/lib/pdf/loader";
 import { cn } from "@/lib/utils";
 
@@ -25,8 +24,8 @@ export function ReaderWorkspace({
   onZoomChange,
   currentPage,
   onPageChange,
-  highlight,
-  onHighlight,
+  highlights,
+  onHighlights,
   activeCitationId,
   onActiveCitationChange,
   citations,
@@ -39,8 +38,8 @@ export function ReaderWorkspace({
   onZoomChange: (zoom: number) => void;
   currentPage: number;
   onPageChange: (page: number) => void;
-  highlight: PdfHighlight | null;
-  onHighlight: (highlight: PdfHighlight | null) => void;
+  highlights: PdfHighlight[];
+  onHighlights: (highlights: PdfHighlight[]) => void;
   activeCitationId: string | null;
   onActiveCitationChange: (id: string | null) => void;
   citations: ReaderCitation[];
@@ -133,10 +132,45 @@ export function ReaderWorkspace({
 
   const handleSelectCitation = (citation: ReaderCitation) => {
     onActiveCitationChange(citation.id);
-    if (!citation.bbox) return;
-    onHighlight({ page: citation.bbox.page, bbox: citation.bbox.bbox });
-    onPageChange(citation.bbox.page);
+    const locations = (citation.locations ?? []).filter(
+      (entry) =>
+        Number.isFinite(entry.page) &&
+        Array.isArray(entry.bbox) &&
+        entry.bbox.length === 4,
+    );
+    if (locations.length > 0) {
+      onHighlights(locations);
+      onPageChange(locations[0].page);
+      return;
+    }
+    if (citation.bbox) {
+      onHighlights([{ page: citation.bbox.page, bbox: citation.bbox.bbox }]);
+      onPageChange(citation.bbox.page);
+      return;
+    }
+    if (citation.page) onPageChange(citation.page);
   };
+
+  const highlightPages = [...new Set(highlights.map((item) => item.page))].sort(
+    (a, b) => a - b,
+  );
+  const firstHighlightPage = highlightPages[0];
+  const lastHighlightPage = highlightPages[highlightPages.length - 1];
+  const contiguous =
+    highlightPages.length > 2 &&
+    lastHighlightPage - firstHighlightPage + 1 === highlightPages.length;
+  const highlightPageLabel =
+    highlights.length === 1
+      ? `${firstHighlightPage}`
+      : contiguous
+        ? `${firstHighlightPage}–${lastHighlightPage}`
+        : highlightPages.join("、");
+  const highlightLabel =
+    highlights.length === 0
+      ? null
+      : highlights.length === 1
+        ? `高亮 · 第 ${highlightPageLabel} 页`
+        : `高亮 ${highlights.length} 处 · 第 ${highlightPageLabel} 页`;
 
   if (!documentId) {
     return <DocumentPicker />;
@@ -158,7 +192,7 @@ export function ReaderWorkspace({
         downloadUrl={`${API_BASE_URL}/api/documents/${documentId}/file${
           versionId ? `?version_id=${versionId}` : ""
         }`}
-        highlightLabel={highlight ? `高亮 · 第 ${highlight.page} 页` : null}
+        highlightLabel={highlightLabel}
       />
 
       {loadError ? (
@@ -188,7 +222,7 @@ export function ReaderWorkspace({
               <PdfViewer
                 pdf={pdf.doc}
                 scale={zoom}
-                highlight={highlight}
+                highlights={highlights}
                 targetPage={currentPage}
                 onVisiblePageChange={onPageChange}
                 onPageRendered={(page, viewport) => {
@@ -225,19 +259,25 @@ export function ReaderWorkspace({
 
 export function DocumentPicker() {
   const router = useRouter();
-  const { data: documents, isLoading } = useQuery({
-    queryKey: ["documents"],
-    queryFn: documentsApi.list,
-  });
   const [query, setQuery] = React.useState("");
+  const [debouncedQuery, setDebouncedQuery] = React.useState("");
+  const [page, setPage] = React.useState(1);
+  const pageSize = 20;
 
-  const filtered = React.useMemo(() => {
-    const keyword = query.trim().toLowerCase();
-    if (!keyword) return documents ?? [];
-    return (documents ?? []).filter((document) =>
-      document.title.toLowerCase().includes(keyword),
-    );
-  }, [documents, query]);
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const { data, isLoading } = useDocumentPage({
+    q: debouncedQuery || undefined,
+    published: "true",
+    sort: "title_asc",
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+  });
+  const documents = data?.items ?? [];
+  const pages = Math.max(1, data?.pages ?? 1);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -250,7 +290,7 @@ export function DocumentPicker() {
             文献阅读器
           </h2>
           <p className="mx-auto mt-2 max-w-md text-[13.5px] leading-6 text-muted-foreground">
-            选择一份知识库文档查看原文。从智能问答页点击引用，可以直接定位到对应页码并高亮被引用的原文区域。
+            选择一份已发布文档查看原文。从智能问答页点击引用，可以直接定位到对应页码并高亮被引用的原文区域。
           </p>
         </div>
 
@@ -258,8 +298,11 @@ export function DocumentPicker() {
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle-foreground" />
           <Input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜索文档"
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
+            placeholder="搜索已发布文档"
             className="h-10 pl-9"
             aria-label="搜索文档"
           />
@@ -268,40 +311,72 @@ export function DocumentPicker() {
         <ul className="mt-4 space-y-2">
           {isLoading ? (
             <li className="py-8 text-center text-[13px] text-muted-foreground">加载中…</li>
-          ) : filtered.length === 0 ? (
+          ) : documents.length === 0 ? (
             <li className="py-8 text-center text-[13px] text-muted-foreground">
-              没有匹配的文档
+              没有匹配的已发布文档；待审核文档请从知识库详情查看。
             </li>
           ) : (
-            filtered.map((document) => (
-              <li key={document.id}>
-                <button
-                  type="button"
-                  disabled={!document.current_version_id}
-                  onClick={() =>
-                    router.push(
-                      `/reader?document_id=${document.id}&version_id=${document.current_version_id}`,
-                    )
-                  }
-                  className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left shadow-xs transition-all duration-200 ease-soft hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-                >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-muted">
-                    <BookOpen className="size-4 text-muted-foreground" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13.5px] font-medium text-foreground">
-                      {document.title}
+            documents.map((document) => {
+              const isHtml = document.source_type === "html";
+              return (
+                <li key={document.id}>
+                  <button
+                    type="button"
+                    disabled={!document.current_version_id}
+                    onClick={() =>
+                      router.push(
+                        isHtml
+                          ? `/source?document_id=${document.id}&version_id=${document.current_version_id}`
+                          : `/reader?document_id=${document.id}&version_id=${document.current_version_id}`,
+                      )
+                    }
+                    className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left shadow-xs transition-all duration-200 ease-soft hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-muted">
+                      <BookOpen className="size-4 text-muted-foreground" />
                     </span>
-                    <span className="mt-0.5 block text-[11.5px] text-subtle-foreground">
-                      {document.category} · {document.page_count ?? 0} 页 · v
-                      {document.current_version_no ?? "—"}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-medium text-foreground">
+                        {document.title}
+                      </span>
+                      <span className="mt-0.5 block text-[11.5px] text-subtle-foreground">
+                        {isHtml ? "网页快照" : "PDF"} · {document.category} ·{" "}
+                        {document.page_count ?? 0} 页 · v
+                        {document.current_version_no ?? "—"}
+                      </span>
                     </span>
-                  </span>
-                </button>
-              </li>
-            ))
+                  </button>
+                </li>
+              );
+            })
           )}
         </ul>
+
+        {data && data.total > pageSize ? (
+          <div className="mt-4 flex items-center justify-between text-[11.5px] text-muted-foreground">
+            <span>
+              共 {data.total} 条 · 第 {page} / {pages} 页
+            </span>
+            <div className="flex gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((value) => Math.max(1, value - 1))}
+              >
+                上一页
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= pages}
+                onClick={() => setPage((value) => value + 1)}
+              >
+                下一页
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

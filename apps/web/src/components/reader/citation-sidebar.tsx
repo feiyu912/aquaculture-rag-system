@@ -14,12 +14,30 @@ export interface ReaderCitation {
   quote: string;
   page: number | null;
   bbox: { page: number; bbox: [number, number, number, number] } | null;
+  page_end?: number | null;
+  locations?: { page: number; bbox: [number, number, number, number] }[];
   question: string;
   answer_preview: string;
   cited_at: string;
   message_id: string;
   session_id: string;
   version_no: number | null;
+}
+
+function citationPageLabel(citation: ReaderCitation): string | null {
+  if (!citation.page) return null;
+  const pages = [
+    ...new Set(
+      (citation.locations ?? [])
+        .map((location) => location.page)
+        .filter((page) => Number.isFinite(page)),
+    ),
+  ].sort((a, b) => a - b);
+  const all = pages.length > 0 ? pages : [citation.page];
+  const first = all[0];
+  const last = all[all.length - 1];
+  const contiguous = all.length > 2 && last - first + 1 === all.length;
+  return contiguous ? `${first}–${last}` : all.join("、");
 }
 
 export function CitationSidebar({
@@ -110,7 +128,9 @@ export function CitationSidebar({
                         {citation.source_index}
                       </span>
                       {citation.page ? (
-                        <Badge variant="neutral">第 {citation.page} 页</Badge>
+                        <Badge variant="neutral">
+                          第 {citationPageLabel(citation)} 页
+                        </Badge>
                       ) : null}
                       {citation.version_no ? (
                         <Badge variant="outline">v{citation.version_no}</Badge>

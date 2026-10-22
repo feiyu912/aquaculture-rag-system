@@ -11,6 +11,7 @@ import {
   Waves,
 } from "lucide-react";
 
+import { ModelPicker } from "@/components/chat/model-picker";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -159,6 +160,7 @@ export function ChatToolbar({
       </span>
 
       <div className="ml-auto flex items-center gap-2">
+        <ModelPicker />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

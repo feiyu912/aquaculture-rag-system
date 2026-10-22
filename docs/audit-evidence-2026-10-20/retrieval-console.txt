@@ -1,0 +1,13 @@
+Building prefix dict from the default dictionary ...
+Loading model from cache /var/folders/ws/j3d7122n5_j8qbkfx872rqs80000gn/T/jieba.cache
+Loading model cost 0.234 seconds.
+Prefix dict has been built successfully.
+W1021 09:16:53.782000 83368 .venv/lib/python3.13/site-packages/torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights:   1%|▏         | 5/391 [00:01<02:05,  3.07it/s]Loading weights: 100%|██████████| 391/391 [00:01<00:00, 239.62it/s]
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 11356.03it/s]
+R061 True matched ['e25f6ae4-dc20-52b3-aae6-9f9c8601ce36', '060eb863-f8b9-5f94-872d-2d440b740886', '9029f463-aa41-52a0-8c6d-dc8341785cac', '70efaaaa-23d1-571b-b4e0-ece33393b151', 'cf2b2c0d-442b-5465-b32f-f82b22724199'] {'dense_ms': 881.8, 'sparse_ms': 60.3, 'graph_ms': 0.0, 'retrieval_ms': 2311.7}
+R062 True matched ['e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4', '060eb863-f8b9-5f94-872d-2d440b740886', 'c03e4cf9-8f83-50da-a126-77e13722a908', '65edfb85-bfc0-51e6-baf5-75467bba628b', 'b0aaee2a-fa88-5501-a038-5599cdffc9a3'] {'dense_ms': 198.7, 'sparse_ms': 11.7, 'graph_ms': 0.0, 'retrieval_ms': 1627.6}
+R064 False current_regulation_unverified [] {'dense_ms': 52.9, 'sparse_ms': 4.9, 'graph_ms': 0.0, 'retrieval_ms': 1572.0}
+R066 True matched ['c03e4cf9-8f83-50da-a126-77e13722a908', 'dfd52b98-1263-5a9f-a59a-4126adc465d4', 'ebcecdbc-aedc-58f6-a069-ac14a47509b9', '10d78e45-8b5e-5b91-8092-5d7a71cb60a2', 'e25f6ae4-dc20-52b3-aae6-9f9c8601ce36'] {'dense_ms': 54.4, 'sparse_ms': 4.7, 'graph_ms': 0.0, 'retrieval_ms': 1421.3}
+UNDATED True matched ['5af3627c-5486-5467-884a-3128491ce0ae', '7d74b6ba-6f99-5aef-ae19-31595fda5841', 'fb999556-8657-5060-bef1-160068f7878b', '527f66c5-7fe4-5dbe-83fb-fed530c70697', '146bb9fd-bbea-5975-8103-c113e5ab867e'] {'dense_ms': 51.2, 'sparse_ms': 4.9, 'graph_ms': 0.0, 'retrieval_ms': 1512.6}
+{'embedder': 'BAAI/bge-m3', 'device': 'mps', 'dim': 1024, 'norm': 0.9998112451483678} [('relevant', 0.9775000306229962), ('irrelevant', 1.6187581436151334e-05)]

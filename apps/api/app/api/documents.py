@@ -19,11 +19,17 @@ from fastapi import (
     status,
 )
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db import get_db
+from app.media import (
+    citation_locations,
+    max_location_page,
+    normalize_media_type,
+)
 from app.models import (
     ChatCitation,
     ChatMessage,
@@ -80,6 +86,14 @@ def _doc_out(doc: KbDocument, version: KbDocumentVersion | None) -> DocumentOut:
         publish_year=doc.publish_year,
         document_status=(doc.doc_metadata or {}).get("document_status"),
         region=(doc.doc_metadata or {}).get("region"),
+        source_type=normalize_media_type(doc.source_type),
+        authority_level=doc.authority_level or "unknown",
+        verification_status=doc.verification_status or "verified",
+        technical_review_status=doc.technical_review_status or "pending",
+        domain_review_status=doc.domain_review_status or "pending",
+        review_flags=list(doc.review_flags or []),
+        effective_date=doc.effective_date,
+        fetched_at=doc.fetched_at,
     )
 
 
@@ -375,6 +389,59 @@ async def rollback_version(
     return _doc_out(doc, version)
 
 
+class PromoteRequest(BaseModel):
+    reviewer: str = Field(min_length=1, max_length=64)
+    note: str | None = None
+
+
+@router.post("/documents/{document_id}/promote", response_model=DocumentOut)
+async def promote_document(
+    document_id: uuid.UUID,
+    payload: PromoteRequest,
+    db: AsyncSession = Depends(get_db),
+) -> DocumentOut:
+    """Publish a staged document after a human check.
+
+    Staging is the only thing that keeps freshly collected material out of
+    retrieval: the pipeline indexes it, but ``status != "active"`` means no
+    version is offered to the retriever.  Promotion is therefore also the point
+    where ``verification_status`` becomes ``verified``.
+    """
+    doc = (
+        await db.execute(select(KbDocument).where(KbDocument.id == document_id).with_for_update())
+    ).scalar_one_or_none()
+    if doc is None or doc.status == "deleted":
+        raise HTTPException(status_code=404, detail="文档不存在")
+    if doc.current_version_id is None:
+        raise HTTPException(status_code=409, detail="文档尚未完成入库，无法发布")
+
+    version = await db.get(KbDocumentVersion, doc.current_version_id)
+    if version is None or version.status != "ready":
+        raise HTTPException(status_code=409, detail="当前版本未就绪，无法发布")
+
+    client = get_client()
+    try:
+        indexed = await asyncio.to_thread(count_version_points, client, version.id)
+    finally:
+        client.close()
+    if indexed == 0:
+        raise HTTPException(status_code=409, detail="索引为空，请先重新入库")
+
+    already = doc.status == "active" and doc.verification_status == "verified"
+    doc.status = "active"
+    doc.verification_status = "verified"
+    metadata = dict(doc.doc_metadata or {})
+    metadata["promoted_by"] = payload.reviewer
+    metadata["promoted_at"] = datetime.now(UTC).isoformat()
+    metadata["promote_note"] = payload.note
+    doc.doc_metadata = metadata
+    await db.commit()
+    result = _doc_out(doc, version)
+    if already:
+        return result
+    return result
+
+
 @router.get("/species", response_model=list[str])
 async def list_species(db: AsyncSession = Depends(get_db)) -> list[str]:
     rows = (
@@ -431,27 +498,33 @@ async def list_documents(
 @router.get("/documents/{document_id}/citations", response_model=list[DocumentCitationOut])
 async def list_document_citations(
     document_id: uuid.UUID,
+    version_id: uuid.UUID | None = Query(default=None),
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
 ) -> list[DocumentCitationOut]:
     """Citations in past answers that point at this document.
 
     The reader uses this to show *why* a document was cited and to jump back
-    to the originating conversation.
+    to the originating conversation.  ``version_id`` must be passed by the
+    reader: a bbox belongs to the exact version that produced it and must not
+    be painted onto a newer/older PDF.
     """
     doc = await db.get(KbDocument, document_id)
     if doc is None or doc.status == "deleted":
         raise HTTPException(status_code=404, detail="文档不存在")
 
+    conditions = [
+        ChatCitation.document_id == document_id,
+        ChatMessage.role == "assistant",
+    ]
+    if version_id is not None:
+        conditions.append(ChatCitation.document_version_id == version_id)
     rows = (
         await db.execute(
             select(ChatCitation, ChatMessage, ChatSession)
             .join(ChatMessage, ChatMessage.id == ChatCitation.message_id)
             .join(ChatSession, ChatSession.id == ChatMessage.session_id)
-            .where(
-                ChatCitation.document_id == document_id,
-                ChatMessage.role == "assistant",
-            )
+            .where(*conditions)
             .order_by(ChatCitation.created_at.desc())
             .limit(max(1, min(limit, 200)))
         )
@@ -468,30 +541,59 @@ async def list_document_citations(
         else []
     )
     version_numbers = {version.id: version.version_no for version in versions}
+    media_type = normalize_media_type(doc.source_type)
 
-    return [
-        DocumentCitationOut(
-            id=citation.id,
-            source_index=citation.source_index,
-            document_id=citation.document_id,
-            document_version_id=citation.document_version_id,
-            quote=citation.quote,
-            page=citation.page,
-            bbox=citation.bbox,
-            score=citation.score,
-            support_status=citation.support_status,
-            support_score=citation.support_score,
-            title=doc.title,
-            version_no=version_numbers.get(citation.document_version_id),
-            species=normalize_species_list(doc.species),
-            message_id=message.id,
-            session_id=session.id,
-            question=session.title,
-            answer_preview=(message.content or "")[:200],
-            cited_at=citation.created_at,
+    def citation_parts(
+        citation: ChatCitation,
+    ) -> tuple[list[dict], dict | None, int | None, int | None]:
+        locations = (
+            []
+            if media_type == "faq"
+            else citation_locations(citation.bbox, media_type)
         )
-        for citation, message, session in rows
-    ]
+        location = locations[0] if locations else None
+        page = citation.page if media_type == "pdf" else None
+        if media_type == "pdf" and page is None and isinstance(location, dict):
+            page = location.get("page") if isinstance(location.get("page"), int) else None
+        page_end = max_location_page(locations)
+        if media_type != "pdf":
+            page_end = None
+        return locations, location, page_end, page
+
+    result: list[DocumentCitationOut] = []
+    for citation, message, session in rows:
+        locations, location, page_end, page = citation_parts(citation)
+        result.append(
+            DocumentCitationOut(
+                id=citation.id,
+                source_index=citation.source_index,
+                document_id=citation.document_id,
+                document_version_id=citation.document_version_id,
+                source_type="document",
+                media_type=media_type,
+                quote=citation.quote,
+                page=page,
+                page_end=page_end,
+                bbox=location.get("bbox") if location else None,
+                location=location,
+                locations=locations,
+                score=citation.score,
+                support_status=citation.support_status,
+                support_score=citation.support_score,
+                title=doc.title,
+                version_no=version_numbers.get(citation.document_version_id),
+                species=normalize_species_list(doc.species),
+                source_url=doc.source_url,
+                document_status=doc.status,
+                available=True,
+                message_id=message.id,
+                session_id=session.id,
+                question=session.title,
+                answer_preview=(message.content or "")[:200],
+                cited_at=citation.created_at,
+            )
+        )
+    return result
 
 
 @router.get("/documents/{document_id}", response_model=DocumentDetail)

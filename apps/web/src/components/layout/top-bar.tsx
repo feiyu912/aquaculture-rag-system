@@ -12,6 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCapabilities } from "@/hooks/use-management";
 import { useHealth } from "@/hooks/use-health";
 import { API_BASE_URL } from "@/lib/api/client";
 import { NAV_ITEMS } from "@/lib/navigation";
@@ -20,6 +21,9 @@ import { cn } from "@/lib/utils";
 export function TopBar() {
   const pathname = usePathname();
   const { data: health, isError } = useHealth();
+  // /api/health can be green while the data APIs are gone (e.g. a stale
+  // server process predating new routes). Probe a core manage endpoint too.
+  const { isError: coreError } = useCapabilities();
   const {
     hasContext,
     contextLabel,
@@ -38,13 +42,15 @@ export function TopBar() {
 
   const healthLabel = isError
     ? "后端离线"
-    : healthy
-      ? "服务正常"
-      : degraded
-        ? "部分降级"
-        : "检查中";
+    : coreError
+      ? "核心接口异常"
+      : healthy
+        ? "服务正常"
+        : degraded
+          ? "部分降级"
+          : "检查中";
 
-  const healthTone = isError
+  const healthTone = isError || coreError
     ? "border-danger/25 bg-danger-soft text-danger"
     : degraded
       ? "border-warning/25 bg-warning-soft text-warning"

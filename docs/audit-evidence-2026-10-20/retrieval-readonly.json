@@ -1,0 +1,462 @@
+{
+  "model": {
+    "embedder": "BAAI/bge-m3",
+    "device": "mps",
+    "dim": 1024,
+    "norm": 0.9998112451483678
+  },
+  "reranker_pair": [
+    [
+      "relevant",
+      0.9775000306229962
+    ],
+    [
+      "irrelevant",
+      1.6187581436151334e-05
+    ]
+  ],
+  "cases": [
+    {
+      "id": "R061",
+      "question": "DB36 和 DB46 两个标准对养殖水体溶解氧的最低要求是否一致？",
+      "sufficient": true,
+      "gate": {
+        "sufficient": true,
+        "reason": "matched",
+        "query_terms": [
+          "db36",
+          "db46",
+          "两个",
+          "水体",
+          "溶解氧",
+          "最低",
+          "一致"
+        ],
+        "matched_terms": [
+          "db36",
+          "db46",
+          "水体",
+          "溶解氧"
+        ],
+        "matched_weight": 6.0,
+        "total_weight": 9.0,
+        "coverage": 0.667,
+        "best_index": null,
+        "missing_terms": []
+      },
+      "timings": {
+        "dense_ms": 881.8,
+        "sparse_ms": 60.3,
+        "graph_ms": 0.0,
+        "retrieval_ms": 2311.7
+      },
+      "source_aware": {
+        "enabled": true,
+        "cited": [
+          {
+            "code": "DB36",
+            "raw": "DB36",
+            "position": 0
+          },
+          {
+            "code": "DB46",
+            "raw": "DB46",
+            "position": 7
+          }
+        ],
+        "resolved": {
+          "DB36": [
+            "2b5511ca-7886-4e40-964e-5a069da06694"
+          ],
+          "DB46": [
+            "9dbe5cbd-ce28-4283-a2ef-5dc3e8fa18fe"
+          ]
+        },
+        "active": true,
+        "reason": null,
+        "anchors": [
+          {
+            "code": "DB36",
+            "raw": "DB36",
+            "position": 0,
+            "versions": [
+              "2b5511ca-7886-4e40-964e-5a069da06694"
+            ],
+            "queries": [
+              "DB36 和 DB46 两个标准对养殖水体溶解氧的最低要求是否一致？"
+            ],
+            "candidates": 34,
+            "facet_filter": "applied",
+            "selected": [
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac"
+            ],
+            "resolved": true
+          },
+          {
+            "code": "DB46",
+            "raw": "DB46",
+            "position": 7,
+            "versions": [
+              "9dbe5cbd-ce28-4283-a2ef-5dc3e8fa18fe"
+            ],
+            "queries": [
+              "DB36 和 DB46 两个标准对养殖水体溶解氧的最低要求是否一致？"
+            ],
+            "candidates": 40,
+            "facet_filter": "applied",
+            "selected": [
+              "060eb863-f8b9-5f94-872d-2d440b740886",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151"
+            ],
+            "resolved": true
+          }
+        ],
+        "slots": 2
+      },
+      "targeted": null,
+      "evidence": [
+        {
+          "parent": "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+          "child": "90c4263f-a434-5e90-a251-8f69a2ede41d",
+          "title": "DB36_T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程",
+          "page": 7,
+          "quote": "8.1水质指标溶氧量5mg/L以上，pH值7.5~8.5，透明度30cm~50cm，氨氮低于0.5mg/L，亚硝酸盐低于0.05mg/L。"
+        },
+        {
+          "parent": "060eb863-f8b9-5f94-872d-2d440b740886",
+          "child": "5a7ec784-b18d-51d8-aa2f-fa8114d61f39",
+          "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+          "page": 7,
+          "quote": "盐度26～35，pH值7.8～8.5，溶解氧含量保持5 mg/L以上。 5养殖设施"
+        },
+        {
+          "parent": "9029f463-aa41-52a0-8c6d-dc8341785cac",
+          "child": "41dde483-48fe-52e3-a96f-d04aa7acad89",
+          "title": "DB36_T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程",
+          "page": 6,
+          "quote": "在放养2h~3h之前，调节好水质，确保有足够的溶氧； DB36/T 2225—2026 6水体培育"
+        },
+        {
+          "parent": "70efaaaa-23d1-571b-b4e0-ece33393b151",
+          "child": "caac3147-2261-515d-b06d-96b6ffe5ebfd",
+          "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+          "page": 15,
+          "quote": "10.5.1水质指标水色呈现黄绿色或黄褐色为宜，溶解氧5 mg/L以上，氨氮0.5 mg/L以下，亚硝氮0.1 mg/L以下，pH7.5-9.0为宜。"
+        },
+        {
+          "parent": "cf2b2c0d-442b-5465-b32f-f82b22724199",
+          "child": "bf84841a-6e5c-55e1-ac0d-ce0c3b288ace",
+          "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+          "page": 12,
+          "quote": "9.3水环境要求DB 46/T XXXX—XXXX培育池消毒处理后，加入养殖用海水，以水深60 cm～80 cm、水温20 ℃～33 ℃、盐度20～33、pH值7.8～8.5为宜。"
+        }
+      ]
+    },
+    {
+      "id": "R062",
+      "question": "中华绒螯蟹和凡纳滨对虾对pH的适宜范围有什么差异？",
+      "sufficient": true,
+      "gate": {
+        "sufficient": true,
+        "reason": "matched",
+        "query_terms": [
+          "中华绒螯蟹",
+          "凡纳滨对虾",
+          "ph",
+          "适宜",
+          "差异"
+        ],
+        "matched_terms": [
+          "中华绒螯蟹",
+          "凡纳滨对虾",
+          "ph",
+          "适宜"
+        ],
+        "matched_weight": 10.0,
+        "total_weight": 11.0,
+        "coverage": 0.909,
+        "best_index": null,
+        "missing_terms": []
+      },
+      "timings": {
+        "dense_ms": 198.7,
+        "sparse_ms": 11.7,
+        "graph_ms": 0.0,
+        "retrieval_ms": 1627.6
+      },
+      "source_aware": {
+        "enabled": true,
+        "cited": [],
+        "resolved": {},
+        "active": false,
+        "reason": "no_cited_source",
+        "anchors": [],
+        "slots": 2
+      },
+      "targeted": null,
+      "evidence": [
+        {
+          "parent": "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+          "child": "8f9dada8-87bc-5298-ad0d-136f9c4ef70f",
+          "title": "凡纳滨对虾养殖示例资料",
+          "page": 1,
+          "quote": "三、凡纳滨对虾养殖要点 凡纳滨对虾又称南美白对虾，是我国重要的海水和咸淡水养殖品种。 示例资料给出的参考范围为：水温 25 至 30 摄氏度，盐度 10 至 25，溶解氧保持在 5 mg/L以上。"
+        },
+        {
+          "parent": "060eb863-f8b9-5f94-872d-2d440b740886",
+          "child": "ed9871bf-b5be-5b98-8265-cdd6375d8ec2",
+          "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+          "page": 7,
+          "quote": "凡纳滨对虾Penaeus vannamei俗称南美白对虾，隶属于节肢动物门（Arthropoda），软甲纲（Malacostraca），十足目（Decapoda），对虾科（Penaeidae），对虾属（Penaeus），为广温广盐性热带虾类。 盐度26～35，pH值7.8～8.5，溶解氧含量保持5 mg/L以上。"
+        },
+        {
+          "parent": "c03e4cf9-8f83-50da-a126-77e13722a908",
+          "child": "2da671e8-cb92-5051-a98f-c4070edd8b51",
+          "title": "DB32_T 5292—2025 中华绒螯蟹生态育苗技术规范",
+          "page": 6,
+          "quote": "6.4水质控制适宜水温为18 ℃~21 ℃。 适宜pH 为6.5~8.5，pH 持续升高的池塘使用乳酸菌等生物制剂调节。"
+        },
+        {
+          "parent": "65edfb85-bfc0-51e6-baf5-75467bba628b",
+          "child": "db42047a-56ea-551d-9069-8b6f24a2071a",
+          "title": "DB36_T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程",
+          "page": 5,
+          "quote": "中华绒螯蟹池塘培育扣蟹技术规程 1范围本文件规定了中华绒螯蟹（Eriocheir sinensis，以下简称河蟹）池塘培育扣蟹技术规程，即从大眼幼体直接培育成扣蟹，包括培育条件、蟹苗放养、生物饵料的培育、投饲管理、水质管理、病害防治、日常管理等。 本文件适用于池塘条件下中华绒螯蟹大眼幼体直接培育成扣蟹。"
+        },
+        {
+          "parent": "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+          "child": "9794c988-eaa3-5122-b6f1-db7cb8b395b6",
+          "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+          "page": 10,
+          "quote": "7.4水质控制亲虾培育要求海水盐度28～35，盐度要稳定，不能过低或突变； 培育池水温28℃～29℃，pH 7.8～8.3为宜；"
+        }
+      ]
+    },
+    {
+      "id": "R064",
+      "question": "2026年最新禁用渔药名单里具体有哪些品种？",
+      "sufficient": false,
+      "gate": {
+        "sufficient": false,
+        "reason": "current_regulation_unverified",
+        "query_terms": [
+          "2026",
+          "最新",
+          "禁用",
+          "渔药",
+          "名单",
+          "具体",
+          "品种"
+        ],
+        "matched_terms": [
+          "2026",
+          "最新",
+          "禁用",
+          "渔药",
+          "品种"
+        ],
+        "matched_weight": 7.0,
+        "total_weight": 9.0,
+        "coverage": 0.778,
+        "best_index": null,
+        "missing_terms": []
+      },
+      "timings": {
+        "dense_ms": 52.9,
+        "sparse_ms": 4.9,
+        "graph_ms": 0.0,
+        "retrieval_ms": 1572.0
+      },
+      "source_aware": {
+        "enabled": true,
+        "cited": [],
+        "resolved": {},
+        "active": false,
+        "reason": "no_cited_source",
+        "anchors": [],
+        "slots": 2
+      },
+      "targeted": null,
+      "evidence": []
+    },
+    {
+      "id": "R066",
+      "question": "DB32/T 5292—2025 生态育苗的水温和pH适宜范围是多少？",
+      "sufficient": true,
+      "gate": {
+        "sufficient": true,
+        "reason": "matched",
+        "query_terms": [
+          "db32",
+          "t",
+          "5292",
+          "2025",
+          "生态",
+          "育苗",
+          "水温",
+          "ph",
+          "适宜"
+        ],
+        "matched_terms": [
+          "db32",
+          "t",
+          "5292",
+          "2025",
+          "生态",
+          "育苗",
+          "水温",
+          "ph",
+          "适宜"
+        ],
+        "matched_weight": 13.0,
+        "total_weight": 13.0,
+        "coverage": 1.0,
+        "best_index": 0,
+        "missing_terms": []
+      },
+      "timings": {
+        "dense_ms": 54.4,
+        "sparse_ms": 4.7,
+        "graph_ms": 0.0,
+        "retrieval_ms": 1421.3
+      },
+      "source_aware": {
+        "enabled": true,
+        "cited": [
+          {
+            "code": "DB32",
+            "raw": "DB32",
+            "position": 0
+          }
+        ],
+        "resolved": {
+          "DB32": [
+            "8028e381-5c13-45b0-9d91-c73cf1a79cfe"
+          ]
+        },
+        "active": false,
+        "reason": "fewer_than_two_resolved_sources",
+        "anchors": [],
+        "slots": 2
+      },
+      "targeted": null,
+      "evidence": [
+        {
+          "parent": "c03e4cf9-8f83-50da-a126-77e13722a908",
+          "child": "2da671e8-cb92-5051-a98f-c4070edd8b51",
+          "title": "DB32_T 5292—2025 中华绒螯蟹生态育苗技术规范",
+          "page": 6,
+          "quote": "6.4水质控制适宜水温为18 ℃~21 ℃。 适宜pH 为6.5~8.5，pH 持续升高的池塘使用乳酸菌等生物制剂调节。"
+        },
+        {
+          "parent": "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+          "child": "2b8cf14f-d9e8-5f31-aa71-8b451b10cdaf",
+          "title": "DB32_T 5292—2025 中华绒螯蟹生态育苗技术规范",
+          "page": 5,
+          "quote": "4.3水质要求育苗池水盐度以16‰~23‰ 为宜。 尾水不应直排，尾水排放应符合DB32/ 4043 标准。"
+        },
+        {
+          "parent": "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+          "child": "10307f74-b2a8-52c7-9aee-3c6471996467",
+          "title": "DB32_T 5292—2025 中华绒螯蟹生态育苗技术规范",
+          "page": 6,
+          "quote": "DB32/T 5292—2025附录A （资料性）轮虫土池规模化培育技术A.1土池清塘和消毒冬季修整堤埂，清除过多底泥。 b）轮虫土池pH：应在8.0~8.8，即pH8.5 左右；"
+        },
+        {
+          "parent": "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+          "child": "e698c751-3752-527e-999e-9af3f3346688",
+          "title": "DB32_T 5292—2025 中华绒螯蟹生态育苗技术规范",
+          "page": 6,
+          "quote": "6.1敌害生物防控和水温控制育苗池在布苗前15 d 用15 mg/L~25 mg/L 的茶籽饼处理池水； 布苗前7 d~10 d 用80 mg/L~"
+        },
+        {
+          "parent": "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+          "child": "90c4263f-a434-5e90-a251-8f69a2ede41d",
+          "title": "DB36_T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程",
+          "page": 7,
+          "quote": "8.1水质指标溶氧量5mg/L以上，pH值7.5~8.5，透明度30cm~50cm，氨氮低于0.5mg/L，亚硝酸盐低于0.05mg/L。"
+        }
+      ]
+    },
+    {
+      "id": "UNDATED",
+      "question": "水产养殖禁用渔药完整清单有哪些？",
+      "sufficient": true,
+      "gate": {
+        "sufficient": true,
+        "reason": "matched",
+        "query_terms": [
+          "水产养殖",
+          "禁用",
+          "渔药",
+          "完整",
+          "清单"
+        ],
+        "matched_terms": [
+          "水产养殖",
+          "禁用",
+          "渔药"
+        ],
+        "matched_weight": 7.0,
+        "total_weight": 9.0,
+        "coverage": 0.778,
+        "best_index": null,
+        "missing_terms": []
+      },
+      "timings": {
+        "dense_ms": 51.2,
+        "sparse_ms": 4.9,
+        "graph_ms": 0.0,
+        "retrieval_ms": 1512.6
+      },
+      "source_aware": {
+        "enabled": true,
+        "cited": [],
+        "resolved": {},
+        "active": false,
+        "reason": "no_cited_source",
+        "anchors": [],
+        "slots": 2
+      },
+      "targeted": null,
+      "evidence": [
+        {
+          "parent": "5af3627c-5486-5467-884a-3128491ce0ae",
+          "child": "478c583e-23e0-50c3-b76e-14d6448a28c4",
+          "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+          "page": 9,
+          "quote": "6.3渔药选用绿色、环保的渔药，严格控制用药剂量、使用次数和安全间隔期，使用方法应符合SC/T 1132的规定。 漂白粉、二氧化氯及聚维酮碘等消毒剂应按NY 5071的规定使用。"
+        },
+        {
+          "parent": "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+          "child": "bb955646-8b78-59c4-91f9-e779fd85ddad",
+          "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+          "page": 2,
+          "quote": "5.1 培育设施......................................................................... 25.2供水供气供电系统装置........................................................... 35.3养殖尾水处理系统............................................................... 3 6投入品管理....................…"
+        },
+        {
+          "parent": "fb999556-8657-5060-bef1-160068f7878b",
+          "child": "d9f3437a-b44b-5bdc-ac55-8cac974939fd",
+          "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+          "page": 8,
+          "quote": "——应从正规渠道选购合法企业生产的渔药、饵料、苗种、动物保健产品及相关用具等养殖投入品， DB 46/T XXXX—XXXX购买时检查投入品的产品批号、标签标识； ——不得购买、使用、储存国家和海南省禁用的养殖投入品；"
+        },
+        {
+          "parent": "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+          "child": "0831fa0d-e059-57d0-9de0-6f6d6110b6ff",
+          "title": "DB36_T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程",
+          "page": 8,
+          "quote": "8.3尾水排放尾水符合DB36/ 1993要求。 渔药使用符合NY/T 755的规定。"
+        },
+        {
+          "parent": "146bb9fd-bbea-5975-8103-c113e5ab867e",
+          "child": "0ec9734e-b4ed-5ab6-82df-7c23008004c8",
+          "title": "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）",
+          "page": 6,
+          "quote": "农产品全产业链生产规范南美白对虾（凡纳滨对虾） 1范围本文件规定了凡纳滨对虾全产业链生产的术语和定义、养殖环境、养殖设施、投入品管理、亲本选择与培育、苗种培育、中间培育、养成技术、病害防控、收获及商品化处理、产品质量、包装标识、运输贮存、产品检测与准出管理、溯源管理、社会化服务、品牌建设及生产档案等要求。 GB 11607渔业水质标准GB 2733食品安全国家标准鲜、冻动物性水产品GB 43284限制商品过度包装要求生鲜食用农产品GB/T 191包装储运图示标志GB/T 22919.5水产配合饲料第5部分：南美白对…"
+        }
+      ]
+    }
+  ]
+}

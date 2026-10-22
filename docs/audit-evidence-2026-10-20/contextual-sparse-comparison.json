@@ -1,0 +1,10 @@
+{
+  "collections": {
+    "kb_chunks_bge_m3_v1": 190,
+    "kb_chunks_bge_m3_ctx_v1": 190
+  },
+  "same_point_id_sets": true,
+  "sparse_vectors_different": 0,
+  "different_point_ids": [],
+  "payload_content_hash_different": 0
+}

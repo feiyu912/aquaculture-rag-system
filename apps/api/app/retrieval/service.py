@@ -13,6 +13,7 @@ from app.config import settings
 from app.graph.service import expand_entities, graph_chunk_matches, load_graph
 from app.ingestion.embedder import Embedder
 from app.ingestion.pipeline import chunk_config_hash
+from app.media import max_location_page, normalize_media_type, public_locations
 from app.models import KbChunk, KbDocument, KbDocumentVersion
 from app.query.decompose import decompose_question
 from app.query.expand import alias_variants
@@ -29,6 +30,7 @@ from app.query.sources import (
     order_round_robin,
 )
 from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, bm25_config_hash, tokenize
+from app.retrieval.faq_store import search_faq
 from app.retrieval.index_manifest import check_manifest
 from app.retrieval.requirements import (
     Requirement,
@@ -41,7 +43,22 @@ from app.retrieval.rerank import NoopReranker, Reranker
 from app.retrieval.rrf import rrf_fuse
 from app.retrieval.sufficiency import Sufficiency, assess_evidence
 from app.retrieval.vector_store import SearchHit, get_client, search_dense, search_sparse
-from app.species import detect_species, normalize_species_list, parse_species
+from app.species import (
+    detect_species,
+    normalize_species_list,
+    parse_species,
+    species_applicable,
+    species_in_text,
+)
+from app.trust import (
+    LEVEL_L2,
+    PENDING,
+    STRICT_AUTHORITIES,
+    TrustProfile,
+    applicability_conflict,
+    evidence_eligible,
+    is_strict_question,
+)
 
 SENTENCE_RE = re.compile(r"(?<=[。！？!?；;])")
 VALID_MODES = ("dense", "bm25", "hybrid", "hybrid_rerank")
@@ -50,13 +67,16 @@ VALID_MODES = ("dense", "bm25", "hybrid", "hybrid_rerank")
 @dataclass(slots=True)
 class Evidence:
     source_index: int
-    document_id: uuid.UUID
-    version_id: uuid.UUID
-    parent_chunk_id: uuid.UUID
-    child_chunk_id: uuid.UUID
+    # Document evidence carries ids; verified-FAQ evidence carries ``faq_id``
+    # instead, so the document ids become optional rather than being filled
+    # with a fake UUID.
+    document_id: uuid.UUID | None
+    version_id: uuid.UUID | None
+    parent_chunk_id: uuid.UUID | None
+    child_chunk_id: uuid.UUID | None
     title: str
     version_no: int
-    page: int
+    page: int | None
     quote: str
     content: str
     location: dict | None
@@ -67,27 +87,71 @@ class Evidence:
     # entity matched, the relation path that reached it, and the edge
     # provenance.  None keeps ordinary vector hits distinguishable.
     graph_provenance: dict | None = None
+    # --- layered trust metadata -------------------------------------------
+    source_type: str = "document"  # document | faq (evidence branch)
+    # Physical format of the underlying material.  A web page has no PDF page
+    # or bbox; clients must not invent one.
+    media_type: str = "pdf"  # pdf | html | faq
+    faq_id: uuid.UUID | None = None
+    evidence_level: str = "L1_original"
+    authority: str = "unknown"
+    verification_status: str = "verified"
+    publisher: str | None = None
+    source_url: str | None = None
+    # True when this item was added during the second (FAQ) retrieval stage.
+    supplemental: bool = False
+    # A PDF parent block can span several pages.  ``location`` is the first
+    # one for backward compatibility; ``locations`` carries every page/bbox so
+    # the UI does not silently reduce a multi-page citation to page one.
+    page_end: int | None = None
+    locations: list[dict] = field(default_factory=list)
 
     def as_source(self) -> dict:
-        location = self.location or {}
+        media_type = normalize_media_type(self.media_type)
+        is_pdf = media_type == "pdf"
+        locations = public_locations(self.locations, media_type)
+        if not locations and self.location:
+            locations = public_locations([self.location], media_type)
+        location = locations[0] if locations else (self.location or {})
+        page = (
+            location.get("page")
+            if is_pdf and isinstance(location.get("page"), int)
+            else (self.page if is_pdf else None)
+        )
+        page_end = max_location_page(locations) if is_pdf else None
+        if is_pdf and page_end is None:
+            page_end = self.page_end or page
         return {
             "source_id": f"S{self.source_index}",
             "index": self.source_index,
-            "document_id": str(self.document_id),
-            "version_id": str(self.version_id),
+            "source_type": self.source_type,
+            "media_type": media_type,
+            "evidence_level": self.evidence_level,
+            "authority": self.authority,
+            "verification_status": self.verification_status,
+            "publisher": self.publisher,
+            "source_url": self.source_url,
+            "supplemental": self.supplemental,
+            "available": True,
+            "unavailable_reason": None,
+            "faq_id": str(self.faq_id) if self.faq_id else None,
+            "document_id": str(self.document_id) if self.document_id else None,
+            "version_id": str(self.version_id) if self.version_id else None,
             "version_no": self.version_no,
-            "chunk_id": str(self.parent_chunk_id),
-            "child_chunk_id": str(self.child_chunk_id),
+            "chunk_id": str(self.parent_chunk_id) if self.parent_chunk_id else None,
+            "child_chunk_id": str(self.child_chunk_id) if self.child_chunk_id else None,
             "title": self.title,
             "species": self.species,
-            "page": self.page,
+            "page": page,
+            "page_end": page_end,
             "quote": self.quote,
             "heading_path": self.heading_path,
             "graph_provenance": self.graph_provenance,
-            "location": self.location,
+            "location": location if locations else None,
             # Convenience fields for PDF.js; ``location`` remains the canonical
             # full record for backward compatibility.
-            "bbox": location.get("bbox"),
+            "bbox": location.get("bbox") if is_pdf else None,
+            "locations": locations,
             "coordinate_system": location.get("coordinate_system"),
             "origin": location.get("origin"),
             "rotation": location.get("rotation"),
@@ -105,6 +169,9 @@ class RetrievalResult:
     config: dict
     sufficient: bool = True
     gate: dict = field(default_factory=dict)
+    # Kept for callers that need the interpreted question (e.g. the faq_direct
+    # applicability check) without rebuilding the IR.
+    query_ir: QueryIR | None = None
 
 
 def normalize_mode(mode: str | None) -> str:
@@ -273,6 +340,140 @@ async def _resolve_source_versions(
     return resolved
 
 
+async def _supplement_with_faq(
+    question: str,
+    query_ir,
+    embedder,
+    bm25,
+    active_versions: list[uuid.UUID],
+    gate_reason: str,
+    enabled: bool | None = None,
+) -> tuple[list[Evidence], dict]:
+    """Second retrieval stage: verified FAQ, only when documents fell short.
+
+    Hard rules encoded here (they are the point of the layered policy):
+
+    1. Called only when the L1 gate already failed, so FAQ can never displace
+       document evidence or consume its Top-K slots.
+    2. Only ``verified`` FAQ is searchable at all (enforced by the payload
+       filter), and only items found by *both* dense and BM25 are kept.
+    3. Species/stage/region must not contradict the question.
+    4. The FAQ's supporting documents must still be active, otherwise the
+       answer has lost its traceable basis.
+    5. Strict topics (drugs, dosing, diagnosis) additionally require the
+       support to be a binding/official source.
+    """
+    # The request may only *narrow* the capability, never widen it: the global
+    # flag stays the hard switch, ``enabled`` is the per-request intent.
+    effective = settings.enable_faq_retrieval and (
+        True if enabled is None else enabled
+    )
+    trace: dict = {
+        "enabled": effective,
+        "stage": "after_documents",
+        "documents_gate_reason": gate_reason,
+        "candidates": 0,
+        "accepted": 0,
+        "rejected": [],
+    }
+    if not effective:
+        trace["skipped"] = (
+            "flag_disabled" if not settings.enable_faq_retrieval else "mode_document_only"
+        )
+        return [], trace
+
+    context = {
+        "species": list(getattr(query_ir, "species", []) or []),
+        "growth_stages": list(getattr(query_ir, "growth_stage", []) or []),
+        "region": getattr(query_ir, "region", None),
+    }
+    strict = is_strict_question(question)
+
+    dense = await asyncio.to_thread(embedder.embed_query, question)
+    sparse = bm25.query_vector(question)
+    client = get_client()
+    try:
+        hits = await asyncio.to_thread(
+            search_faq, client, dense, sparse, top_k=max(4, settings.faq_supplement_k * 2)
+        )
+    except Exception as exc:  # a FAQ outage must never break document RAG
+        trace["error"] = str(exc)[:200]
+        return [], trace
+    finally:
+        client.close()
+
+    trace["candidates"] = len(hits)
+    active = set(active_versions)
+    accepted: list[Evidence] = []
+    for hit in hits:
+        payload = hit["payload"]
+        faq_id = payload.get("faq_id") or payload.get("chunk_id")
+        profile = TrustProfile(
+            level=payload.get("evidence_level") or LEVEL_L2,
+            authority=payload.get("source_authority") or "unknown",
+            verification_status=payload.get("verification_status") or PENDING,
+            publisher=payload.get("publisher"),
+            source_url=payload.get("source_url"),
+            applicability={
+                "species": payload.get("species") or [],
+                "growth_stages": payload.get("growth_stages") or [],
+                "region": payload.get("region"),
+            },
+        )
+        ok, reason = evidence_eligible(profile, strict=strict)
+        if not ok:
+            trace["rejected"].append({"faq_id": faq_id, "reason": reason})
+            continue
+        conflict, why = applicability_conflict(profile.applicability, context)
+        if conflict:
+            trace["rejected"].append({"faq_id": faq_id, "reason": why})
+            continue
+        support = [str(v) for v in (payload.get("supporting_version_ids") or [])]
+        if not support or not (active & {uuid.UUID(v) for v in support if _is_uuid(v)}):
+            trace["rejected"].append({"faq_id": faq_id, "reason": "support_not_active"})
+            continue
+        accepted.append(
+            Evidence(
+                source_index=0,  # renumbered after the merge
+                document_id=None,
+                version_id=None,
+                parent_chunk_id=None,
+                child_chunk_id=None,
+                title=f"FAQ：{payload.get('question', '')[:60]}",
+                version_no=0,
+                page=None,
+                quote=_excerpt(payload.get("answer") or "", 260),
+                content=_excerpt(payload.get("answer") or "", 1200),
+                location={"coordinate_system": "faq", "faq_id": str(faq_id)},
+                score=hit["score"],
+                species=payload.get("species") or [],
+                heading_path=[],
+                source_type="faq",
+                media_type="faq",
+                faq_id=uuid.UUID(str(faq_id)) if _is_uuid(str(faq_id)) else None,
+                evidence_level=LEVEL_L2,
+                authority=profile.authority,
+                verification_status=profile.verification_status,
+                publisher=profile.publisher,
+                source_url=profile.source_url,
+                supplemental=True,
+            )
+        )
+        if len(accepted) >= settings.faq_supplement_k:
+            break
+
+    trace["accepted"] = len(accepted)
+    return accepted, trace
+
+
+def _is_uuid(value: str) -> bool:
+    try:
+        uuid.UUID(str(value))
+    except (ValueError, AttributeError, TypeError):
+        return False
+    return True
+
+
 async def retrieve(
     db: AsyncSession,
     question: str,
@@ -287,6 +488,7 @@ async def retrieve(
     search_question: str | None = None,
     _attempt: int = 0,
     keep_insufficient_evidence: bool = False,
+    include_faq: bool | None = None,
 ) -> RetrievalResult:
     started = time.perf_counter()
     mode = normalize_mode(mode)
@@ -894,7 +1096,19 @@ async def retrieve(
         doc = doc_by_id.get(version.document_id) if version else None
         if version is None or doc is None:
             continue
-        location = parent.locations[0] if parent.locations else None
+        media_type = normalize_media_type(doc.source_type)
+        locations = public_locations(list(parent.locations or []), media_type)
+        location = locations[0] if locations else None
+        if media_type == "pdf":
+            page = (
+                location.get("page")
+                if isinstance(location, dict) and isinstance(location.get("page"), int)
+                else parent.page_from
+            )
+            page_end = max_location_page(locations) or page
+        else:
+            page = None
+            page_end = None
         evidence.append(
             Evidence(
                 source_index=len(evidence) + 1,
@@ -904,18 +1118,58 @@ async def retrieve(
                 child_chunk_id=child.id,
                 title=doc.title,
                 version_no=version.version_no,
-                page=parent.page_from,
+                page=page,
+                page_end=page_end,
                 quote=best_sentence(parent.content, question, 260),
                 content=_excerpt(parent.content, 1800),
                 location=location,
+                locations=locations,
                 score=by_parent_id.get(parent.id, 0.0),
                 species=normalize_species_list(doc.species),
                 heading_path=list(parent.heading_path or []),
                 graph_provenance=graph_provenance_by_child.get(str(child.id)),
+                source_type="document",
+                media_type=media_type,
+                evidence_level="L1_original",
+                authority=doc.authority_level or "unknown",
+                verification_status=doc.verification_status or "verified",
+                publisher=doc.source_org,
+                source_url=doc.source_url,
             )
         )
         if len(evidence) >= (top_k or settings.max_sources):
             break
+
+    # Applicability check: a species-specific document must not answer a
+    # question about a different species, however similar the wording is.
+    question_species = set(species_in_text(question))
+    species_trace: dict | None = None
+    if question_species and evidence:
+        kept_species = [
+            item for item in evidence if species_applicable(item.species, question_species)
+        ]
+        if len(kept_species) != len(evidence):
+            species_trace = {
+                "question_species": sorted(question_species),
+                "dropped": len(evidence) - len(kept_species),
+                "kept": len(kept_species),
+            }
+        evidence = kept_species
+
+    # Strict topics (drugs, dosing, banned substances, diagnosis) must not be
+    # answered from a draft/historical/unknown page even if it ranks first.
+    strict_question = is_strict_question(question)
+    strict_trace: dict | None = None
+    if strict_question and evidence:
+        kept = [item for item in evidence if item.authority in STRICT_AUTHORITIES]
+        if len(kept) != len(evidence):
+            strict_trace = {
+                "enabled": True,
+                "dropped": len(evidence) - len(kept),
+                "kept": len(kept),
+                "required": sorted(STRICT_AUTHORITIES),
+            }
+        evidence = kept
 
     requirements: list[Requirement] = []
     if modules["requirements"]:
@@ -970,6 +1224,7 @@ async def retrieve(
                 # evidence, so a retry that is insufficient on its own can
                 # still contribute the one facet the first pass missed.
                 keep_insufficient_evidence=True,
+                include_faq=False,
             )
             attempt = {
                 "requirement": target["key"],
@@ -1020,8 +1275,43 @@ async def retrieve(
             "sufficient_after": gate.sufficient,
         }
 
+    faq_trace: dict | None = None
     if not gate.sufficient and not keep_insufficient_evidence:
+        faq_evidence, faq_trace = await _supplement_with_faq(
+            question, query_ir, embedder, bm25, active_versions, gate.reason, include_faq
+        )
+        if faq_evidence:
+            # Appended *after* the document evidence: FAQ never displaces an
+            # original source, it only fills a gap.
+            evidence = [*evidence, *faq_evidence]
+            gate = _assess_with_requirements(
+                question,
+                evidence,
+                requirements,
+                species_options,
+                fallback_reason=None,
+            )
+            gate = _apply_current_regulation_gate(query_ir, gate)
+            faq_trace["sufficient_after"] = gate.sufficient
+
+    if not gate.sufficient and not keep_insufficient_evidence:
+        if strict_question and strict_trace is not None:
+            gate = Sufficiency(
+                False,
+                "strict_topic_requires_authoritative_source",
+                gate.query_terms,
+                gate.matched_terms,
+                gate.matched_weight,
+                gate.total_weight,
+                gate.coverage,
+                gate.best_index,
+                gate.missing_terms,
+            )
         evidence = []
+
+    # Source indices must stay contiguous after filtering/supplementing.
+    for position, item in enumerate(evidence, start=1):
+        item.source_index = position
 
     if source_trace is not None:
         source_trace["anchors"] = anchor_trace
@@ -1051,6 +1341,15 @@ async def retrieve(
         config["evidence_requirements"] = [item.as_dict() for item in requirements]
     if targeted_trace:
         config["targeted_retrieval"] = targeted_trace
+    if faq_trace is not None:
+        config["faq_supplement"] = faq_trace
+    config["include_faq"] = bool(
+        settings.enable_faq_retrieval if include_faq is None else (settings.enable_faq_retrieval and include_faq)
+    )
+    if strict_trace is not None:
+        config["strict_source_filter"] = strict_trace
+    if species_trace is not None:
+        config["applicability_filter"] = species_trace
     timings["retrieval_ms"] = round((time.perf_counter() - started) * 1000, 1)
     return RetrievalResult(
         evidence=evidence,
@@ -1060,6 +1359,7 @@ async def retrieve(
         config=config,
         sufficient=gate.sufficient,
         gate=gate.as_dict(),
+        query_ir=query_ir,
     )
 
 
@@ -1163,12 +1463,21 @@ def _assess_with_requirements(
     return gate
 
 
+def _evidence_key(item: Evidence) -> uuid.UUID:
+    if item.parent_chunk_id is not None:
+        return item.parent_chunk_id
+    if item.faq_id is not None:
+        return item.faq_id
+    return uuid.UUID(int=0)
+
+
 def _merge_evidence(first: list[Evidence], second: list[Evidence]) -> list[Evidence]:
     by_parent: dict[uuid.UUID, Evidence] = {}
     for item in [*first, *second]:
-        current = by_parent.get(item.parent_chunk_id)
+        key = _evidence_key(item)
+        current = by_parent.get(key)
         if current is None or item.score > current.score:
-            by_parent[item.parent_chunk_id] = item
+            by_parent[key] = item
     return sorted(by_parent.values(), key=lambda item: -item.score)
 
 

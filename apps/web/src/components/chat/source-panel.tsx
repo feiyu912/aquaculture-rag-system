@@ -17,7 +17,7 @@ export function SourcePanel({
   sources,
   selectedIndex,
   onSelect,
-  onOpenPdf,
+  onOpenSource,
   onClose,
   maxSources,
   className,
@@ -25,7 +25,7 @@ export function SourcePanel({
   sources: Source[];
   selectedIndex: number | null;
   onSelect: (index: number) => void;
-  onOpenPdf?: (source: Source) => void;
+  onOpenSource?: (source: Source) => void;
   onClose?: () => void;
   /** Server-side cap on citations; shown when it is actually reached. */
   maxSources?: number;
@@ -88,7 +88,7 @@ export function SourcePanel({
           <div className="flex flex-col gap-2.5">
             {sources.map((source) => (
               <div
-                key={`${source.document_id}-${source.index}`}
+                key={source.source_id || `${source.source_type}-${source.faq_id ?? source.document_id ?? "none"}-${source.index}`}
                 ref={(node) => {
                   if (node) cardRefs.current.set(source.index, node);
                 }}
@@ -97,7 +97,7 @@ export function SourcePanel({
                   source={source}
                   active={selectedIndex === source.index}
                   onSelect={onSelect}
-                  onOpenPdf={onOpenPdf}
+                  onOpenSource={onOpenSource}
                 />
               </div>
             ))}

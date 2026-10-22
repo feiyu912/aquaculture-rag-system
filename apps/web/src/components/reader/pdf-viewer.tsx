@@ -23,7 +23,7 @@ interface PageEntry {
 export function PdfViewer({
   pdf,
   scale,
-  highlight,
+  highlights = [],
   targetPage,
   className,
   onVisiblePageChange,
@@ -31,7 +31,7 @@ export function PdfViewer({
 }: {
   pdf: PdfDocumentProxy;
   scale: number;
-  highlight?: PdfHighlight | null;
+  highlights?: PdfHighlight[];
   /** Page the user asked for (page list, toolbar, deep link). */
   targetPage?: number;
   className?: string;
@@ -147,12 +147,17 @@ export function PdfViewer({
     // Rendering is kicked off by the intersection observer below.
   }, [scale]);
 
-  // Always render the highlighted page, even when it is far outside the
-  // viewport, so the highlight can be positioned and scrolled to.
+  const highlightPages = React.useMemo(
+    () => new Set(highlights.map((item) => item.page)),
+    [highlights],
+  );
+
+  // Always render every highlighted page, even when far outside the viewport,
+  // so all boxes of a multi-page citation can be positioned.
   React.useEffect(() => {
-    if (!highlight || pages.length === 0) return;
-    void renderPage(highlight.page);
-  }, [highlight, renderPage, pages.length]);
+    if (pages.length === 0) return;
+    for (const page of highlightPages) void renderPage(page);
+  }, [highlightPages, renderPage, pages.length]);
 
   // Lazily render pages as they scroll into view.
   React.useEffect(() => {
@@ -241,32 +246,41 @@ export function PdfViewer({
     }, 700);
   }, [targetPage, pages.length, scale]);
 
-  const highlightRect = React.useMemo(() => {
-    if (!highlight) return null;
-    const viewport = viewportRef.current.get(highlight.page);
-    if (!viewport) return null;
-    const rect = bboxToViewportRect({ bbox: highlight.bbox }, viewport);
-    return clampToPage(rect, viewport.width, viewport.height);
-  }, [highlight, rendering]);
+  const highlightRects = React.useMemo(() => {
+    const byPage = new Map<number, NonNullable<ReturnType<typeof clampToPage>>[]>();
+    for (const item of highlights) {
+      const viewport = viewportRef.current.get(item.page);
+      if (!viewport) continue;
+      const rect = bboxToViewportRect({ bbox: item.bbox }, viewport);
+      const clamped = clampToPage(rect, viewport.width, viewport.height);
+      if (!clamped) continue;
+      const current = byPage.get(item.page) ?? [];
+      current.push(clamped);
+      byPage.set(item.page, current);
+    }
+    return byPage;
+  }, [highlights, rendering]);
 
-  // Bring the highlighted region into view once its page has been rendered.
+  // Bring the first highlighted region into view once its page is rendered.
+  const primary = highlights[0] ?? null;
+  const primaryRect = primary ? highlightRects.get(primary.page)?.[0] ?? null : null;
   React.useEffect(() => {
-    if (!highlight || !highlightRect) return;
-    const key = `${highlight.page}-${highlight.bbox.join(",")}`;
+    if (!primary || !primaryRect) return;
+    const key = `${primary.page}-${primary.bbox.join(",")}`;
     if (scrolledRef.current === key) return;
 
     const container = containerRef.current;
-    const pageNode = pageRefs.current.get(highlight.page);
+    const pageNode = pageRefs.current.get(primary.page);
     if (!container || !pageNode) return;
 
     scrolledRef.current = key;
     const pageRect = pageNode.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     const offsetInPage = pageRect.top - containerRect.top + container.scrollTop;
-    const target = offsetInPage + highlightRect.top - container.clientHeight * 0.35;
+    const target = offsetInPage + primaryRect.top - container.clientHeight * 0.35;
 
     container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
-  }, [highlight, highlightRect, rendering, pages.length]);
+  }, [primary, primaryRect, rendering, pages.length]);
 
   return (
     <div
@@ -280,7 +294,8 @@ export function PdfViewer({
         {pages.map((entry) => {
           const width = Math.round(entry.width * scale);
           const height = Math.round(entry.height * scale);
-          const isHighlighted = highlight?.page === entry.pageNumber;
+          const pageRects = highlightRects.get(entry.pageNumber) ?? [];
+          const isHighlighted = pageRects.length > 0;
 
           return (
             <div
@@ -307,17 +322,18 @@ export function PdfViewer({
                   className="block"
                 />
 
-                {isHighlighted && highlightRect && (
+                {pageRects.map((rect, index) => (
                   <div
+                    key={`${entry.pageNumber}-${index}`}
                     className="pointer-events-none absolute rounded-[3px] bg-primary-400/28 ring-2 ring-primary-500/80"
                     style={{
-                      left: highlightRect.left,
-                      top: highlightRect.top,
-                      width: highlightRect.width,
-                      height: highlightRect.height,
+                      left: rect.left,
+                      top: rect.top,
+                      width: rect.width,
+                      height: rect.height,
                     }}
                   />
-                )}
+                ))}
 
                 {rendering.has(entry.pageNumber) && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/70">

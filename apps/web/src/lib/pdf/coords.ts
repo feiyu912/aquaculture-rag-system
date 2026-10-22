@@ -1,5 +1,3 @@
-import type { BBoxLocation } from "@/lib/api/types";
-
 /**
  * Transform between the backend's canonical bbox and PDF.js viewport
  * coordinates.
@@ -29,7 +27,7 @@ export interface ViewportRect {
 }
 
 export function bboxToViewportRect(
-  location: Pick<BBoxLocation, "bbox">,
+  location: { bbox: [number, number, number, number] },
   viewport: ViewportLike,
 ): ViewportRect {
   const [viewX0, viewY0] = viewport.viewBox;
@@ -90,4 +88,39 @@ export function parseBBoxParam(value: string | null): [number, number, number, n
   const parts = value.split(",").map((part) => Number.parseFloat(part));
   if (parts.length !== 4 || parts.some((part) => !Number.isFinite(part))) return null;
   return parts as [number, number, number, number];
+}
+
+export interface PdfLocation {
+  page: number;
+  bbox: [number, number, number, number];
+}
+
+/**
+ * Parse the `loc` reader query parameter: a JSON array of page/bbox pairs.
+ * The legacy single `bbox` parameter stays supported; this is only used when
+ * one PDF block spans several pages or regions.
+ */
+export function parseLocationsParam(value: string | null): PdfLocation[] | null {
+  if (!value) return null;
+  try {
+    const raw = JSON.parse(value) as unknown;
+    if (!Array.isArray(raw) || raw.length === 0 || raw.length > 50) return null;
+    const locations: PdfLocation[] = [];
+    for (const item of raw) {
+      if (!item || typeof item !== "object") return null;
+      const candidate = item as { page?: unknown; bbox?: unknown };
+      const page = Number(candidate.page);
+      const bbox = Array.isArray(candidate.bbox)
+        ? candidate.bbox.map((part) => Number(part))
+        : null;
+      if (!Number.isFinite(page) || page <= 0) return null;
+      if (!bbox || bbox.length !== 4 || bbox.some((part) => !Number.isFinite(part))) {
+        return null;
+      }
+      locations.push({ page, bbox: bbox as [number, number, number, number] });
+    }
+    return locations;
+  } catch {
+    return null;
+  }
 }

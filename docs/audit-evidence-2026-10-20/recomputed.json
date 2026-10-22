@@ -1,0 +1,2501 @@
+{
+  "dataset_sha256": "09d2a329e9710ae1d3e212b1b927e3ee06bc2a93b5638d2bf2d2e564d6eb01ca",
+  "cases": 70,
+  "expected_answerable": 67,
+  "gold_document_titles": [
+    "DB32_T 5292—2025 中华绒螯蟹生态育苗技术规范",
+    "DB36_T 2225—2026 中华绒螯蟹池塘培育扣蟹技术规程",
+    "DB46 农产品全产业链生产规范 南美白对虾（凡纳滨对虾）"
+  ],
+  "counterexample": {
+    "recall@5": 1.0,
+    "ndcg@5": 0.6309297535714574,
+    "recall@10": 1.0,
+    "ndcg@10": 0.6309297535714574,
+    "mrr@10": 0.5
+  },
+  "runs": {
+    "real_questions_v1_1_query_ir": {
+      "bm25": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.850746,
+          "ndcg@5": 0.812187,
+          "recall@10": 0.927861,
+          "ndcg@10": 0.839851,
+          "mrr@10": 0.811271
+        },
+        "old_ndcg10": 0.932828,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "c8e7c398-27cf-5feb-8acf-3a0e1b9ccefb",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "fa87bf26-3b4b-5467-92d6-40bbf8ec3011",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.2313134383181744,
+              "mrr@10": 0.125
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "fb91131e-1366-5651-8dc6-d5a82c71eadd",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "7dc206de-b2af-57f4-ba56-8d48fd32281b",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "4862737d-b694-5831-86a0-f88fd7b4e0fd"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 1.0,
+              "ndcg@10": 0.3562071871080222,
+              "mrr@10": 0.16666666666666666
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "dense": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.863184,
+          "ndcg@5": 0.792329,
+          "recall@10": 0.878109,
+          "ndcg@10": 0.797645,
+          "mrr@10": 0.773632
+        },
+        "old_ndcg10": 0.886306,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "weak_overlap"
+          },
+          "R062": {
+            "ranked": [
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "060eb863-f8b9-5f94-872d-2d440b740886",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "4e1ec864-261a-5598-8319-1097e0683b4c",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "9deadde7-69ac-5d3e-9c0a-2876753ee2c8",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "d7e8cdce-1576-5262-bc5b-4a97035cefc9",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.3333333333333333,
+              "ndcg@5": 0.35098520806348704,
+              "recall@10": 0.3333333333333333,
+              "ndcg@10": 0.35098520806348704,
+              "mrr@10": 0.5
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "fcafbb19-4e0e-565a-b4b9-0e0bb0e51bd9",
+              "f6cea5c2-1121-578f-b889-216012ff88d2"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "f6cea5c2-1121-578f-b889-216012ff88d2",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "997a5fab-087b-549e-ace3-f4463e0edb4e",
+              "daaf82e7-d646-5759-a61b-bfcdf8f93c52",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "hybrid": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.858209,
+          "ndcg@5": 0.82937,
+          "recall@10": 0.883085,
+          "ndcg@10": 0.837986,
+          "mrr@10": 0.822554
+        },
+        "old_ndcg10": 0.888052,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "f374393a-7765-52fb-92ce-691653a486d1",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "060eb863-f8b9-5f94-872d-2d440b740886",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.22106460231896935,
+              "mrr@10": 0.1111111111111111
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "42c6b32a-835c-5a54-81dd-cc2461af8318"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "hybrid_rerank": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.89801,
+          "ndcg@5": 0.856209,
+          "recall@10": 0.935323,
+          "ndcg@10": 0.867529,
+          "mrr@10": 0.848792
+        },
+        "old_ndcg10": 0.935422,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "060eb863-f8b9-5f94-872d-2d440b740886",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "9deadde7-69ac-5d3e-9c0a-2876753ee2c8",
+              "f374393a-7765-52fb-92ce-691653a486d1",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "50b67816-f67a-5d48-8adf-d196cd08db99"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.6666666666666666,
+              "ndcg@5": 0.42272040640559616,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.42272040640559616,
+              "mrr@10": 0.5
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "997a5fab-087b-549e-ace3-f4463e0edb4e",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 1.0,
+              "recall@10": 1.0,
+              "ndcg@10": 1.0,
+              "mrr@10": 1.0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "input_sha256": "158992d4a2e6bcbe41b17ad52bb996c4c40f2e38033c518b1076fd2f367942ad"
+    },
+    "real_questions_v1_1_no_query_ir": {
+      "bm25": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.850746,
+          "ndcg@5": 0.812187,
+          "recall@10": 0.927861,
+          "ndcg@10": 0.839851,
+          "mrr@10": 0.811271
+        },
+        "old_ndcg10": 0.932828,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "c8e7c398-27cf-5feb-8acf-3a0e1b9ccefb",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "fa87bf26-3b4b-5467-92d6-40bbf8ec3011",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.2313134383181744,
+              "mrr@10": 0.125
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "fb91131e-1366-5651-8dc6-d5a82c71eadd",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "7dc206de-b2af-57f4-ba56-8d48fd32281b",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "4862737d-b694-5831-86a0-f88fd7b4e0fd"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 1.0,
+              "ndcg@10": 0.3562071871080222,
+              "mrr@10": 0.16666666666666666
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "dense": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.833333,
+          "ndcg@5": 0.756808,
+          "recall@10": 0.848259,
+          "ndcg@10": 0.761783,
+          "mrr@10": 0.734471
+        },
+        "old_ndcg10": 0.856455,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "9deadde7-69ac-5d3e-9c0a-2876753ee2c8",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "d7e8cdce-1576-5262-bc5b-4a97035cefc9",
+              "060eb863-f8b9-5f94-872d-2d440b740886",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "839c807c-0559-5ace-bc19-08397c9504e6"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.3333333333333333,
+              "ndcg@5": 0.2152055950263274,
+              "recall@10": 0.3333333333333333,
+              "ndcg@10": 0.2152055950263274,
+              "mrr@10": 0.2
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "fcafbb19-4e0e-565a-b4b9-0e0bb0e51bd9",
+              "f6cea5c2-1121-578f-b889-216012ff88d2"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "f6cea5c2-1121-578f-b889-216012ff88d2",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "997a5fab-087b-549e-ace3-f4463e0edb4e",
+              "daaf82e7-d646-5759-a61b-bfcdf8f93c52",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "hybrid": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.858209,
+          "ndcg@5": 0.807901,
+          "recall@10": 0.873134,
+          "ndcg@10": 0.813218,
+          "mrr@10": 0.792289
+        },
+        "old_ndcg10": 0.878003,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "c8e7c398-27cf-5feb-8acf-3a0e1b9ccefb"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "f374393a-7765-52fb-92ce-691653a486d1",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "9deadde7-69ac-5d3e-9c0a-2876753ee2c8",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "42c6b32a-835c-5a54-81dd-cc2461af8318"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "hybrid_rerank": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.89801,
+          "ndcg@5": 0.856209,
+          "recall@10": 0.935323,
+          "ndcg@10": 0.867529,
+          "mrr@10": 0.848792
+        },
+        "old_ndcg10": 0.935422,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "060eb863-f8b9-5f94-872d-2d440b740886",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "9deadde7-69ac-5d3e-9c0a-2876753ee2c8",
+              "f374393a-7765-52fb-92ce-691653a486d1",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "50b67816-f67a-5d48-8adf-d196cd08db99"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.6666666666666666,
+              "ndcg@5": 0.42272040640559616,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.42272040640559616,
+              "mrr@10": 0.5
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "997a5fab-087b-549e-ace3-f4463e0edb4e",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 1.0,
+              "recall@10": 1.0,
+              "ndcg@10": 1.0,
+              "mrr@10": 1.0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "input_sha256": "20a157f9525a50baeb6f1cb530e9ec2922c34190dc650718cbb40db510ec25d1"
+    },
+    "real_questions_v1_1_ctx_query_ir": {
+      "bm25": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.865672,
+          "ndcg@5": 0.817961,
+          "recall@10": 0.927861,
+          "ndcg@10": 0.840524,
+          "mrr@10": 0.811976
+        },
+        "old_ndcg10": 0.932828,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "c8e7c398-27cf-5feb-8acf-3a0e1b9ccefb",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "fa87bf26-3b4b-5467-92d6-40bbf8ec3011",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.2313134383181744,
+              "mrr@10": 0.125
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "fb91131e-1366-5651-8dc6-d5a82c71eadd",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "5af3627c-5486-5467-884a-3128491ce0ae"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "7dc206de-b2af-57f4-ba56-8d48fd32281b",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "4862737d-b694-5831-86a0-f88fd7b4e0fd"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 0.38685280723454163,
+              "recall@10": 1.0,
+              "ndcg@10": 0.38685280723454163,
+              "mrr@10": 0.2
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "dense": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.900498,
+          "ndcg@5": 0.836545,
+          "recall@10": 0.927861,
+          "ndcg@10": 0.845044,
+          "mrr@10": 0.823051
+        },
+        "old_ndcg10": 0.930785,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7dae726d-6725-5eeb-bb56-1f44973700ab",
+              "c8e7c398-27cf-5feb-8acf-3a0e1b9ccefb",
+              "332893cf-b52b-5d41-b2a7-5d5993d44da5",
+              "75a8d8be-a5d7-5d69-8b5f-7c6ed271f339",
+              "a41937e0-4105-5856-ae11-c85ece5274d2"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "a78e8ec3-5d33-5886-8458-ed39068770e1",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "0ba1332e-e21f-5d32-a1c2-49b84644be1c",
+              "fa87bf26-3b4b-5467-92d6-40bbf8ec3011",
+              "50b67816-f67a-5d48-8adf-d196cd08db99"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.3333333333333333,
+              "ndcg@5": 0.09271639884807328,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.2781491965442198,
+              "mrr@10": 0.3333333333333333
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "6fedba53-7261-5270-b4ad-0ce4d877f904",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "67c9ea56-efa6-5c47-9ef8-e0e2feafabe4",
+              "fcafbb19-4e0e-565a-b4b9-0e0bb0e51bd9",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "6f9fd8ff-39da-5cdc-ae01-809b45610333"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "5a69dd7d-a895-571b-956c-a2f3f10a9d6a",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "42c6b32a-835c-5a54-81dd-cc2461af8318"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 0.6309297535714574,
+              "recall@10": 1.0,
+              "ndcg@10": 0.6309297535714574,
+              "mrr@10": 0.5
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "hybrid": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.930348,
+          "ndcg@5": 0.852998,
+          "recall@10": 0.935323,
+          "ndcg@10": 0.855956,
+          "mrr@10": 0.838308
+        },
+        "old_ndcg10": 0.943116,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "c8e7c398-27cf-5feb-8acf-3a0e1b9ccefb",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.3333333333333333,
+              "ndcg@5": 0.18543279769614657,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.38359028349089247,
+              "mrr@10": 1.0
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "fb91131e-1366-5651-8dc6-d5a82c71eadd",
+              "6fedba53-7261-5270-b4ad-0ce4d877f904"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "7dc206de-b2af-57f4-ba56-8d48fd32281b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "50b67816-f67a-5d48-8adf-d196cd08db99"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 0.6309297535714574,
+              "recall@10": 1.0,
+              "ndcg@10": 0.6309297535714574,
+              "mrr@10": 0.5
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "hybrid_rerank": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.893035,
+          "ndcg@5": 0.8566,
+          "recall@10": 0.950249,
+          "ndcg@10": 0.876887,
+          "mrr@10": 0.85661
+        },
+        "old_ndcg10": 0.954861,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "7dae726d-6725-5eeb-bb56-1f44973700ab",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.5,
+              "ndcg@10": 0.1934264036172708,
+              "mrr@10": 0.125
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "a78e8ec3-5d33-5886-8458-ed39068770e1",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.3333333333333333,
+              "ndcg@5": 0.07986155906569621,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.24066785744472613,
+              "mrr@10": 0.25
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "997a5fab-087b-549e-ace3-f4463e0edb4e",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 1.0,
+              "recall@10": 1.0,
+              "ndcg@10": 1.0,
+              "mrr@10": 1.0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "input_sha256": "096d46568017750cbdf03ed07e1e787429dc9b7369ad9f20e0bc5ba66be8c072"
+    },
+    "real_questions_v1_1_ctx_no_query_ir": {
+      "bm25": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.865672,
+          "ndcg@5": 0.823469,
+          "recall@10": 0.927861,
+          "ndcg@10": 0.845879,
+          "mrr@10": 0.819231
+        },
+        "old_ndcg10": 0.932828,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "c8e7c398-27cf-5feb-8acf-3a0e1b9ccefb",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "fa87bf26-3b4b-5467-92d6-40bbf8ec3011"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.22106460231896935,
+              "mrr@10": 0.1111111111111111
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "fb91131e-1366-5651-8dc6-d5a82c71eadd",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "5af3627c-5486-5467-884a-3128491ce0ae"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "7dc206de-b2af-57f4-ba56-8d48fd32281b",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "4862737d-b694-5831-86a0-f88fd7b4e0fd"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 0.38685280723454163,
+              "recall@10": 1.0,
+              "ndcg@10": 0.38685280723454163,
+              "mrr@10": 0.2
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "dense": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.900498,
+          "ndcg@5": 0.836232,
+          "recall@10": 0.935323,
+          "ndcg@10": 0.847675,
+          "mrr@10": 0.82272
+        },
+        "old_ndcg10": 0.939936,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7dae726d-6725-5eeb-bb56-1f44973700ab",
+              "c8e7c398-27cf-5feb-8acf-3a0e1b9ccefb",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "28d81626-f88b-5998-884f-19a6e738d5f1"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.5,
+              "ndcg@10": 0.1845756967795682,
+              "mrr@10": 0.1111111111111111
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "0ba1332e-e21f-5d32-a1c2-49b84644be1c",
+              "fa87bf26-3b4b-5467-92d6-40bbf8ec3011",
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "a78e8ec3-5d33-5886-8458-ed39068770e1"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.3333333333333333,
+              "ndcg@5": 0.07173519834210915,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.2698926841368551,
+              "mrr@10": 0.2
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "6fedba53-7261-5270-b4ad-0ce4d877f904",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "67c9ea56-efa6-5c47-9ef8-e0e2feafabe4",
+              "fcafbb19-4e0e-565a-b4b9-0e0bb0e51bd9",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "6f9fd8ff-39da-5cdc-ae01-809b45610333"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "5a69dd7d-a895-571b-956c-a2f3f10a9d6a",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "42c6b32a-835c-5a54-81dd-cc2461af8318"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 0.6309297535714574,
+              "recall@10": 1.0,
+              "ndcg@10": 0.6309297535714574,
+              "mrr@10": 0.5
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "hybrid": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.930348,
+          "ndcg@5": 0.853152,
+          "recall@10": 0.935323,
+          "ndcg@10": 0.854138,
+          "mrr@10": 0.826368
+        },
+        "old_ndcg10": 0.94516,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "c8e7c398-27cf-5feb-8acf-3a0e1b9ccefb",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "28d81626-f88b-5998-884f-19a6e738d5f1",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "fb999556-8657-5060-bef1-160068f7878b"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.0,
+              "ndcg@10": 0.0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.3333333333333333,
+              "ndcg@5": 0.23958467719708867,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.30563717246200395,
+              "mrr@10": 0.25
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "fb91131e-1366-5651-8dc6-d5a82c71eadd",
+              "6fedba53-7261-5270-b4ad-0ce4d877f904"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "7dc206de-b2af-57f4-ba56-8d48fd32281b",
+              "c4d617a4-b4ee-5062-9bfa-4d98a442e244",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "50b67816-f67a-5d48-8adf-d196cd08db99"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 0.6309297535714574,
+              "recall@10": 1.0,
+              "ndcg@10": 0.6309297535714574,
+              "mrr@10": 0.5
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "hybrid_rerank": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.893035,
+          "ndcg@5": 0.851091,
+          "recall@10": 0.950249,
+          "ndcg@10": 0.870985,
+          "mrr@10": 0.848774
+        },
+        "old_ndcg10": 0.954861,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": false,
+            "reason": "matched"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "7dae726d-6725-5eeb-bb56-1f44973700ab",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 0.0,
+              "ndcg@5": 0.0,
+              "recall@10": 0.5,
+              "ndcg@10": 0.1934264036172708,
+              "mrr@10": 0.125
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "a78e8ec3-5d33-5886-8458-ed39068770e1",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.3333333333333333,
+              "ndcg@5": 0.07986155906569621,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.24066785744472613,
+              "mrr@10": 0.25
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [
+              "5af3627c-5486-5467-884a-3128491ce0ae",
+              "bed1ace7-0dd6-52e6-ac99-81d108ce2f78",
+              "146bb9fd-bbea-5975-8103-c113e5ab867e",
+              "7d74b6ba-6f99-5aef-ae19-31595fda5841",
+              "5f11c772-299c-5f6b-a948-0059de98974d",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "7941adb8-33bd-5ec9-8c64-b0227fa08cc9"
+            ],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "matched"
+          },
+          "R066": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "997a5fab-087b-549e-ace3-f4463e0edb4e",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc",
+              "6a8cffc9-e4fb-5319-93db-1b6d7fd4521c"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 1.0,
+              "recall@10": 1.0,
+              "ndcg@10": 1.0,
+              "mrr@10": 1.0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "input_sha256": "de7077a2f73d67c08992748115b6e602af709ec4d2f12d5154be818f4d645612"
+    },
+    "real_questions_v1_source_aware": {
+      "hybrid_rerank": {
+        "n": 67,
+        "recomputed": {
+          "recall@5": 0.883085,
+          "ndcg@5": 0.846792,
+          "recall@10": 0.920398,
+          "ndcg@10": 0.858112,
+          "mrr@10": 0.841329
+        },
+        "old_ndcg10": 0.920497,
+        "expected_refusal": [
+          {
+            "id": "R063",
+            "refused": true,
+            "reason": "weak_overlap"
+          },
+          {
+            "id": "R064",
+            "refused": true,
+            "reason": "current_regulation_unverified"
+          },
+          {
+            "id": "R065",
+            "refused": true,
+            "reason": "weak_overlap"
+          }
+        ],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "060eb863-f8b9-5f94-872d-2d440b740886",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 1.0,
+              "recall@10": 1.0,
+              "ndcg@10": 1.0,
+              "mrr@10": 1.0
+            },
+            "reason": "matched"
+          },
+          "R062": {
+            "ranked": [
+              "e09fc1a4-f7ef-5195-8a8e-6bc87a66b5b4",
+              "060eb863-f8b9-5f94-872d-2d440b740886",
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "65edfb85-bfc0-51e6-baf5-75467bba628b",
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3",
+              "f747ff94-f616-5608-88e8-f9bcf012e502",
+              "9deadde7-69ac-5d3e-9c0a-2876753ee2c8",
+              "f374393a-7765-52fb-92ce-691653a486d1",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "50b67816-f67a-5d48-8adf-d196cd08db99"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2,
+              "b0aaee2a-fa88-5501-a038-5599cdffc9a3": 1
+            },
+            "corrected": {
+              "recall@5": 0.6666666666666666,
+              "ndcg@5": 0.42272040640559616,
+              "recall@10": 0.6666666666666666,
+              "ndcg@10": 0.42272040640559616,
+              "mrr@10": 0.5
+            },
+            "reason": "matched"
+          },
+          "R064": {
+            "ranked": [],
+            "gold": {},
+            "corrected": {
+              "recall@5": 0,
+              "ndcg@5": 0,
+              "recall@10": 0,
+              "ndcg@10": 0,
+              "mrr@10": 0
+            },
+            "reason": "current_regulation_unverified"
+          },
+          "R066": {
+            "ranked": [
+              "c03e4cf9-8f83-50da-a126-77e13722a908",
+              "dfd52b98-1263-5a9f-a59a-4126adc465d4",
+              "ebcecdbc-aedc-58f6-a069-ac14a47509b9",
+              "10d78e45-8b5e-5b91-8092-5d7a71cb60a2",
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "c704a9b1-d658-5106-9752-00f8f7628344",
+              "997a5fab-087b-549e-ace3-f4463e0edb4e",
+              "50b67816-f67a-5d48-8adf-d196cd08db99",
+              "eb672a11-a134-5878-8809-38f9a58a9776",
+              "8e8c4185-438c-525b-8e71-59acfb4e7efc"
+            ],
+            "gold": {
+              "c03e4cf9-8f83-50da-a126-77e13722a908": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 1.0,
+              "recall@10": 1.0,
+              "ndcg@10": 1.0,
+              "mrr@10": 1.0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "input_sha256": "69417a4fbe4e2eccc255fea2b9ebf1deb7d0595a5e5f743a48e833e8f03c285b"
+    },
+    "r061_source_aware": {
+      "hybrid_rerank": {
+        "n": 1,
+        "recomputed": {
+          "recall@5": 1.0,
+          "ndcg@5": 1.0,
+          "recall@10": 1.0,
+          "ndcg@10": 1.0,
+          "mrr@10": 1.0
+        },
+        "old_ndcg10": 1.0,
+        "expected_refusal": [],
+        "special_cases": {
+          "R061": {
+            "ranked": [
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36",
+              "060eb863-f8b9-5f94-872d-2d440b740886",
+              "9029f463-aa41-52a0-8c6d-dc8341785cac",
+              "70efaaaa-23d1-571b-b4e0-ece33393b151",
+              "cf2b2c0d-442b-5465-b32f-f82b22724199",
+              "abbffc09-5761-5b42-ac52-c3df820f9bdb",
+              "fb999556-8657-5060-bef1-160068f7878b",
+              "104a82d9-bd71-59a3-8e54-cf7859970d8d",
+              "de18d0c3-dd9b-55b0-9f01-46e8ecc434d5",
+              "527f66c5-7fe4-5dbe-83fb-fed530c70697"
+            ],
+            "gold": {
+              "e25f6ae4-dc20-52b3-aae6-9f9c8601ce36": 2,
+              "060eb863-f8b9-5f94-872d-2d440b740886": 2
+            },
+            "corrected": {
+              "recall@5": 1.0,
+              "ndcg@5": 1.0,
+              "recall@10": 1.0,
+              "ndcg@10": 1.0,
+              "mrr@10": 1.0
+            },
+            "reason": "matched"
+          }
+        }
+      },
+      "input_sha256": "0516f4d0e3bf214a02cae770bd85fe1ce5bead468db1fd702d5ea6a7a859c8a4"
+    }
+  },
+  "planner": {
+    "rules": {
+      "all70": {
+        "recall@5": 0.845238,
+        "ndcg@5": 0.810501,
+        "recall@10": 0.880952,
+        "ndcg@10": 0.821336,
+        "mrr@10": 0.805272
+      },
+      "expected_answerable67": {
+        "recall@5": 0.883085,
+        "ndcg@5": 0.846792,
+        "recall@10": 0.920398,
+        "ndcg@10": 0.858112,
+        "mrr@10": 0.841329
+      },
+      "actually_answered65": {
+        "recall@5": 0.910256,
+        "ndcg@5": 0.872847,
+        "recall@10": 0.948718,
+        "ndcg@10": 0.884516,
+        "mrr@10": 0.867216
+      },
+      "refused": [
+        "R017",
+        "R036",
+        "R063",
+        "R064",
+        "R065"
+      ]
+    },
+    "llm": {
+      "all70": {
+        "recall@5": 0.82381,
+        "ndcg@5": 0.777956,
+        "recall@10": 0.864286,
+        "ndcg@10": 0.791161,
+        "mrr@10": 0.7672
+      },
+      "expected_answerable67": {
+        "recall@5": 0.860697,
+        "ndcg@5": 0.81279,
+        "recall@10": 0.902985,
+        "ndcg@10": 0.826586,
+        "mrr@10": 0.801552
+      },
+      "actually_answered65": {
+        "recall@5": 0.887179,
+        "ndcg@5": 0.837799,
+        "recall@10": 0.930769,
+        "ndcg@10": 0.852019,
+        "mrr@10": 0.826215
+      },
+      "refused": [
+        "R017",
+        "R036",
+        "R063",
+        "R064",
+        "R065"
+      ]
+    },
+    "deltas": [
+      {
+        "id": "R014",
+        "rules": {
+          "recall@5": 0.0,
+          "ndcg@5": 0.0,
+          "recall@10": 1.0,
+          "ndcg@10": 0.3333333333333333,
+          "mrr@10": 0.14285714285714285
+        },
+        "llm": {
+          "recall@5": 0.0,
+          "ndcg@5": 0.0,
+          "recall@10": 0.0,
+          "ndcg@10": 0.0,
+          "mrr@10": 0
+        }
+      },
+      {
+        "id": "R016",
+        "rules": {
+          "recall@5": 1.0,
+          "ndcg@5": 0.5,
+          "recall@10": 1.0,
+          "ndcg@10": 0.5,
+          "mrr@10": 0.3333333333333333
+        },
+        "llm": {
+          "recall@5": 1.0,
+          "ndcg@5": 0.43067655807339306,
+          "recall@10": 1.0,
+          "ndcg@10": 0.43067655807339306,
+          "mrr@10": 0.25
+        }
+      },
+      {
+        "id": "R024",
+        "rules": {
+          "recall@5": 1.0,
+          "ndcg@5": 0.4623836304746291,
+          "recall@10": 1.0,
+          "ndcg@10": 0.4623836304746291,
+          "mrr@10": 0.25
+        },
+        "llm": {
+          "recall@5": 0.5,
+          "ndcg@5": 0.3196311965446524,
+          "recall@10": 1.0,
+          "ndcg@10": 0.4114350473367146,
+          "mrr@10": 0.2
+        }
+      },
+      {
+        "id": "R025",
+        "rules": {
+          "recall@5": 0.5,
+          "ndcg@5": 0.8262346571285599,
+          "recall@10": 1.0,
+          "ndcg@10": 0.9180385079206221,
+          "mrr@10": 1.0
+        },
+        "llm": {
+          "recall@5": 0.5,
+          "ndcg@5": 0.8262346571285599,
+          "recall@10": 0.5,
+          "ndcg@10": 0.8262346571285599,
+          "mrr@10": 1.0
+        }
+      },
+      {
+        "id": "R052",
+        "rules": {
+          "recall@5": 1.0,
+          "ndcg@5": 1.0,
+          "recall@10": 1.0,
+          "ndcg@10": 1.0,
+          "mrr@10": 1.0
+        },
+        "llm": {
+          "recall@5": 1.0,
+          "ndcg@5": 0.43067655807339306,
+          "recall@10": 1.0,
+          "ndcg@10": 0.43067655807339306,
+          "mrr@10": 0.25
+        }
+      },
+      {
+        "id": "R056",
+        "rules": {
+          "recall@5": 1.0,
+          "ndcg@5": 1.0,
+          "recall@10": 1.0,
+          "ndcg@10": 1.0,
+          "mrr@10": 1.0
+        },
+        "llm": {
+          "recall@5": 1.0,
+          "ndcg@5": 0.6309297535714574,
+          "recall@10": 1.0,
+          "ndcg@10": 0.6309297535714574,
+          "mrr@10": 0.5
+        }
+      },
+      {
+        "id": "R062",
+        "rules": {
+          "recall@5": 0.6666666666666666,
+          "ndcg@5": 0.42272040640559616,
+          "recall@10": 0.6666666666666666,
+          "ndcg@10": 0.42272040640559616,
+          "mrr@10": 0.5
+        },
+        "llm": {
+          "recall@5": 0.6666666666666666,
+          "ndcg@5": 0.29506715409202366,
+          "recall@10": 1.0,
+          "ndcg@10": 0.4932246398867695,
+          "mrr@10": 0.25
+        }
+      },
+      {
+        "id": "R066",
+        "rules": {
+          "recall@5": 1.0,
+          "ndcg@5": 1.0,
+          "recall@10": 1.0,
+          "ndcg@10": 1.0,
+          "mrr@10": 1.0
+        },
+        "llm": {
+          "recall@5": 0.0,
+          "ndcg@5": 0.0,
+          "recall@10": 1.0,
+          "ndcg@10": 0.3010299956639812,
+          "mrr@10": 0.1111111111111111
+        }
+      }
+    ],
+    "errors": [
+      {
+        "id": "R021",
+        "error": "LLMError: openai_compatible returned empty content"
+      },
+      {
+        "id": "R069",
+        "error": "LLMError: openai_compatible request failed: "
+      }
+    ],
+    "used": 48
+  },
+  "answer_quality": {
+    "rules": {
+      "n": 8,
+      "answered": 7,
+      "citation_coverage_mean": 0.633929,
+      "invalid_citation_cases": 0,
+      "gold_source_cited": 7
+    },
+    "llm": {
+      "n": 8,
+      "answered": 7,
+      "citation_coverage_mean": 0.574206,
+      "invalid_citation_cases": 0,
+      "gold_source_cited": 7
+    }
+  }
+}

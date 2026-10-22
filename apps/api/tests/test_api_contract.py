@@ -24,5 +24,15 @@ def test_documented_api_routes_are_mounted():
         "/api/jobs/{job_id}/retry",
         "/api/debug/query-logs/{request_id}",
         "/api/debug/stats",
+        "/api/manage/documents",
+        "/api/manage/documents/{document_id}",
+        "/api/manage/documents/{document_id}/chunks",
+        "/api/manage/stats",
+        "/api/manage/facets",
+        "/api/manage/jobs",
+        "/api/manage/faq",
+        "/api/manage/faq/{faq_id}",
+        "/api/manage/capabilities",
+        "/api/manage/llm",
     }
     assert expected - paths == set()

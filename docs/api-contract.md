@@ -160,7 +160,8 @@ Accept: text/event-stream
   "session_id": "6f1f5d8e-3f6a-4c2b-9d7e-2a1b3c4d5e6f",
   "category": null,
   "species": "中华绒螯蟹",
-  "retrieval_mode": "hybrid_rerank"
+  "retrieval_mode": "hybrid_rerank",
+  "answer_mode": "document_rag"
 }
 ```
 
@@ -171,6 +172,27 @@ Accept: text/event-stream
 | category | 否 | string/null | 文档分类硬过滤，例如 `水质管理` |
 | species | 否 | string/null | 品种硬过滤；建议只传单一品种 |
 | retrieval_mode | 否 | `dense`/`bm25`/`hybrid`/`hybrid_rerank` | 默认 `hybrid` |
+| answer_mode | 否 | `document_rag`/`document_faq_rag`/`faq_direct` | 默认 `document_rag`，见 2.4.1 |
+
+#### 2.4.1 `answer_mode` 语义与错误码
+
+| 值 | 行为 | 前置开关 |
+|---|---|---|
+| `document_rag` | 只用原始文献；FAQ 阶段**不发起**任何查询 | 无（默认） |
+| `document_faq_rag` | 先用原文；原文证据不足时才追加已核验 FAQ（最多 2 条，不顶替原文） | `ENABLE_FAQ_RETRIEVAL=true` |
+| `faq_direct` | 原文不足且单条已核验 FAQ 同时满足 5 个严格条件时，直接由 FAQ 作答；否则自动回退到 `document_faq_rag` | `ENABLE_FAQ_RETRIEVAL=true` **且** `ENABLE_FAQ_DIRECT_ANSWER=true` |
+
+错误码：
+
+| 情况 | 状态码 | detail |
+|---|---|---|
+| 请求了 `document_faq_rag` / `faq_direct` 但开关未开 | 400 | `FAQ 检索未启用，answer_mode 仅支持 document_rag` |
+| 请求了 `faq_direct` 但直答开关未开 | 400 | `FAQ 直答未启用` |
+| 枚举值非法 | 422 | pydantic `literal_error` |
+
+`faq_direct` 的 5 个条件（任一不满足即回退，且**不会**降低充分性阈值）：已核验且支撑版本仍 active；dense 与 BM25 **同时排第一**；物种/阶段/地区不冲突；严格主题（用药、剂量、禁用、诊断）要求支撑为权威来源；答案不含"如果/视情况/分阶段"等条件句。
+
+`status` 事件新增字段：`answer_mode`、`answer_mode_used`、`faq_supplement`（含 `accepted`/`rejected`/`skipped`）、`faq_direct`（含 `used`/`fallback_reason`）、`applicability_filter`、`strict_source_filter`。
 
 注意：`hybrid_rerank` 会调用真实 BGE-Reranker，延迟高于 `hybrid`；不要在前端默认强制。
 
@@ -963,6 +985,235 @@ GET /api/health
 - SSE 心跳、断线重连、`Last-Event-ID`；
 - 语义 NLI 支持性接口（当前只有词面 v0）。
 
+## 13. 数据来源与 FAQ 复核接口（2026-10-21 新增）
+
+本节接口对应"分层可信证据"改造。第一阶段 FAQ **不参与默认问答**：`enable_faq_retrieval` 默认 `false`，因此前端即使不调用本节接口，聊天行为也与之前一致。
+
+### 13.1 `POST /api/documents/{document_id}/promote`
+
+把 **staging** 文档发布为可检索文档，并把 `verification_status` 置为 `verified`。这是采集入库材料进入检索的唯一通道。
+
+请求：
+
+```json
+{ "reviewer": "陶江", "note": "已核对原文与发布日期" }
+```
+
+约束与错误：
+
+| 情况 | 状态码 | detail |
+|---|---|---|
+| 文档不存在或已删除 | 404 | `文档不存在` |
+| 尚无 `current_version_id` | 409 | `文档尚未完成入库，无法发布` |
+| 当前版本 `status != ready` | 409 | `当前版本未就绪，无法发布` |
+| Qdrant 中该版本点位为 0 | 409 | `索引为空，请先重新入库` |
+
+成功返回 `DocumentOut`（同 `GET /api/documents/{id}`）。重复调用是幂等的。
+
+### 13.2 `GET /api/faq`
+
+查询 FAQ 条目。查询参数：`review_status`（`pending`/`verified`/`rejected`）、`topic`、`limit`（1–100，默认 20）、`offset`。
+
+响应数组元素：
+
+```json
+{
+  "id": "uuid",
+  "question": "…",
+  "answer": "…",
+  "species": ["中华绒螯蟹"],
+  "topic": "水质",
+  "source_dataset": "Mxode/Chinese-QA-AFAF",
+  "source_authority": "unknown",
+  "review_status": "pending",
+  "usage_scope": "knowledge",
+  "evidence_status": "supported",
+  "quality_flags": ["drug_claim_needs_strict_source"],
+  "supporting_count": 2,
+  "reviewer": null,
+  "reviewed_at": null,
+  "indexed_at": null
+}
+```
+
+### 13.3 `GET /api/faq/{faq_id}`
+
+在 13.2 字段基础上追加 `supporting`（支撑 chunk 数组，含 `document_id`/`version_id`/`chunk_id`/`page`/`quote`/`authority`）、`review_notes`、`original_answer`。不存在返回 404。
+
+### 13.4 `GET /api/faq/stats`
+
+```json
+{ "by_status": [{ "review_status": "pending", "evidence_status": "supported", "count": 68 }], "indexed": 0 }
+```
+
+### 13.5 `POST /api/faq/{faq_id}/review`
+
+这是**唯一**能把 `review_status` 改成 `verified` 的接口。
+
+请求：
+
+```json
+{ "action": "verify", "reviewer": "陶江", "answer": "可选：人工修订后的答案", "notes": "…" }
+```
+
+`action` 仅接受 `verify` / `reject`。
+
+核验前置条件（不满足则拒绝）：
+
+| 情况 | 状态码 | detail |
+|---|---|---|
+| `usage_scope = "eval"` | 409 | `评测专用条目（usage_scope=eval）不得进入知识库` |
+| 已核验过 | 409 | `该条目已通过复核` |
+| 无仍然 active 的支撑版本 | 422 | `缺少仍处于 active 状态的支撑文献，无法核验。…` |
+| `evidence_status != "supported"` | 422 | `证据链状态为 none，不足以核验` |
+
+`verify` 成功后：写入 `reviewer`/`reviewed_at`/`review_notes`，替换为人工修订答案（原答案保存在 `original_answer`），随后才写入 Qdrant，并回填 `indexed_at`。`reject` 会把条目从 Qdrant 删除。
+
+> 前端注意：本接口不做鉴权，`reviewer` 只是审计字段，不是身份凭证。
+
+### 13.6 `GET /api/data/sources`
+
+返回 `data/sources/registry.yaml` 的源清单及入库统计：
+
+```json
+{
+  "total": 22,
+  "by_authority": { "official_technical": 9, "peer_reviewed": 12, "standard_draft": 1 },
+  "by_policy": { "auto": 22 },
+  "items": [
+    { "id": "nftec-disease-2026-10", "url": "…", "authority": "official_technical",
+      "resolver": "direct", "license": null, "documents_active": 0,
+      "documents_staging": 1, "chunks": 21 }
+  ]
+}
+```
+
+### 13.7 `GET /api/data/runs`
+
+采集/导入审计记录，参数 `kind`（`crawl`/`faq_import`/`index`）、`limit`。
+
+### 13.8 `DocumentOut` 新增字段
+
+| 字段 | 说明 |
+|---|---|
+| `source_type` | `pdf` / `html`（历史值 `web` 仅兼容读取） |
+| `authority_level` | `national_standard`/`industry_standard`/`local_standard`/`official_technical`/`peer_reviewed`/`standard_draft`/`historical`/`synthetic`/`unknown` 等 |
+| `verification_status` | `verified` / `pending` / `rejected` |
+| `effective_date` | 生效日期（字符串，可空） |
+| `fetched_at` | 采集时间（ISO-8601，可空） |
+
+`status="staging"` 的文档**不会**出现在问答引用中；前端可据此显示"待发布"。
+
+### 13.9 引用对象新增字段
+
+`CitationOut` 与 SSE `sources[]` 增加：
+
+| 字段 | 说明 |
+|---|---|
+| `source_type` | `document` 或 `faq` |
+| `faq_id` | FAQ 引用时非空；此时 `document_id`/`version_id`/`chunk_id` 为 `null` |
+| `evidence_level` | `L1_original` / `L2_verified_faq`（L3/L4 永不出现） |
+| `authority` | 来源权威等级（见 `app/authority.py`） |
+| `verification_status` | `verified` |
+| `publisher` | 发布机构 |
+| `source_url` | 原文 URL |
+| `supplemental` | `true` 表示该条是第二阶段补充的 FAQ 证据 |
+
+聊天请求体已新增 `answer_mode`，语义与错误码见 2.4.1；其中 `document_faq_rag`/`faq_direct` 需服务端开关开启，默认仅 `document_rag` 可用。
+
+## 14. 数据管理查询 API（2026-10-21 新增）
+
+这一组接口是**只读查询**，前缀 `/api/manage`，与既有 `/api/documents` 分开：
+旧列表继续返回 `DocumentOut[]`，不会因为分页改造而破坏旧客户端。
+
+### 14.1 `GET /api/manage/documents`
+
+服务端分页、稳定排序、可组合筛选。参数：
+
+| 参数 | 说明 |
+|---|---|
+| `q` | 标题/分类/机构/URL/source_id 模糊搜索 |
+| `status` | 逗号分隔：`active,staging,failed,deleted`；`failed` 是派生状态（无当前版本且最近一次解析失败），不会同时出现在 `staging`；不传默认排除 `deleted` |
+| `published` | `true`：`status=active` + `verification_status=verified` + 有当前版本；`false` 取反 |
+| `technical_review` / `domain_review` | 逗号分隔的审查状态；两条轴独立 |
+| `document_type` | `standard` / `standard_draft` / `technical_guidance` / `research` / `synthetic` / `other` |
+| `source_type` | `pdf` / `html`；历史 `web` 在输出中归一为 `html` |
+| `authority_level` / `language` / `species` / `category` / `license` / `source_id` | 精确筛选 |
+| `sort` | `created_desc`（默认）、`created_asc`、`updated_desc`、`title_asc`、`title_desc`、`year_desc` |
+| `limit` / `offset` | `limit` 1–100，默认 25 |
+
+响应：
+
+```json
+{
+  "items": [{"id": "...", "title": "...", "status": "staging", "published": false,
+             "retrievable": false, "document_type": "standard_draft",
+             "parent_chunks": 3, "child_chunks": 12, "...": "..."}],
+  "total": 100, "page": 1, "page_size": 25, "pages": 4,
+  "has_next": true, "has_prev": false, "sort": "created_desc", "applied_filters": {}
+}
+```
+
+要点：
+
+- `total` 是**筛选后的全库计数**，不是当前页长度。
+- `published` 只表示发布状态；`retrievable` 还要求当前版本 `ready`。前端不要用 `current_version_id` 代替发布状态。
+- `staging` 即使已有当前版本、块已入索引，也不是 published。
+- 同一来源的多版本/重复上传通过规范化 URL / `content_hash` 去重后计入 `/stats` 的有效规模。
+
+### 14.2 `GET /api/manage/stats`
+
+返回全库聚合：文档状态（`by_status` 只统计未删除，`by_status_including_deleted` 另给删除桶）、核验、材料性质、两条审查轴、独立来源（有效/待审/重复归并）、版本（`versions.total` 含删除文档，`live_total`/`deleted_total` 分开）、父/子块（全部/当前 active/当前 staging/删除版本）、FAQ 审核与**实际 Qdrant FAQ 点数**、来源登记与最近批次。删除记录计入 `records_including_deleted`，不计入可信度分布或有效规模。`published` 只要求 active+verified+当前版本；`retrievable` 还要求当前版本 `ready`，二者必须分开显示。
+
+### 14.3 `GET /api/manage/facets`
+
+返回筛选面板的计数：`status`、`category`、`species`、`source_type`、`authority_level`、`technical_review_status`、`domain_review_status`、`language`、`license`、`document_type`。`include_deleted=true` 只影响 `status` 桶；其余分面始终只统计未删除资料。
+
+### 14.4 `GET /api/manage/documents/{document_id}`
+
+文档详情：来源/存储/许可证、当前版本与历史版本、任务、解析块预览、风险标记（`review_flag_details`），以及 `source`/`storage`/`review` 三个说明性对象。**不改变任何状态。**
+
+### 14.5 `GET /api/manage/documents/{document_id}/chunks`
+
+参数 `version_id`、`role=parent|child`、`page`、`q`、`limit`、`offset`。`version_id` 不传时取当前版本；不属于该文档的版本返回 404。
+
+### 14.6 `GET /api/manage/jobs`
+
+参数 `status`、`kind`、`document_id`、`limit`、`offset`；返回任务状态、进度、`attempts`、失败原因、版本号与文档标题。
+
+### 14.7 FAQ 管理查询
+
+- `GET /api/manage/faq?q=&review_status=&evidence_status=&usage_scope=&species=&indexed=&limit=&offset=`
+- `GET /api/manage/faq/{faq_id}`：答案、审核来源、`supporting[]`（每条支撑原文的文档/版本/页码/引文/可用性）。
+- `GET /api/manage/faq/stats/summary`：数据库审核计数、`verified_indexed`（`indexed_at` 非空）、Qdrant `index_points`；二者可能不同。
+
+`program_seeded`（数据集 `seed:*` 或标记 `seeded_from_active_document`）表示**程序从已发布原文复制**，`review_provenance_label` 必须显示为非专家审核；`domain_review_status` 为 `not_recorded` 时不得显示成专家确认。
+
+### 14.8 `GET /api/manage/capabilities`
+
+服务端能力开关：`answer_modes[]`（含 `available`/`reason`）、`faq_retrieval`、`faq_direct_answer`、`max_sources`、`faq_supplement_k`。前端只能展示 `available=true` 的模式，不得通过按钮或请求体绕过全局关闭。
+
+### 14.9 引用对象的分支与可用性
+
+`source_type` 是证据分支（`document` / `faq`）；`media_type` 是物理形态（`pdf` / `html` / `faq`）。二者不可混用：
+
+- PDF：`document_id`/`version_id`/`page`/`page_end`/`locations[]` 可用；`location`/`bbox` 只是第一处定位，跨页父块必须读取 `locations[]` 才能完整展示全部页码与 bbox。
+- HTML：有 `document_id`/`version_id`，**没有** PDF 页码/bbox；`locations[]` 是块/段落锚点，不能渲染为 PDF 高亮。
+- FAQ：`faq_id` 非空，`document_id`/`version_id`/`page` 为 `null`；FAQ 本身不是 PDF，支撑原文在 `/api/manage/faq/{id}` 的 `supporting[]`。
+
+历史消息读取（`GET /api/sessions/{id}/messages`）的 `CitationOut` 新增：
+
+| 字段 | 说明 |
+|---|---|
+| `media_type` | `pdf` / `html` / `faq` |
+| `source_url` | 原文链接（FAQ 为原始来源） |
+| `document_status` | 当前文档状态；FAQ 为 null |
+| `available` | 该历史引用现在是否仍可打开 |
+| `unavailable_reason` | `document_deleted` / `document_missing` / `version_missing` / `faq_missing` / `faq_not_verified` / `faq_support_invalid` |
+| `locations` / `page_end` | PDF 全部页码与 bbox；HTML 为块锚点；FAQ 为空 |
+
+`GET /api/documents/{document_id}/citations` 新增可选 `version_id`，并返回每条引用的 `locations[]`/`page_end`。阅读器**必须**传当前打开的版本，否则后端不会把旧版本的 bbox 套到新版本上；跨页引用要逐一定位 `locations[]`，不能只画第一处。
+
 ## 12. 变更记录
 
 | 日期 | 变更 |
@@ -970,3 +1221,5 @@ GET /api/health
 | 2026-10-20 | 初版；按真实 FastAPI/OpenAPI 整理；新增 `GET /api/debug/stats`、文档 source 元数据字段、`chunk_id`/`location`/`bbox` 顶层字段；文档列表支持 `q/status/limit/offset` |
 | 2026-10-20b | 复核真实响应：补充 `/api/health` 的 `max_sources`/`rerank_top_k`；修正 PDF 原文件接口已支持 Range/206（不是“无特殊处理”）；补充 18 路由回归测试说明 |
 | 2026-10-20c | Planner 结构化任务：新增 `planner_tasks`，记录子问题 facet/继承字段/effective_query；明确非 species hard 约束降级规则；补充 simple 跳过与 `applicable_constraints` |
+| 2026-10-21 | 新增第 13 节：文档 `promote`、FAQ 列表/详情/统计/复核、数据来源与导入审计；`CitationOut` 增加 `source_type`/`faq_id`/`evidence_level`/`authority`/`verification_status`/`publisher`/`source_url`/`supplemental`；FAQ 检索默认关闭 |
+| 2026-10-21b | 新增第 14 节 `/api/manage/*` 服务端分页/筛选/统计/详情与 FAQ 管理；引用增加 `media_type`/`locations[]`/`page_end`/可用性与版本过滤；旧 `/api/documents` 数组契约保持不变 |

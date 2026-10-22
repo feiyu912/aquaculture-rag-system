@@ -1,0 +1,16 @@
+{
+  "status": "ok",
+  "components": {
+    "postgres": "ok",
+    "qdrant": "ok",
+    "redis": "ok"
+  },
+  "collection": "kb_chunks_bge_m3_v1",
+  "llm_provider": "openai_compatible",
+  "llm_configured": true,
+  "embedding_model": "BAAI/bge-m3",
+  "embedding_device": "mps",
+  "reranker_model": "BAAI/bge-reranker-v2-m3",
+  "max_sources": 5,
+  "rerank_top_k": 8
+}
