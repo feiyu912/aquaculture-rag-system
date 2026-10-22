@@ -1,0 +1,31 @@
+{
+  "count": 100,
+  "by_group": {
+    "standard": 29,
+    "national": 20,
+    "local": 36,
+    "journal": 15
+  },
+  "by_type": {
+    "standard_section": 29,
+    "forecast": 20,
+    "local_tech": 36,
+    "journal_conclusion": 15
+  },
+  "unique_species": 28,
+  "exclusions_considered": 3233,
+  "annotation_status": "template_generated_pending_human_review",
+  "source_snapshot": "kb-v1_20261022",
+  "validation": {
+    "gold_chunks_found": 100,
+    "gold_points_found": 100,
+    "max_prior_similarity": 0.143,
+    "errors": []
+  },
+  "caveats": [
+    "annotation_status=template_generated_pending_human_review; domain review not performed",
+    "20 of 29 standard questions cite the standard code, which favours lexical retrieval",
+    "Chinese-only: 526 publishable English WorldFish documents are not covered",
+    "local source contains some non-aquaculture articles; filtered by lexicon only"
+  ]
+}

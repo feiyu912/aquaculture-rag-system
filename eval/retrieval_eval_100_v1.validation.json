@@ -1,0 +1,18 @@
+{
+  "dataset": "eval/retrieval_eval_100_v1.jsonl",
+  "cases": 100,
+  "by_group": {
+    "journal": 15,
+    "local": 36,
+    "national": 20,
+    "standard": 29
+  },
+  "gold_chunks_found": 100,
+  "gold_points_found": 100,
+  "max_prior_similarity": {
+    "score": 0.143,
+    "case": "E011",
+    "prior": "鳊鱼夏花的放养密度是多少？"
+  },
+  "errors": []
+}
