@@ -1,0 +1,865 @@
+{
+  "summary": {
+    "cases": 50,
+    "answered": 50,
+    "citation_coverage_mean": 0.6905,
+    "cited_sentences": 429,
+    "supported_sentences": 384,
+    "support_rate": 0.8951,
+    "uncited_fact_sentences": 150,
+    "cases_with_invalid_citation": 0,
+    "method": "character 4-gram overlap between cited sentence and cited parent chunk; >=0.35 counted as supported. Proxy only, not entailment."
+  },
+  "cases": [
+    {
+      "id": "E001",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 309,
+      "citation_coverage": 0.5714285714285714,
+      "cited_sentences": 4,
+      "supported_sentences": 4,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 4,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E002",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 355,
+      "citation_coverage": 0.6666666666666666,
+      "cited_sentences": 4,
+      "supported_sentences": 0,
+      "support_rate": 0.0,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "原因：<sources> 中提供的湖南省资料分别为 2026年8月 [S1]、2026年6月 [S2]、2025年8月 [S3]、2026年7月 [S5]、2025年6月 [S7]，没有 2024年8月湖南省的预测预报资料。",
+          "overlap": 0.027
+        },
+        {
+          "sentence": "补充说明：若您需要的是“8月湖南省”的一般性参考，现有资料中 2026年8月 [S1] 仅指出该时段易发病毒性、细菌性、寄生虫性疾病，死鱼和泛塘风险上升，但未列出具体病种；",
+          "overlap": 0.203
+        },
+        {
+          "sentence": "2025年8月 [S3] 同样未列出具体病种。",
+          "overlap": 0.0
+        }
+      ]
+    },
+    {
+      "id": "E003",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 431,
+      "citation_coverage": 0.75,
+      "cited_sentences": 6,
+      "supported_sentences": 6,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E004",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1068,
+      "citation_coverage": 0.8666666666666667,
+      "cited_sentences": 21,
+      "supported_sentences": 18,
+      "support_rate": 0.857,
+      "uncited_fact_sentences": 0,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "泥蚶滤食率显著降低 [S2]；",
+          "overlap": 0.125
+        },
+        {
+          "sentence": "东泥织纹螺摄食成功率由67%降至12% [S2]。",
+          "overlap": 0.312
+        },
+        {
+          "sentence": "- 幼体浮游与附着：海洋酸化削弱青蛤浮游幼体游动行为 [S5]；",
+          "overlap": 0.227
+        }
+      ]
+    },
+    {
+      "id": "E005",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 361,
+      "citation_coverage": 1.0,
+      "cited_sentences": 5,
+      "supported_sentences": 4,
+      "support_rate": 0.8,
+      "uncited_fact_sentences": 1,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "补充：附录A表中列出的具体时段（如6月上旬至7月上旬为10:00~12:00、2:00~4:00等）属于该规程附录A的内容 [S8]，但该表在资料中未明确标注为“5.1.2.2”条款本身，仅作为“开启时段参见附录A”的对应资料 [S1][S",
+          "overlap": 0.258
+        }
+      ]
+    },
+    {
+      "id": "E006",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 210,
+      "citation_coverage": 0.4,
+      "cited_sentences": 2,
+      "supported_sentences": 1,
+      "support_rate": 0.5,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- 2024年8月山东省水产养殖病害预测预报，指出8月高温多雨、病害多发高发 [S8]；",
+          "overlap": 0.121
+        }
+      ]
+    },
+    {
+      "id": "E007",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 448,
+      "citation_coverage": 1.0,
+      "cited_sentences": 5,
+      "supported_sentences": 4,
+      "support_rate": 0.8,
+      "uncited_fact_sentences": 0,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "现有资料仅涉及澳洲淡水龙虾放苗前的田埂加固和进排水系统两项内容 [S2][S9][S10]，缺少放苗前的其他关键信息，例如：稻田消毒方式与用量、水草种植要求、苗种规格与放养密度、放苗水温与时间、水质调节措施等。",
+          "overlap": 0.105
+        }
+      ]
+    },
+    {
+      "id": "E008",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 725,
+      "citation_coverage": 0.8,
+      "cited_sentences": 9,
+      "supported_sentences": 8,
+      "support_rate": 0.889,
+      "uncited_fact_sentences": 1,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- 以甲醇（MeOH）为基础，分别与PG、DMSO、Gly及20%蔗糖（Suc）配制成MPS、MDS、MGS三种复合性冷冻保护剂 [S1][S5]。",
+          "overlap": 0.17
+        }
+      ]
+    },
+    {
+      "id": "E009",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 600,
+      "citation_coverage": 0.9090909090909091,
+      "cited_sentences": 13,
+      "supported_sentences": 12,
+      "support_rate": 0.923,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "以上为该标准第4章“配套设施”的全部要求内容 [S1]。",
+          "overlap": 0.053
+        }
+      ]
+    },
+    {
+      "id": "E010",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 249,
+      "citation_coverage": 0.4,
+      "cited_sentences": 2,
+      "supported_sentences": 0,
+      "support_rate": 0.0,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- 现有四川省资料为2026年7月和2026年6月，且内容主要是综合防控措施，未列出10月重点防控病害 [S4][S5]。",
+          "overlap": 0.065
+        },
+        {
+          "sentence": "- 其他省份10月预报（贵州、全国、甘肃、湖南、吉林、广东）不能直接代表四川省情况 [S1][S2][S3][S6][S7][S8][S10]。",
+          "overlap": 0.0
+        }
+      ]
+    },
+    {
+      "id": "E011",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 70,
+      "citation_coverage": 1.0,
+      "cited_sentences": 2,
+      "supported_sentences": 1,
+      "support_rate": 0.5,
+      "uncited_fact_sentences": 0,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "补充说明：该资料同时给出苗种规格为尾重 20～100 克 [S4]。",
+          "overlap": 0.261
+        }
+      ]
+    },
+    {
+      "id": "E012",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1266,
+      "citation_coverage": 0.6666666666666666,
+      "cited_sentences": 14,
+      "supported_sentences": 12,
+      "support_rate": 0.857,
+      "uncited_fact_sentences": 4,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- 生长参数：阿魏组 SGR 显著高于空白组和 DMPT 组，FCR 显著低于空白组和 DMPT 组 [S3]。",
+          "overlap": 0.194
+        },
+        {
+          "sentence": "虾膏组 agrp 显著降低，npy、pomc、cart 无显著差异 [S9]。",
+          "overlap": 0.269
+        }
+      ]
+    },
+    {
+      "id": "E013",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 284,
+      "citation_coverage": 0.6,
+      "cited_sentences": 3,
+      "supported_sentences": 2,
+      "support_rate": 0.667,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- DB37/T 6047—2026 的“8.2 饲养管理”给出了虾、蟹、贝的投喂要求 [S3]。",
+          "overlap": 0.1
+        }
+      ]
+    },
+    {
+      "id": "E014",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 297,
+      "citation_coverage": 0.25,
+      "cited_sentences": 2,
+      "supported_sentences": 2,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E015",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1833,
+      "citation_coverage": 0.7407407407407407,
+      "cited_sentences": 28,
+      "supported_sentences": 27,
+      "support_rate": 0.964,
+      "uncited_fact_sentences": 4,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "**说明**：以上涉及用药的内容均为资料原文表述，具体用药请遵循当地规范并咨询执业兽医，按兽药商品说明书规定剂量使用 [S2][S4][S5][S7]。",
+          "overlap": 0.179
+        }
+      ]
+    },
+    {
+      "id": "E016",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1054,
+      "citation_coverage": 0.8,
+      "cited_sentences": 14,
+      "supported_sentences": 13,
+      "support_rate": 0.929,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "2. 各因素变动10%时，净现值的变动幅度分别约为：销售单价65.19%、养殖密度17.43%、瞬时死亡率14.36%、鱼苗成本5.95% [S3]。",
+          "overlap": 0.269
+        }
+      ]
+    },
+    {
+      "id": "E017",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 501,
+      "citation_coverage": 0.9090909090909091,
+      "cited_sentences": 11,
+      "supported_sentences": 10,
+      "support_rate": 0.909,
+      "uncited_fact_sentences": 5,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- 整体架构分为三层：设备层、数据层、应用层 [S1]。",
+          "overlap": 0.062
+        }
+      ]
+    },
+    {
+      "id": "E018",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 540,
+      "citation_coverage": 0.5,
+      "cited_sentences": 6,
+      "supported_sentences": 6,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 6,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E019",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 572,
+      "citation_coverage": 0.625,
+      "cited_sentences": 10,
+      "supported_sentences": 10,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E020",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 774,
+      "citation_coverage": 0.8333333333333334,
+      "cited_sentences": 14,
+      "supported_sentences": 14,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E021",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 503,
+      "citation_coverage": 0.75,
+      "cited_sentences": 6,
+      "supported_sentences": 6,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 5,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E022",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 262,
+      "citation_coverage": 0.5,
+      "cited_sentences": 2,
+      "supported_sentences": 0,
+      "support_rate": 0.0,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- 资料 S7 是《2024年7月新疆维吾尔自治区水产养殖病害预测预报》，其中提到7月是疾病高发季节，应加强水质管理和疾病防控等工作 [S7]，但**未列出**该月需要重点防控的具体病害名称。",
+          "overlap": 0.211
+        },
+        {
+          "sentence": "- 其他资料中，S3、S4 为新疆7月预报，但分别属于2026年和2025年，且同样未列出具体病害名称 [S3][S4]；",
+          "overlap": 0.0
+        }
+      ]
+    },
+    {
+      "id": "E023",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 479,
+      "citation_coverage": 0.8,
+      "cited_sentences": 11,
+      "supported_sentences": 10,
+      "support_rate": 0.909,
+      "uncited_fact_sentences": 0,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "涉及用药的具体剂量，现有资料未给出，仅提示参照兽药商品说明书，并应遵循当地规范、咨询执业兽医 [S1]。",
+          "overlap": 0.098
+        }
+      ]
+    },
+    {
+      "id": "E024",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1077,
+      "citation_coverage": 0.75,
+      "cited_sentences": 14,
+      "supported_sentences": 14,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 1,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E025",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 176,
+      "citation_coverage": 0.6666666666666666,
+      "cited_sentences": 2,
+      "supported_sentences": 2,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E026",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 246,
+      "citation_coverage": 0.4,
+      "cited_sentences": 2,
+      "supported_sentences": 0,
+      "support_rate": 0.0,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "可用的四川省资料为2026年7月、2026年6月的预测预报，以及2026年5月水产养殖滥用药专项整治调研信息 [S2][S4][S9]；",
+          "overlap": 0.196
+        },
+        {
+          "sentence": "另有其他省份或年份的预测预报 [S3][S5][S6][S7][S8][S10]，不能用于回答四川省2026年4月的情况。",
+          "overlap": 0.116
+        }
+      ]
+    },
+    {
+      "id": "E027",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1407,
+      "citation_coverage": 0.6428571428571429,
+      "cited_sentences": 18,
+      "supported_sentences": 16,
+      "support_rate": 0.889,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- 上述罗非鱼相关水处理要点主要来自“对虾零换水微生物原位调控”模式，罗非鱼在其中承担颗粒物摄食与生态净化功能 [S2][S3]；",
+          "overlap": 0.216
+        },
+        {
+          "sentence": "- 涉及消毒、用药等内容，资料仅提示定期用生石灰、国标渔药碘制剂等消毒并使用微生物制剂调理水质 [S6]，具体用药应遵循当地规范并咨询执业兽医。",
+          "overlap": 0.322
+        }
+      ]
+    },
+    {
+      "id": "E028",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1053,
+      "citation_coverage": 0.8181818181818182,
+      "cited_sentences": 13,
+      "supported_sentences": 13,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E029",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 176,
+      "citation_coverage": 1.0,
+      "cited_sentences": 4,
+      "supported_sentences": 4,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 1,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E030",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 216,
+      "citation_coverage": 0.4,
+      "cited_sentences": 2,
+      "supported_sentences": 0,
+      "support_rate": 0.0,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "资料中涉及甘肃省9月份的内容为2025年9月和2026年9月 [S2][S4]，并非2024年9月；",
+          "overlap": 0.0
+        },
+        {
+          "sentence": "其他资料分别为四川省、广西壮族自治区、贵州省或甘肃省其他月份的内容 [S3][S5][S6][S7][S8][S9][S10]。",
+          "overlap": 0.0
+        }
+      ]
+    },
+    {
+      "id": "E031",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 929,
+      "citation_coverage": 0.7857142857142857,
+      "cited_sentences": 15,
+      "supported_sentences": 15,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E032",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1558,
+      "citation_coverage": 0.8095238095238095,
+      "cited_sentences": 23,
+      "supported_sentences": 22,
+      "support_rate": 0.957,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- 白度值排序：AF 组 > AF+I 组 > LIF+I 组 > LIF 组（表 2 数据）[S5]。",
+          "overlap": 0.286
+        }
+      ]
+    },
+    {
+      "id": "E033",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 774,
+      "citation_coverage": 0.7222222222222222,
+      "cited_sentences": 13,
+      "supported_sentences": 13,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 6,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E034",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 483,
+      "citation_coverage": 1.0,
+      "cited_sentences": 9,
+      "supported_sentences": 9,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 1,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E035",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 361,
+      "citation_coverage": 0.5,
+      "cited_sentences": 3,
+      "supported_sentences": 0,
+      "support_rate": 0.0,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "- 资料中涉及“春季渔业生产管理要点”的文件为《湖北省2025年春季渔业生产管理要点》[S2][S4]和《湖北省2026年春季渔业生产管理要点》[S6][S8][S9]，未提供2024年湖北省春季渔业生产管理要点。",
+          "overlap": 0.328
+        },
+        {
+          "sentence": "- 资料中涉及黄颡鱼养殖技术的内容来自《湖北省水产技术推广总站2024年渔业主推技术指南》中的“黄颡鱼池塘健康养殖技术”[S1][S3][S5]，但这不是“2024年湖北省春季渔业生产管理”文件。",
+          "overlap": 0.145
+        },
+        {
+          "sentence": "- 现有资料中虽有2024年冬季水产养殖管理措施[S7]，但不属于春季生产管理要点。",
+          "overlap": 0.273
+        }
+      ]
+    },
+    {
+      "id": "E036",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 900,
+      "citation_coverage": 0.6470588235294118,
+      "cited_sentences": 13,
+      "supported_sentences": 13,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 5,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E037",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 211,
+      "citation_coverage": 1.0,
+      "cited_sentences": 5,
+      "supported_sentences": 5,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 1,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E038",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 266,
+      "citation_coverage": 0.25,
+      "cited_sentences": 1,
+      "supported_sentences": 0,
+      "support_rate": 0.0,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "原因：<source id=\"S1\"> 为海南省2026年8月病害预测预报，但其中仅提到8月海南高温、台风暴雨多发，是病害高发关键期，需做好水质调控、病害防控及极端天气应急管理 [S1]；",
+          "overlap": 0.297
+        }
+      ]
+    },
+    {
+      "id": "E039",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 528,
+      "citation_coverage": 0.7,
+      "cited_sentences": 9,
+      "supported_sentences": 9,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 6,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E040",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1024,
+      "citation_coverage": 0.875,
+      "cited_sentences": 15,
+      "supported_sentences": 14,
+      "support_rate": 0.933,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "资料中未给出 L-精氨酸的具体用药剂量建议（实验所用饲料添加浓度为 600 mg/kg [S5]，仅为实验设置，非推荐用量）；",
+          "overlap": 0.128
+        }
+      ]
+    },
+    {
+      "id": "E041",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 338,
+      "citation_coverage": 1.0,
+      "cited_sentences": 6,
+      "supported_sentences": 5,
+      "support_rate": 0.833,
+      "uncited_fact_sentences": 1,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "以上均为该标准资料中的结论性规定 [S1]。",
+          "overlap": 0.0
+        }
+      ]
+    },
+    {
+      "id": "E042",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 355,
+      "citation_coverage": 0.25,
+      "cited_sentences": 2,
+      "supported_sentences": 2,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E043",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1091,
+      "citation_coverage": 0.45454545454545453,
+      "cited_sentences": 12,
+      "supported_sentences": 12,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 10,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E044",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 1552,
+      "citation_coverage": 0.5517241379310345,
+      "cited_sentences": 17,
+      "supported_sentences": 16,
+      "support_rate": 0.941,
+      "uncited_fact_sentences": 12,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "SIRT6、SIRT7 为第四类，该分类与人和中华鳖中的研究结果一致 [S1][S8]。",
+          "overlap": 0.29
+        }
+      ]
+    },
+    {
+      "id": "E045",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 396,
+      "citation_coverage": 0.8571428571428571,
+      "cited_sentences": 7,
+      "supported_sentences": 7,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E046",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 654,
+      "citation_coverage": 0.4,
+      "cited_sentences": 4,
+      "supported_sentences": 4,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 7,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E047",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 795,
+      "citation_coverage": 0.47619047619047616,
+      "cited_sentences": 10,
+      "supported_sentences": 6,
+      "support_rate": 0.6,
+      "uncited_fact_sentences": 5,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "现有资料中，只有 S3《高位池养殖尾水处理模式》涉及高位池尾水处理，其中提到缢蛏仅作为二级生物净化池可养殖的底栖动物之一 [S3]。",
+          "overlap": 0.113
+        },
+        {
+          "sentence": "可用黑水虻分解或微生物菌剂发酵堆肥 [S3]。",
+          "overlap": 0.312
+        },
+        {
+          "sentence": "- 上述内容为“高位池养殖尾水处理模式”的通用要求，并非专门针对缢蛏养殖 [S3]。",
+          "overlap": 0.033
+        }
+      ]
+    },
+    {
+      "id": "E048",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 627,
+      "citation_coverage": 1.0,
+      "cited_sentences": 9,
+      "supported_sentences": 9,
+      "support_rate": 1.0,
+      "uncited_fact_sentences": 1,
+      "invalid_citations": [],
+      "unsupported_examples": []
+    },
+    {
+      "id": "E049",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 306,
+      "citation_coverage": 0.8,
+      "cited_sentences": 4,
+      "supported_sentences": 3,
+      "support_rate": 0.75,
+      "uncited_fact_sentences": 2,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "补充说明：该来源的参考文献中列有 NY 5052（海水养殖用水水质）、NY 5362（海水养殖产地环境条件）等标准 [S1]，但这些属于参考文献条目，并非“8 病害防治”条款本身提出的要求。",
+          "overlap": 0.282
+        }
+      ]
+    },
+    {
+      "id": "E050",
+      "answered": true,
+      "sufficient": true,
+      "answer_chars": 429,
+      "citation_coverage": 0.42857142857142855,
+      "cited_sentences": 3,
+      "supported_sentences": 1,
+      "support_rate": 0.333,
+      "uncited_fact_sentences": 3,
+      "invalid_citations": [],
+      "unsupported_examples": [
+        {
+          "sentence": "原因：<source> 中虽有《2026年6月上海市水产养殖病害预测预报》（S4），但其内容只描述了高温、梅雨、水质波动等风险因素，未列出具体需要重点防控的病害名称 [S4]。",
+          "overlap": 0.014
+        },
+        {
+          "sentence": "- 2025年6月上海市预测预报资料中也未列出具体病害名称，仅提示高温、梅雨导致发病率上升 [S3]。",
+          "overlap": 0.0
+        }
+      ]
+    }
+  ]
+}

@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT / "apps" / "api"))
 from app.config import settings
 from app.db import SessionLocal
 from app.generation.citations import validate_answer
-from app.generation.llm import Generator, MockGenerator, build_generator
+from app.generation.llm import Generator, LLMError, MockGenerator, build_generator
 from app.ingestion.embedder import get_embedder
 from app.query.planner import planner_from_generator
 from app.retrieval.bm25 import BM25SparseEncoder
@@ -82,10 +82,17 @@ def _gold_source_hit(evidence: list[Evidence], cited: list[int], gold_titles: li
 
 
 async def _generate(generator: Generator, question: str, evidence: list[Evidence]) -> str:
-    answer = ""
-    async for token in generator.stream(question, evidence):
-        answer += token
-    return answer
+    last: Exception | None = None
+    for attempt in range(3):
+        try:
+            answer = ""
+            async for token in generator.stream(question, evidence):
+                answer += token
+            return answer
+        except LLMError as exc:  # gateway timeouts are transient; retry twice
+            last = exc
+            await asyncio.sleep(2 * (attempt + 1))
+    raise last  # type: ignore[misc]
 
 
 async def run(

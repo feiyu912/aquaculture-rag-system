@@ -1,0 +1,5 @@
+category,cases,refused,refusal_rate,avg_top_score
+adjacent_agriculture,10,7,0.7,0.109
+in_domain_unsupported,10,3,0.3,0.3897
+out_of_domain,10,8,0.8,0.0323
+ALL,30,18,0.6,0.177

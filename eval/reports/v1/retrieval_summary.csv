@@ -1,0 +1,5 @@
+mode,cases,answerable,refused,insufficient_expected,insufficient_pass,avg_sources,avg_retrieval_ms,recall@5,recall@10,ndcg@5,ndcg@10,mrr@10,child_recall@5,child_recall@10,child_ndcg@10,child_mrr@10
+dense,100,100,7,0,0,9.06,137.8,0.41,0.48,0.3246,0.3485,0.307,0.29,0.33,0.2349,0.2044
+bm25,100,100,0,0,0,9.97,89.7,0.46,0.54,0.3631,0.3889,0.3422,0.36,0.41,0.3057,0.2733
+hybrid,100,100,0,0,0,9.93,127.1,0.51,0.61,0.4105,0.4419,0.3896,0.39,0.46,0.332,0.2917
+hybrid_rerank,100,100,0,0,0,9.91,2681.3,0.6,0.68,0.5223,0.5493,0.508,0.45,0.51,0.4153,0.3855

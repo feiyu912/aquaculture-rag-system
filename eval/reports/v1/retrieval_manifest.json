@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-10-22T02:34:50.194483+00:00",
+  "git_commit": "26234ec0a35f349a072aaf8ef8be363070192d90",
+  "git_dirty": true,
+  "dataset": "../../eval/retrieval_eval_100_v1.jsonl",
+  "dataset_sha256": "acad2c3dff726e276d37e85457e01daf344c120863344e17be021b9d53133244",
+  "cases": 100,
+  "modes": [
+    "dense",
+    "bm25",
+    "hybrid",
+    "hybrid_rerank"
+  ],
+  "top_k": 10,
+  "query_ir": false,
+  "query_planner": false,
+  "contextual_retrieval": false,
+  "collection": "kb_chunks_bge_m3_v1",
+  "embedding_model": "BAAI/bge-m3",
+  "reranker_model": "BAAI/bge-reranker-v2-m3",
+  "annotation_status": "ai_assisted_pending_human_review",
+  "metric_note": "Primary Recall/nDCG/MRR use the returned parent chunk (the context unit sent to the LLM); child_* metrics use the representative child chunk. Refusals count as zero; insufficient cases are excluded from retrieval means."
+}
