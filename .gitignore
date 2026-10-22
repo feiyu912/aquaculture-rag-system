@@ -45,3 +45,7 @@ eval/runs/
 # Playwright artifacts
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Snapshot payloads: chunk text stays local (73MB); the manifest, per-document
+# records and checksums are tracked.
+snapshots/*/chunks.jsonl.gz

@@ -1,0 +1,428 @@
+{
+  "snapshot_id": "kb-v1_20261022",
+  "label": "KB-v1",
+  "frozen_at": "2026-10-22T02:15:23.633031Z",
+  "frozen_at_local": "2026-10-22T10:15:23.633031+08:00",
+  "corpus_digest": "2f6f744358074a8368059c644f621605d7058bb8b947c5b062b4662610d4316e",
+  "document_count": 1548,
+  "documents": {
+    "by_source_group": {
+      "WorldFish": 723,
+      "national": 459,
+      "local": 222,
+      "standard": 98,
+      "journal": 43,
+      "other": 3
+    },
+    "by_source_trust": {
+      "international_org": 723,
+      "official_national": 459,
+      "official_local": 222,
+      "official_standard": 98,
+      "research_institute": 43,
+      "(none)": 3
+    },
+    "by_licence_class": {
+      "cc_explicit": 567,
+      "gov_document_cn": 459,
+      "unclear": 320,
+      "repository_open_access": 199,
+      "(none)": 3
+    },
+    "by_index_eligibility": {
+      "eligible": 1347,
+      "pending_licence": 200,
+      "ineligible": 1
+    },
+    "by_technical_review": {
+      "pass": 722,
+      "warn": 544,
+      "pending": 281,
+      "fail": 1
+    },
+    "by_domain_review": {
+      "pending": 1548
+    },
+    "by_risk_level": {
+      "low": 881,
+      "medium": 371,
+      "high": 290,
+      "(none)": 6
+    },
+    "by_doc_genre": {
+      "other": 732,
+      "normative_document": 435,
+      "(none)": 360,
+      "technical_article": 21
+    },
+    "by_source_type": {
+      "pdf": 868,
+      "html": 680
+    },
+    "by_category": {
+      "未分类": 1440,
+      "水产标准": 95,
+      "病害防控": 6,
+      "养殖技术": 5,
+      "技术模式": 1,
+      "水质管理": 1
+    },
+    "by_language": {
+      "(none)": 1403,
+      "zh": 145
+    },
+    "by_region": {
+      "(none)": 1446,
+      "安徽省": 8,
+      "山东省": 7,
+      "江苏省": 7,
+      "湖南省": 7,
+      "全国": 6,
+      "吉林省": 5,
+      "江西省": 5,
+      "河北省": 5,
+      "上海市": 4,
+      "浙江省": 4,
+      "内蒙古自治区": 3,
+      "四川省": 3,
+      "天津市": 3,
+      "广东省": 3,
+      "湖北省": 3,
+      "辽宁省": 3,
+      "重庆市": 3,
+      "黑龙江省": 3,
+      "河南省": 2,
+      "海南省": 2,
+      "西藏自治区": 2,
+      "青海省": 2,
+      "云南省": 1,
+      "北京市": 1,
+      "宁夏回族自治区": 1,
+      "宁波市": 1,
+      "山西省": 1,
+      "广西壮族自治区": 1,
+      "沧州市": 1,
+      "湛江市": 1,
+      "滨州市": 1,
+      "福建省": 1,
+      "贵州省": 1,
+      "陕西省": 1
+    },
+    "top_source_orgs": {
+      "WorldFish": 723,
+      "全国水产技术推广总站": 454,
+      "gd-dara-tech": 114,
+      "(none)": 73,
+      "sh-nyncw-bwbdscl": 64,
+      "hb-nysy-yyjs": 36,
+      "水产学报": 23,
+      "渔业科学进展": 20,
+      "hn-agri-jszn": 4,
+      "js-nantong-yyyz": 4,
+      "农业农村部": 4,
+      "江苏省市场监督管理局": 3,
+      "系统示例资料（非真实标准）": 3,
+      "安徽省市场监督管理局": 2,
+      "江西省市场监督管理局": 2,
+      "吉林省质量技术监督局": 1,
+      "四川省水产技术推广总站": 1,
+      "天津市市场监督管理委员会": 1,
+      "宁波市市场监督管理局": 1,
+      "山东省市场监督管理局": 1,
+      "山东省渔业发展和资源养护总站": 1,
+      "江苏省水产技术推广站": 1,
+      "沧州市市场监督管理局": 1,
+      "河北省质量技术监督局": 1,
+      "浙江省水产技术推广总站": 1,
+      "海南省市场监督管理局": 1,
+      "海南省质量技术监督局": 1,
+      "湖南省市场监督管理局": 1,
+      "湖南省水产技术推广站": 1,
+      "湛江市市场监督管理局": 1,
+      "滨州市市场监督管理局": 1,
+      "西藏自治区市场监督管理局": 1,
+      "辽宁省市场监督管理局": 1,
+      "重庆市市场监督管理局": 1
+    },
+    "isolated_for_licence": {
+      "(not isolated)": 1348,
+      "licence_unverified": 192,
+      "licence_rejected": 4,
+      "no_licence_review": 3,
+      "technical_review_failed": 1
+    }
+  },
+  "chunks": {
+    "chunks": 335088,
+    "child_chunks": 252033,
+    "parent_chunks": 83055,
+    "tokens": 22111562,
+    "mean_chunks_per_document": 216.47,
+    "integrity": {
+      "chunks_written": 335088,
+      "hash_mismatch": 0,
+      "empty_content": 0
+    }
+  },
+  "index": {
+    "collection": "kb_chunks_bge_m3_v1",
+    "vector_size": 1024,
+    "distance": "Cosine",
+    "points": 189476,
+    "active_version_points": 174715,
+    "stale_points": 14761,
+    "documents_without_points": 200,
+    "documents_partial_points": 0,
+    "index_manifests": [
+      {
+        "collection": "kb_chunks_bge_m3_ctx_v1",
+        "embedding_model": "BAAI/bge-m3",
+        "vector_size": 1024,
+        "chunk_config_hash": "b55b38183c1d93857fd80439275cee36fcb5a4d7d07c99ba20e8a804de49bdee",
+        "bm25_config_hash": "",
+        "status": "active",
+        "document_count": 6,
+        "point_count": 190,
+        "updated_at": "2026-10-20T05:08:31.412368Z"
+      },
+      {
+        "collection": "kb_chunks_bge_m3_v1",
+        "embedding_model": "BAAI/bge-m3",
+        "vector_size": 1024,
+        "chunk_config_hash": "4868e31c4d1aa57cb93f7a7f266f57f42a7ba1b377b864be70c1641e62c896e0",
+        "bm25_config_hash": "e3851c722cd28f3a34f4ef8f1faf595d844274c6d3831b2c72f23603c81cf13f",
+        "status": "active",
+        "document_count": 1337,
+        "point_count": 189476,
+        "updated_at": "2026-10-22T02:10:13.759720Z"
+      }
+    ]
+  },
+  "publish_gate": {
+    "rule": "status='active' AND index_eligibility='eligible' AND technical_review_status<>'fail' AND source_trust IS NOT NULL AND source_trust<>'unknown' AND licence_review_id IS NOT NULL AND EXISTS (SELECT 1 FROM licence_reviews r WHERE r.id=kb_documents.licence_review_id AND r.decision='approved')",
+    "publishable_now": 1347,
+    "blocked": 201,
+    "blocked_by_reason": {
+      "index_eligibility=pending_licence": 200,
+      "licence_review=unverified": 192,
+      "licence_review=rejected": 5,
+      "source_trust=None": 3,
+      "no_licence_review_id": 3,
+      "index_eligibility=ineligible": 1,
+      "technical_review=fail": 1
+    },
+    "note": "门禁只用于说明可发布性；快照包含 active 集合的全部文档，未按门禁筛除。"
+  },
+  "licence_reviews": {
+    "de31077d-e34c-4d6e-8845-fdb3459a8de6": {
+      "scope": "worldfish-item-cc-by-nc-nd",
+      "basis": "item_licence_field",
+      "decision": "approved",
+      "evidence_kind": "item_licence_field",
+      "conditions": "按逐条 dc:rights 声明的 CC 条款使用；仅限内部非商业检索；保留出处；NC/ND 条款按其原文执行。 许可依据来自单篇 dc:rights；全文经仓储站点 PDF 下载取得，仓储 End User Agreement 对系统性抓取另有限制，获取环节的书面许可未核验。",
+      "evidence_url": null,
+      "evidence_quote": "逐条 OAI-PMH dc:rights 字段为 CC BY-NC-ND 4.0。",
+      "reviewer": "user_decision_plan_a",
+      "decided_at": "2026-10-22T02:00:10.307473Z"
+    },
+    "b6c250bd-c228-47aa-84aa-45bd025758df": {
+      "scope": "worldfish-item-cc-by-nc",
+      "basis": "item_licence_field",
+      "decision": "approved",
+      "evidence_kind": "item_licence_field",
+      "conditions": "按逐条 dc:rights 声明的 CC 条款使用；仅限内部非商业检索；保留出处；NC/ND 条款按其原文执行。 许可依据来自单篇 dc:rights；全文经仓储站点 PDF 下载取得，仓储 End User Agreement 对系统性抓取另有限制，获取环节的书面许可未核验。",
+      "evidence_url": null,
+      "evidence_quote": "逐条 OAI-PMH dc:rights 字段为 CC BY-NC 系列许可（例如 “CC-BY-NC-4.0”）。",
+      "reviewer": "user_decision_plan_a",
+      "decided_at": "2026-10-22T02:00:10.307473Z"
+    },
+    "28730a43-9dbd-4659-be45-9378fd470d96": {
+      "scope": "local_gov_tech_articles",
+      "basis": "research_exemption_cn_art24_6",
+      "decision": "approved",
+      "evidence_kind": "policy_inference",
+      "conditions": null,
+      "evidence_url": "https://www.gov.cn/guoqing/2020-11/11/content_5561144.htm",
+      "evidence_quote": "著作权法第二十四条(六)：为学校课堂教学或者科学研究，翻译、改编、汇编、播放或者少量复制已经发表的作品，供教学或者科研人员使用，但不得出版发行。限内部检索研究使用，不公开再分发，不商业使用，保留出处",
+      "reviewer": "user_decision_internal_research",
+      "decided_at": "2026-10-21T08:19:43.515376Z"
+    },
+    "04f8e67e-f674-462c-93c4-bb01bd67540f": {
+      "scope": "cn-gov-s5-forecast",
+      "basis": "statute_s5_inference",
+      "decision": "approved",
+      "evidence_kind": "policy_inference",
+      "conditions": "仅限内部非商业检索使用；不公开再分发；保留发布机构、标题与原文链接；不用于训练对外发布的模型。 该依据为法律推断，不是法律意见或已确认的法律事实。",
+      "evidence_url": "https://www.gov.cn/xinwen/2020-11/11/content_5561144.htm",
+      "evidence_quote": "《中华人民共和国著作权法》第五条：本法不适用于：（一）法律、法规，国家机关的决议、决定、命令和其他具有立法、行政、司法性质的文件，及其官方正式译文；（二）单纯事实消息；（三）历法、通用数表、通用表格和公式。",
+      "reviewer": "user_decision_plan_a",
+      "decided_at": "2026-10-22T02:00:10.307473Z"
+    },
+    "ab2a6fbe-17f7-4c76-a69b-b967d5b8e7f8": {
+      "scope": "worldfish-item-cc-by",
+      "basis": "item_licence_field",
+      "decision": "approved",
+      "evidence_kind": "item_licence_field",
+      "conditions": "按逐条 dc:rights 声明的 CC 条款使用；仅限内部非商业检索；保留出处；NC/ND 条款按其原文执行。 许可依据来自单篇 dc:rights；全文经仓储站点 PDF 下载取得，仓储 End User Agreement 对系统性抓取另有限制，获取环节的书面许可未核验。",
+      "evidence_url": null,
+      "evidence_quote": "逐条 OAI-PMH dc:rights 字段为 CC BY 系列许可（例如 “CC BY 4.0”）。",
+      "reviewer": "user_decision_plan_a",
+      "decided_at": "2026-10-22T02:00:10.307473Z"
+    },
+    "3b5aac2b-592b-4ff1-8593-1746f669a9db": {
+      "scope": "cn_public_standard_platform",
+      "basis": "platform_public_access",
+      "decision": "approved",
+      "evidence_kind": "platform_public_access",
+      "conditions": null,
+      "evidence_url": "https://dbba.sacinfo.org.cn/",
+      "evidence_quote": "地方标准信息公开服务平台免费提供标准文本在线查看与下载；仅用于非商业性科研检索，不再分发，保留标准号与发布机构",
+      "reviewer": "user_decision_internal_research",
+      "decided_at": "2026-10-22T01:27:00.913464Z"
+    },
+    "fd3a6307-4693-4e7c-abb5-9c32436c0a6f": {
+      "scope": "oa_journal_cc_by_nc_nd",
+      "basis": "publisher_cc",
+      "decision": "approved",
+      "evidence_kind": "publisher_policy",
+      "conditions": null,
+      "evidence_url": "https://www.china-fishery.com/scxuebao/site/menus/20230407133217001",
+      "evidence_quote": "本刊使用知识共享许可协议(Creative Commons)，允许第三方用户按照署名(BY)-非商业性使用(NC)-禁止演绎(ND) 4.0 的方式复制、传播；所有文章一经发表立即永久免费阅读和下载",
+      "reviewer": "agent_verified_against_publisher_page",
+      "decided_at": "2026-10-21T08:18:42.060098Z"
+    },
+    "7bb05c31-5bcb-48c5-ab32-88c6b3cff20b": {
+      "scope": "worldfish-repository",
+      "basis": "repository_terms",
+      "decision": "unverified",
+      "evidence_kind": "repository_terms",
+      "conditions": "仅限内部非商业检索使用；不公开再分发；保留发布机构、标题与原文链接；不用于训练对外发布的模型。",
+      "evidence_url": "https://digitalarchive.worldfishcenter.org/info/end-user-agreement",
+      "evidence_quote": "The Content ... are provided on the Site “AS IS” for your information and personal use only. ... you are granted a limited license to access and use the Site and to download or print a copy of any portion of the Content ... solely for your personal, non-commercial use. ... you agree not to: Systematically retrieve data or other content from the Site to create or compile, directly or indirectly, a collection, compilation, database, or directory without written permission from us.",
+      "reviewer": null,
+      "decided_at": null
+    },
+    "53c52f07-f358-464a-a720-d9e4bdff4f1a": {
+      "scope": "cn-gov-news-research-exemption",
+      "basis": "research_exemption_cn_art24_6",
+      "decision": "approved",
+      "evidence_kind": "policy_inference",
+      "conditions": "仅限内部非商业检索使用；不公开再分发；保留发布机构、标题与原文链接；不用于训练对外发布的模型。 该依据为法律推断，不是法律意见或已确认的法律事实。",
+      "evidence_url": "https://www.gov.cn/xinwen/2020-11/11/content_5561144.htm",
+      "evidence_quote": "《中华人民共和国著作权法》第二十四条（六）：为学校课堂教学或者科学研究，翻译、改编、汇编、播放或者少量复制已经发表的作品，供教学或者科研人员使用，但不得出版发行。",
+      "reviewer": "user_decision_plan_a",
+      "decided_at": "2026-10-22T02:00:10.307473Z"
+    },
+    "103544a2-a8b1-45f3-891a-6559686991d2": {
+      "scope": "worldfish-item-all-rights-reserved",
+      "basis": "item_licence_field",
+      "decision": "rejected",
+      "evidence_kind": "item_licence_field",
+      "conditions": " 许可依据来自单篇 dc:rights；全文经仓储站点 PDF 下载取得，仓储 End User Agreement 对系统性抓取另有限制，获取环节的书面许可未核验。",
+      "evidence_url": null,
+      "evidence_quote": "逐条 OAI-PMH dc:rights 字段为 “Copyrighted; all rights reserved”。",
+      "reviewer": "user_decision_plan_a",
+      "decided_at": "2026-10-22T02:00:10.307473Z"
+    },
+    "9d845bc1-5764-4953-b96d-3ba3edb516cc": {
+      "scope": "worldfish-item-other-licence",
+      "basis": "item_licence_field",
+      "decision": "approved",
+      "evidence_kind": "item_licence_field",
+      "conditions": "仅限内部非商业检索使用；不公开再分发；保留发布机构、标题与原文链接；不用于训练对外发布的模型。 许可依据来自单篇 dc:rights；全文经仓储站点 PDF 下载取得，仓储 End User Agreement 对系统性抓取另有限制，获取环节的书面许可未核验。",
+      "evidence_url": null,
+      "evidence_quote": "逐条 OAI-PMH dc:rights 字段为 GPL-3.0-or-later。",
+      "reviewer": "user_decision_plan_a",
+      "decided_at": "2026-10-22T02:00:10.307473Z"
+    },
+    "4a4b4e73-5146-431e-8d1b-832af6348d31": {
+      "scope": "worldfish-item-public-domain",
+      "basis": "item_licence_field",
+      "decision": "approved",
+      "evidence_kind": "item_licence_field",
+      "conditions": "仅限内部非商业检索使用；不公开再分发；保留发布机构、标题与原文链接；不用于训练对外发布的模型。 许可依据来自单篇 dc:rights；全文经仓储站点 PDF 下载取得，仓储 End User Agreement 对系统性抓取另有限制，获取环节的书面许可未核验。",
+      "evidence_url": null,
+      "evidence_quote": "逐条 OAI-PMH dc:rights 字段为 “No known copyright restrictions”。",
+      "reviewer": "user_decision_plan_a",
+      "decided_at": "2026-10-22T02:00:10.307473Z"
+    },
+    "14ef7fd8-d44e-49d8-ba07-2eabfb17ca25": {
+      "scope": "worldfish-item-copyrighted-nc-only",
+      "basis": "item_licence_field",
+      "decision": "approved",
+      "evidence_kind": "item_licence_field",
+      "conditions": "仅限内部非商业检索使用；不公开再分发；保留发布机构、标题与原文链接；不用于训练对外发布的模型。 许可依据来自单篇 dc:rights；全文经仓储站点 PDF 下载取得，仓储 End User Agreement 对系统性抓取另有限制，获取环节的书面许可未核验。",
+      "evidence_url": null,
+      "evidence_quote": "逐条 OAI-PMH dc:rights 字段为 “Copyrighted; Non-commercial use only”。",
+      "reviewer": "user_decision_plan_a",
+      "decided_at": "2026-10-22T02:00:10.307473Z"
+    }
+  },
+  "config": {
+    "embedding_model": "BAAI/bge-m3",
+    "embedding_device": "mps",
+    "embedding_use_fp16": true,
+    "embedding_batch_size": 8,
+    "embedding_max_length": 1024,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_device": "mps",
+    "retrieval": {
+      "default_mode": "hybrid",
+      "dense_top_k": 20,
+      "bm25_top_k": 20,
+      "rrf_k": 60,
+      "rerank_top_k": 15,
+      "max_sources": 15
+    },
+    "llm": {
+      "provider": "openai_compatible",
+      "model": "deepseek-v4.1-flash"
+    }
+  },
+  "state_outside_snapshot": [
+    {
+      "status": "active",
+      "documents": 1548,
+      "versions": 1537,
+      "chunks": 335088
+    },
+    {
+      "status": "deleted",
+      "documents": 294,
+      "versions": 178,
+      "chunks": 11321
+    },
+    {
+      "status": "staging",
+      "documents": 33,
+      "versions": 11,
+      "chunks": 2494
+    }
+  ],
+  "server_version": "16.15",
+  "git": {
+    "commit": "8d11601b30deec6f26737ffdb28db821f0b39fa9",
+    "branch": "main",
+    "dirty": true
+  },
+  "caveats": [
+    "domain_review_status 的取值分布为 {'pending': 1548}；本快照不声称任何专家审核已发生。",
+    "201 篇 active 文档不满足现行发布门禁（{'index_eligibility=pending_licence': 200, 'licence_review=unverified': 192, 'licence_review=rejected': 5, 'source_trust=None': 3, 'no_licence_review_id': 3, 'index_eligibility=ineligible': 1, 'technical_review=fail': 1}）；它们是历史批次，按原状冻结，未做任何改写。",
+    "11 篇 active 文档没有 current_version，0 篇当前版本状态不是 ready。",
+    "11 篇源文件在磁盘上缺失，file.sha256 记为 null。",
+    "200 篇有子块但 Qdrant 无向量，0 篇向量数少于子块数。",
+    "content_hash 重复 1 组，涉及 2 篇（重印/转载）；快照按原状保留，未合并计数。"
+  ],
+  "artifacts": {
+    "documents.jsonl.gz": {
+      "file": "documents.jsonl.gz",
+      "sha256": "3c9b88ad489fcd7a8c5b6314b17f4740b2daee45acac5ed29b379d54f1201af6",
+      "bytes": 653656
+    },
+    "chunks.jsonl.gz": {
+      "file": "chunks.jsonl.gz",
+      "sha256": "404d1c5cffed6c3cb172d62d05143eec49a3ffb5c265630eba43b6573184eca1",
+      "bytes": 73085725
+    }
+  }
+}
