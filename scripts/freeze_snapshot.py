@@ -132,7 +132,7 @@ def source_group(record: dict) -> str:
         "official_local": "local",
         "official_national": "national",
         "research_institute": "journal",
-    }.get(record["source_trust"] or "", "other")
+    }.get(record["trust"]["source_trust"] or "", "other")
 
 
 def sha256_file(path: str | None, block: int = 1 << 20) -> str | None:
@@ -236,11 +236,15 @@ def qdrant_index(collection: str, url: str) -> dict[str, int]:
         if offset is None:
             break
     info = client.get_collection(collection)
+    vectors = info.config.params.vectors
+    # Named vectors (ours is called "dense") come back as a dict; unnamed ones
+    # as VectorParams.  Handle both so the manifest states the real geometry.
+    params = next(iter(vectors.values())) if isinstance(vectors, dict) else vectors
     return {
         "points": counts,
         "collection_points": info.points_count or 0,
-        "vector_size": info.config.params.vectors.size,
-        "distance": str(info.config.params.vectors.distance),
+        "vector_size": params.size,
+        "distance": str(params.distance),
     }
 
 
@@ -261,13 +265,15 @@ def git_state() -> dict:
 
 def gate_reasons(record: dict) -> list[str]:
     reasons = []
-    if record["index_eligibility"] != "eligible":
-        reasons.append(f"index_eligibility={record['index_eligibility']}")
-    if record["technical_review_status"] == "fail":
+    eligibility = record["licence"]["index_eligibility"]
+    if eligibility != "eligible":
+        reasons.append(f"index_eligibility={eligibility}")
+    if record["review"]["technical"] == "fail":
         reasons.append("technical_review=fail")
-    if not record["source_trust"] or record["source_trust"] == "unknown":
-        reasons.append(f"source_trust={record['source_trust']}")
-    review = record["licence_review"]
+    trust = record["trust"]["source_trust"]
+    if not trust or trust == "unknown":
+        reasons.append(f"source_trust={trust}")
+    review = record["licence"]["review"]
     if not review["id"]:
         reasons.append("no_licence_review_id")
     elif review["decision"] != "approved":
@@ -426,7 +432,9 @@ async def build(args: argparse.Namespace) -> int:
 
     with gzip_text_writer(docs_path) as fh:
         for record in records:
-            fh.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+            fh.write(
+                json.dumps(record, ensure_ascii=False, sort_keys=True, default=_default) + "\n"
+            )
 
     # ---- manifest ---------------------------------------------------------
     def key(value) -> str:
