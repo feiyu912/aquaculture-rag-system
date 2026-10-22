@@ -254,12 +254,25 @@ def best_sentence(text: str, query: str, limit: int = 220, max_sentences: int = 
     return _excerpt(" ".join(ordered), limit)
 
 
+def _servable() -> list:
+    """Documents the retrieval layer may serve.
+
+    index_eligibility carries the trust+licence judgement; a failed technical
+    review is never served even when a licence exists.  Documents isolated for
+    an unapproved licence therefore stay out of every retrieval path, not just
+    out of the index build.
+    """
+    return [
+        KbDocument.status == "active",
+        KbDocument.index_eligibility == "eligible",
+        KbDocument.technical_review_status != "fail",
+        KbDocument.current_version_id.is_not(None),
+    ]
+
+
 async def get_active_versions(db: AsyncSession) -> list[uuid.UUID]:
     result = await db.execute(
-        select(KbDocument.current_version_id).where(
-            KbDocument.status == "active",
-            KbDocument.current_version_id.is_not(None),
-        )
+        select(KbDocument.current_version_id).where(*_servable())
     )
     return [row[0] for row in result.all() if row[0] is not None]
 
@@ -295,10 +308,7 @@ async def _active_version_rows(
 ) -> tuple[list[uuid.UUID], list[str]]:
     rows = (
         await db.execute(
-            select(KbDocument.current_version_id, KbDocument.species).where(
-                KbDocument.status == "active",
-                KbDocument.current_version_id.is_not(None),
-            )
+            select(KbDocument.current_version_id, KbDocument.species).where(*_servable())
         )
     ).all()
     versions: list[uuid.UUID] = []
@@ -323,10 +333,7 @@ async def _resolve_source_versions(
         return {}
     rows = (
         await db.execute(
-            select(KbDocument.title, KbDocument.current_version_id).where(
-                KbDocument.status == "active",
-                KbDocument.current_version_id.is_not(None),
-            )
+            select(KbDocument.title, KbDocument.current_version_id).where(*_servable())
         )
     ).all()
     active = set(active_versions)

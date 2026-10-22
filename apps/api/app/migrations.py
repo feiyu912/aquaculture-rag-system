@@ -261,6 +261,30 @@ MIGRATIONS: list[tuple[str, str | list[str]]] = [
             updated_at timestamptz NOT NULL DEFAULT now()
         )""",
     ),
+    # --- Licence audit trail (2026-10-22) -------------------------------
+    # licence_evidence tells us *what kind* of evidence supports a decision:
+    # a per-item rights field is not the same claim as a statutory inference,
+    # and the thesis must be able to tell them apart.
+    (
+        "0027_licence_review_evidence",
+        [
+            """CREATE TABLE IF NOT EXISTS licence_reviews (
+                id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                scope varchar(80) NOT NULL,
+                basis varchar(64) NOT NULL,
+                decision varchar(24) NOT NULL,
+                evidence_url text,
+                evidence_quote text,
+                reviewer varchar(64),
+                decided_at timestamptz,
+                created_at timestamptz NOT NULL DEFAULT now()
+            )""",
+            "ALTER TABLE licence_reviews ADD COLUMN IF NOT EXISTS evidence_kind varchar(32) NOT NULL DEFAULT 'unspecified'",
+            "ALTER TABLE licence_reviews ADD COLUMN IF NOT EXISTS conditions text",
+            "ALTER TABLE licence_reviews ADD COLUMN IF NOT EXISTS supersedes_id uuid",
+            "CREATE INDEX IF NOT EXISTS ix_licence_reviews_scope ON licence_reviews (scope)",
+        ],
+    ),
 ]
 
 
