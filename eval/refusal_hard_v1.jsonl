@@ -1,0 +1,11 @@
+{"id": "H01", "question": "《DB88/T 1234-2024 对虾工厂化养殖技术规范》规定虾苗投放密度是多少？", "category": "fabricated_standard", "expect_insufficient": true, "rationale": "标准号不存在，仅格式合法。"}
+{"id": "H02", "question": "SC/T 9999-2025 大黄鱼深水网箱养殖技术规程中，网箱周长应是多少？", "category": "fabricated_standard", "expect_insufficient": true, "rationale": "标准号不存在。"}
+{"id": "H03", "question": "DB22/T 3310-2021 中广东省池塘的溶解氧限值是多少？", "category": "wrong_region", "expect_insufficient": true, "rationale": "吉林省地方标准不覆盖广东，地区元数据不符。"}
+{"id": "H04", "question": "2027年3月海南省水产养殖病害预测预报有哪些？", "category": "wrong_forecast", "expect_insufficient": true, "rationale": "无该省份/月份的预报。"}
+{"id": "H05", "question": "2024年2月西藏自治区水产养殖病害预测预报有哪些？", "category": "wrong_forecast", "expect_insufficient": true, "rationale": "知识库无西藏预报。"}
+{"id": "H06", "question": "DB22/T 3310-2021 中凡纳滨对虾的投喂量是多少？", "category": "species_mismatch", "expect_insufficient": true, "rationale": "该标准不针对凡纳滨对虾，物种适用性不符。"}
+{"id": "H07", "question": "2025年全国水产养殖碳排放总量是多少万吨？", "category": "numeric_stat", "expect_insufficient": true, "rationale": "知识库无全国统计口径数据。"}
+{"id": "H08", "question": "某县2026年渔业执法检查结果如何？", "category": "placeholder_entity", "expect_insufficient": true, "rationale": "实体为占位符，无法定位文档。"}
+{"id": "H09", "question": "2026年11月湖北省水产养殖病害预测预报有哪些？", "category": "wrong_forecast", "expect_insufficient": true, "rationale": "只有 2026年10月及以前的湖北预报。"}
+{"id": "H10", "question": "DB22/T 3310-2021 规定池塘 pH 应控制在多少？", "category": "answerable_control", "expect_insufficient": false, "rationale": "对照组：真实标准且原文含 pH 数值，应可回答。"}
+{"id": "H11", "question": "2026年10月湖北省水产养殖病害预测预报有哪些？", "category": "answerable_control", "expect_insufficient": false, "rationale": "对照组：真实存在的预报。"}

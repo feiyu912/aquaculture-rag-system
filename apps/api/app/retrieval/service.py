@@ -30,6 +30,7 @@ from app.query.sources import (
     order_round_robin,
 )
 from app.retrieval.bm25 import CUSTOM_TERMS, BM25SparseEncoder, bm25_config_hash, tokenize
+from app.retrieval.entity_checks import apply_entity_checks
 from app.retrieval.faq_store import search_faq
 from app.retrieval.index_manifest import check_manifest
 from app.retrieval.requirements import (
@@ -193,6 +194,16 @@ TARGETED_SKIP_REASONS = {
     "no_query_terms",
     "no_evidence",
     "current_regulation_unverified",
+    # Entity failures are not retrieval gaps: a second retrieval pass cannot
+    # conjure a standard code or a forecast month that the catalogue lacks.
+    "standard_not_found",
+    "standard_not_current",
+    "effective_date_mismatch",
+    "forecast_not_found",
+    "region_mismatch",
+    "species_mismatch",
+    "no_numeric_evidence",
+    "validity_unverified",
 }
 
 
@@ -1194,6 +1205,7 @@ async def retrieve(
         species_options,
         fallback_reason=None,
     )
+    gate = await apply_entity_checks(db, question, query_ir, evidence, gate)
     gate = _apply_current_regulation_gate(query_ir, gate)
 
     targeted_trace: dict | None = None
@@ -1271,6 +1283,7 @@ async def retrieve(
                 species_options,
                 fallback_reason=None,
             )
+            gate = await apply_entity_checks(db, question, query_ir, evidence, gate)
             gate = _apply_current_regulation_gate(query_ir, gate)
             if gate.sufficient:
                 break
@@ -1300,6 +1313,8 @@ async def retrieve(
             )
             gate = _apply_current_regulation_gate(query_ir, gate)
             faq_trace["sufficient_after"] = gate.sufficient
+
+    gate = await apply_entity_checks(db, question, query_ir, evidence, gate)
 
     if not gate.sufficient and not keep_insufficient_evidence:
         if strict_question and strict_trace is not None:

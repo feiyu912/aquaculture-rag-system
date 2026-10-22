@@ -116,9 +116,10 @@ async def main() -> int:
         writer.writeheader()
         writer.writerows(rows)
 
+    dataset = args.dataset.resolve()
     manifest = {
         "created_at": datetime.now(UTC).isoformat(),
-        "dataset": str(args.dataset.relative_to(ROOT)),
+        "dataset": str(dataset.relative_to(ROOT)),
         "dataset_sha256": hashlib.sha256(args.dataset.read_bytes()).hexdigest(),
         "cases": len(details),
         "mode": "hybrid_rerank",
